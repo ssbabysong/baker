@@ -7,7 +7,7 @@ import { parseRecipeText, formatAmount, formatMinutes, guessStepKind } from './p
 import { rateStar, shape, icon, storefront, storefrontSign, ovenScene, stageScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES, SHAPE_NAMES_EN } from './sketch.js';
 import {
   remainingMs, formatClock, createTimer, pauseTimer, resumeTimer, addMinutes,
-  unlockAudio, playChime, startRinging, stopRinging, askNotifyPermission, notify, keepAwake,
+  unlockAudio, playChime, playLevelUp, startRinging, stopRinging, askNotifyPermission, notify, keepAwake,
   isNative, permissionState, refreshPermission, syncNativeAlarms,
 } from './timers.js';
 import { currentCatalog, refreshCatalog, mergeCatalog, takeCatalogUpdate, skipCatalogUpdate } from './catalog.js';
@@ -1005,8 +1005,8 @@ async function saveFinish() {
 async function celebrate(count, shapeName) {
   const a = levelOf(count - 1);
   const b = levelOf(count);
-  playChime();
   const up = b.lv > a.lv;
+  if (up) playLevelUp(); else playChime();
   const left = b.next ? b.next.at - count : 0;
   await dialog(`<div class="celebrate">${up ? shopFront(b.lv, state.shop.name, true) : `<div class="duo">${shape(shapeName)}${mascot('yay')}</div>`}
     <h3>${up ? L(`小店升级啦！Lv.${b.lv} ${b.name}`, `Level up! Lv.${b.lv} ${b.name}`) : L(`第 ${count} 炉出炉！`, `Batch #${count} is out!`)}</h3>

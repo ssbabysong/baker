@@ -80,6 +80,33 @@ export function playChime() {
   ding(t + 0.7, 1568);
 }
 
+// 小店升级：店门口的铃铛「叮铃铃」+ 一段往上走的小号角，最后落在一个和弦上，和计时提醒听得出不一样
+function note(at, freq, { type = 'triangle', vol = 0.28, len = 0.5 } = {}) {
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(vol, at + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + len);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(at);
+  o.stop(at + len + 0.05);
+}
+
+export function playLevelUp() {
+  unlockAudio();
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime + 0.05;
+  // 门铃：两个高音快速交替几下
+  [2637, 3136, 2637, 3136, 2637].forEach((f, i) => note(t + i * 0.06, f, { type: 'sine', vol: 0.12, len: 0.25 }));
+  // 往上走：C5 E5 G5
+  [523, 659, 784].forEach((f, i) => note(t + 0.4 + i * 0.13, f, { len: 0.3 }));
+  // 落在 C 大三和弦上，拖长一点
+  [1047, 1319, 1568].forEach((f) => note(t + 0.8, f, { vol: 0.18, len: 1.4 }));
+  note(t + 0.8, 523, { type: 'sine', vol: 0.2, len: 1.4 });
+}
+
 export function startRinging() {
   stopRinging();
   playChime();
