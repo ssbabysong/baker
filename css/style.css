@@ -2,11 +2,11 @@
    奶油纸底 + 可可色文字 + 砖红线稿 + 蜡笔色块（面包黄 / 雾蓝 / 橄榄绿）
    数字和日期用打字机字体，英文小注用手写体 */
 
-/* 也字工厂花卷体：装了就用；也可以把有授权的字体文件放到 fonts/，或在「店务」里上传 */
+/* 店铺字体：也字工厂小石头。设备上装了就用；也可以把有授权的字体文件放到 fonts/，或在「店务」里上传 */
 @font-face {
-  font-family: 'Huajuan';
-  src: local('也字工厂花卷体'), local('YeZiGongChangHuaJuanTi'), local('Yezigongchang Huajuan'),
-       url('../fonts/huajuan.woff2') format('woff2'), url('../fonts/huajuan.ttf') format('truetype');
+  font-family: 'ShopFont';
+  src: local('也字工厂小石头'), local('YEFONTXiaoShiTou'),
+       url('../fonts/shopfont.woff2') format('woff2'), url('../fonts/shopfont.ttf') format('truetype');
   font-display: swap;
 }
 
@@ -35,8 +35,8 @@
   --shadow: 0 2px 0 rgba(74, 58, 46, .07);
   --radius-wobble: 255px 14px 225px 14px / 14px 225px 14px 255px;
   --radius-wobble-2: 14px 225px 14px 255px / 255px 14px 225px 14px;
-  --font: 'Huajuan', 'PingFang SC', 'Noto Sans SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
-  --title: 'Huajuan', 'ZCOOL KuaiLe', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  --font: 'ShopFont', 'PingFang SC', 'Noto Sans SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
+  --title: 'ShopFont', 'ZCOOL KuaiLe', 'PingFang SC', 'Noto Sans SC', sans-serif;
   --mono: 'Courier Prime', 'Courier New', ui-monospace, monospace;
   --tabbar-h: 66px;
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .26 0 0 0 0 .2 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -431,7 +431,7 @@ details[open] > summary::before { content: '▾ '; }
   box-shadow: 0 -4px 16px rgba(90, 67, 53, .05);
 }
 .tabbar nav { display: flex; max-width: 560px; height: var(--tabbar-h); margin: 0 auto; }
-.tabbar a { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; text-decoration: none; font-size: 11px; color: var(--ink-soft); }
+.tabbar a { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; text-decoration: none; font-size: 12px; color: var(--ink-soft); }
 .tabbar a .ti { width: 30px; height: 30px; color: var(--ink-soft); position: relative; }
 .tabbar a span { position: relative; }
 .tabbar a .blob { position: absolute; width: 50px; height: 50px; top: 3px; left: 50%; margin-left: -25px; }
