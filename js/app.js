@@ -52,13 +52,37 @@ function toast(msg) {
 
 // 只有发酵和烘烤这两种"等待"的步骤才有计时器；揉面、整形之类做完点一下就好
 const TIMED_KINDS = new Set(['ferment', 'bake']);
-const isTimed = (st) => !!(st && st.minutes && TIMED_KINDS.has(st.kind));
+// 发酵没写时间的，默认按 1 小时算（计时器也按这个）
+const stepMin = (st) => (st ? st.minutes || (st.kind === 'ferment' ? 60 : null) : null);
+const isTimed = (st) => !!(st && stepMin(st) && TIMED_KINDS.has(st.kind));
 const progressOf = (t) => (t ? (t.done ? 1 : 1 - remainingMs(t) / t.durationMs) : 0);
 const growScale = (p) => (0.66 + 0.34 * Math.min(1, Math.max(0, p))).toFixed(3);
 
 const kindLabel = (k) => ({
   ferment: L('发酵', 'Proof'), bake: L('烘烤', 'Bake'), rest: L('静置', 'Rest'), chill: L('冷藏', 'Chill'), knead: L('揉面', 'Knead'),
+  shape: L('整形', 'Shape'), cool: L('冷却', 'Cool'), decorate: L('装饰', 'Finish'),
 }[k] || '');
+
+// 每一步「在做什么」：发酵 / 烘烤按记下的类型；其他的看字面认（整形、冷却、装饰、揉面），
+// 实在认不出来：第一次发酵之前算揉面，之后算整形。步骤标签的颜色和烘焙页的小动画都按它来
+function stepKind(st, i, steps) {
+  if (!st) return 'other';
+  if (st.kind === 'ferment' || st.kind === 'bake') return st.kind;
+  const t = String(st.text || '').toLowerCase();
+  if (/切开|切口|割包|score|slice open/.test(t)) return 'shape';
+  if (/冷却|放凉|晾凉|晾网|cool/.test(t)) return 'cool';
+  if (/甘纳许|裱花|挤入|挤上|抹平|抹匀|装饰|淋面|刷.{0,4}蛋液|蛋液|撒上|粘满|粘上|筛糖粉|ganache|pipe|piping|glaze|frost|brush|egg wash|sprinkle|dust/.test(t)) return 'decorate';
+  if (/整形|分割|滚圆|收圆|擀|卷起|包入|包馅|切开|搓|编|割包|shape|divide|round|roll|score|fill/.test(t)) return 'shape';
+  if (/揉|搅拌|混合|厨师机|打面|knead|mix/.test(t)) return 'knead';
+  if (st.kind === 'rest' || st.kind === 'chill') return st.kind;
+  const firstFerment = steps.findIndex((x) => x.kind === 'ferment');
+  return firstFerment >= 0 && i > firstFerment ? 'shape' : 'knead';
+}
+const kindTag = (k) => (kindLabel(k) ? `<span class="kind k-${k}">${kindLabel(k)}</span>` : '');
+
+// 步骤文字：只把数字（时间、温度、份数、用量）加粗
+const NUM_RE = /(\d+(?:\.\d+)?(?:\s*[-~～]\s*\d+(?:\.\d+)?)?\s*(?:°\s*C|℃|度|%|％|分钟|分|小时|秒|倍|份|个|克|g|kg|ml|min|h(?![a-z])|s(?![a-z]))?)/gi;
+const stepHtml = (text) => esc(text).replace(NUM_RE, '<b class="num">$1</b>');
 
 // 店铺等级：私房烘焙的成长路线，出炉次数越多，小店越像样
 const LEVELS = [
@@ -95,10 +119,10 @@ async function showRoadmap() {
   const cur = levelOf(n);
   await dialog(`<div class="roadmap">
     <h3>${L('升级路线', 'Road to the flagship')}</h3>
-    <p class="small muted">${L(`每出炉一次就离下一级近一点。现在累计出炉 <b class="need">${n}</b> 次。`, `Every bake gets you closer. Baked so far: <b class="need">${n}</b>.`)}</p>
+    <p class="small muted">${L(`每出炉一次就离下一级近一点。现在累计出炉 <b class="need">${n}</b> 次。`, `Every bake gets you closer. Baked so far: <b class="need">${n}</b>.`)} ${L('点已解锁的店面可以看大图。', 'Tap an unlocked shop to see it big.')}</p>
     <ol>${LEVELS.map((lvl, i) => {
       const st = i + 1 < cur.lv ? 'past' : i + 1 === cur.lv ? 'now' : 'next';
-      return `<li class="${st}">${shopFront(i + 1, '', true)}
+      return `<li class="${st}" ${st !== 'next' ? `data-act="level-view" data-lv="${i + 1}" role="button"` : ''}>${shopFront(i + 1, '', true)}
         <div class="t"><b>Lv.${i + 1} ${lvName(i)}</b>
           <span class="small muted">${lvDesc(i)}</span>
           <span class="small ${st === 'now' ? 'here' : 'muted'}">${st === 'now' ? L('你在这里', 'You are here') : st === 'past' ? L('已达成', 'Done')
@@ -278,7 +302,7 @@ function ovenCard(s) {
   const sceneStep = (curT && s.recipe.steps.find((st) => st.id === curT.stepId)) || cur;
   const n = s.recipe.steps.length;
   return `<a class="card oven-card" href="#/bake/${s.id}" ${curT ? `data-grow="${curT.id}"` : ''}>
-    ${cur ? stageScene(sceneStep?.kind, running.length > 0, '', progressOf(curT)) : ovenScene('', false, true)}
+    ${cur ? stageScene(stepKind(sceneStep, s.recipe.steps.indexOf(sceneStep), s.recipe.steps), running.length > 0, '', progressOf(curT)) : ovenScene('', false, true)}
     <div class="info"><b>${esc(s.recipe.name)}</b>
       <span class="small muted step-line">${cur ? `${L(`第 ${s.current + 1}/${n} 步`, `Step ${s.current + 1}/${n}`)} · ${esc(cur.text)}` : L('可以出炉啦', 'Ready to come out')}</span>
       ${running.length ? `<div class="small clock-line">${icon('timer')}<span class="mono" data-clock="${running[0].id}">${formatClock(remainingMs(running[0]))}</span><span class="lbl">${esc(running[0].label)}</span></div>` : ''}
@@ -357,7 +381,7 @@ function polaroid(b, url) {
 
 // 面包旁边立一张小价签（按当前货币）
 const priceTag = (r) => { const p = getPrice(r); return p != null ? `<span class="price">${formatPrice(p)}</span>` : ''; };
-const totalMinutes = (r) => r.steps.reduce((a, st) => a + (st.minutes || 0), 0);
+const totalMinutes = (r) => r.steps.reduce((a, st) => a + (stepMin(st) || 0), 0);
 
 // 配方架：和首页一样的轻木板，每层三个面包，面包下面是牛皮纸名签，旁边立着价签；最后留一个空位上新配方
 async function viewRecipes() {
@@ -411,7 +435,7 @@ async function viewRecipe(id) {
   ${ingTable(r.ingredients)}
 
   <h2>${L('步骤', 'Steps')}</h2>
-  <ol class="steps">${r.steps.map((s) => `<li>${esc(s.text)}${stepMeta(s)}</li>`).join('')}</ol>
+  <ol class="steps">${r.steps.map((s, i) => { const k = stepKind(s, i, r.steps); return `<li class="k-${k}"><div class="stext">${stepHtml(s.text)}</div>${stepMeta(s, k)}</li>`; }).join('')}</ol>
 
   ${r.notes ? `<h2>${L('备注', 'Notes')}</h2><div class="card fill notes">${esc(r.notes)}</div>` : ''}
 
@@ -427,10 +451,11 @@ function ingTable(ings, scale = 1) {
     <td class="amt">${i.amount != null ? formatAmount(i.amount * scale) : ''} ${esc(i.unit)}</td></tr>`).join('')}</table>`;
 }
 
-function stepMeta(s) {
+function stepMeta(s, k = s.kind) {
   const bits = [];
-  if (s.minutes) bits.push(`<span class="chip time">${icon('timer')} ${formatMinutes(s.minutes)}</span>`);
-  if (kindLabel(s.kind)) bits.push(`<span class="badge">${kindLabel(s.kind)}</span>`);
+  if (kindLabel(k)) bits.push(kindTag(k));
+  const m = stepMin(s);
+  if (m) bits.push(`<span class="chip time">${icon('timer')} ${formatMinutes(m)}${!s.minutes ? ` <span class="muted">${L('默认', 'default')}</span>` : ''}</span>`);
   return bits.length ? `<div class="meta">${bits.join('')}</div>` : '';
 }
 
@@ -647,9 +672,10 @@ function viewBake(id) {
         <span class="small muted">${L('分钟', 'min')}</span><span style="flex:1"></span>
         <button class="btn icon sm ghost" data-act="bake-del-step" data-id="${st.id}" aria-label="${L('删除', 'Delete')}">${icon('close')}</button></div></div></li>`;
     }
-    return `<li class="${done ? 'done' : ''} ${cur ? 'current' : ''}">
-      <div class="stext" data-act="focus-step" data-i="${n}">${esc(st.text)}${timers.map((t) => ` <span class="tick mono" data-clock="${t.id}">${clockText(t)}</span>`).join('')}</div>
-      ${!done && isTimed(st) && !timers.length ? `<div class="meta"><span class="chip time">${icon('timer')} ${formatMinutes(st.minutes)}</span></div>` : ''}
+    const k = stepKind(st, n, r.steps);
+    return `<li class="k-${k} ${done ? 'done' : ''} ${cur ? 'current' : ''}">
+      <div class="stext" data-act="focus-step" data-i="${n}">${stepHtml(st.text)}${timers.map((t) => ` <span class="tick mono" data-clock="${t.id}">${clockText(t)}</span>`).join('')}</div>
+      ${done ? '' : `<div class="meta">${kindTag(k)}${isTimed(st) && !timers.length ? `<span class="chip time">${icon('timer')} ${formatMinutes(stepMin(st))}</span>` : ''}</div>`}
     </li>`;
   }).join('');
 
@@ -713,17 +739,17 @@ function bakeHero(s) {
   } else if (kind === 'bake') {
     const t = curTimer;
     const display = t ? `<span class="display ${t.done ? 'ring' : ''}" data-clock="${t.id}">${clockText(t)}</span>`
-      : `<span class="display">${timed ? formatClock(cur.minutes * 60000) : '--:--'}</span>`;
+      : `<span class="display">${timed ? formatClock(stepMin(cur) * 60000) : '--:--'}</span>`;
     scene = `<div class="oven-wrap">${ovenScene('', running)}${display}${mascot(mood)}</div>`;
   } else if (kind === 'ferment') {
     const t = curTimer;
     const clock = t ? `<div class="hero-clock ${t.done ? 'ring' : ''}" data-clock="${t.id}">${clockText(t)}</div>`
-      : timed ? `<div class="hero-clock">${formatClock(cur.minutes * 60000)}</div>` : '';
+      : timed ? `<div class="hero-clock">${formatClock(stepMin(cur) * 60000)}</div>` : '';
     scene = `<div class="oven-wrap" ${t ? `data-grow="${t.id}"` : ''}>${stageScene('ferment', running, '', progressOf(t))}${mascot(mood)}</div>${clock}`;
   } else {
     // 别的步骤在做的时候，如果之前的发酵/烘烤计时还在跑，用一行小字提醒
     const other = ringing || live[0];
-    scene = `<div class="oven-wrap">${stageScene(kind, true)}${mascot('wave')}</div>
+    scene = `<div class="oven-wrap">${stageScene(stepKind(cur, s.current, r.steps), true)}${mascot('wave')}</div>
       ${other ? `<div class="hero-clock small">${icon(other.done ? 'bell' : 'timer')} <span data-clock="${other.id}">${clockText(other)}</span> · ${esc(other.label.slice(0, 14))}</div>` : ''}`;
   }
 
@@ -733,7 +759,7 @@ function bakeHero(s) {
     action = `<button class="btn primary big block" data-act="go-finish">${icon('camera')} ${L('出炉啦！拍照记录', 'It’s out! Take a photo')}</button>`;
     hint = L('每一步都完成了，辛苦啦', 'Every step done. Nice work');
   } else if (timed && !curTimer) {
-    action = `<button class="btn primary big block" data-act="timer-start" data-id="${cur.id}">${startWord(kind)} · ${formatMinutes(cur.minutes)}</button>`;
+    action = `<button class="btn primary big block" data-act="timer-start" data-id="${cur.id}">${startWord(kind)} · ${formatMinutes(stepMin(cur))}</button>`;
     hint = L('按下就开始计时，时间到会叫你', 'Tap to start the timer. I’ll call you when it’s time');
   } else {
     action = `<button class="btn primary big block" data-act="step-done" data-id="${cur.id}">${icon('check')} ${L('这步好了，下一步', 'Done, next step')}</button>`;
@@ -744,8 +770,9 @@ function bakeHero(s) {
   return `<div class="bake-hero">
     ${scene}
     ${curTimer && !curTimer.done ? timerControls(curTimer) : ''}
-    ${cur ? `<div class="step-now"><span class="n">${L(`第 ${s.current + 1} 步 · 共 ${r.steps.length} 步`, `Step ${s.current + 1} of ${r.steps.length}`)}</span>
-      <b>${esc(cur.text)}</b>${cur.minutes || kindLabel(cur.kind) ? `<span class="small muted">${[kindLabel(cur.kind), cur.minutes ? formatMinutes(cur.minutes) : ''].filter(Boolean).join(' · ')}</span>` : ''}</div>` : ''}
+    ${cur ? `<div class="step-now k-${stepKind(cur, s.current, r.steps)}">
+      <div class="top"><span class="n">${L(`第 ${s.current + 1} 步 · 共 ${r.steps.length} 步`, `Step ${s.current + 1} of ${r.steps.length}`)}</span>${kindTag(stepKind(cur, s.current, r.steps))}${stepMin(cur) ? `<span class="n">${formatMinutes(stepMin(cur))}</span>` : ''}</div>
+      <p>${stepHtml(cur.text)}</p></div>` : ''}
     ${action}
     <p class="hero-hint">${hint}</p>
   </div>`;
@@ -1061,7 +1088,7 @@ async function viewLog(id) {
 
   <details style="margin-top:22px"><summary class="muted">${L('这一炉用的配方', 'Recipe used for this batch')}</summary>
     <div style="margin-top:8px">${ingTable(b.snapshot.ingredients, b.scale)}
-    <ol class="steps" style="margin-top:12px">${b.snapshot.steps.map((st) => `<li>${esc(st.text)}${stepMeta(st)}</li>`).join('')}</ol></div>
+    <ol class="steps" style="margin-top:12px">${b.snapshot.steps.map((st, i) => { const k = stepKind(st, i, b.snapshot.steps); return `<li class="k-${k}"><div class="stext">${stepHtml(st.text)}</div>${stepMeta(st, k)}</li>`; }).join('')}</ol></div>
   </details>
 
   <div class="row" style="margin-top:28px">
@@ -1190,6 +1217,17 @@ function withSession(fn) {
 
 const actions = {
   'roadmap'() { showRoadmap(); },
+  // 升级路线里已解锁的等级：点开看大图
+  async 'level-view'(el) {
+    const lv = Number(el.dataset.lv);
+    const v = await dialog(`<div class="level-big">
+      ${shopFront(lv, state.shop.name, true)}
+      <h3>Lv.${lv} ${lvName(lv - 1)}</h3>
+      <p class="small muted">${lvDesc(lv - 1)}</p>
+      <div class="row" style="justify-content:center"><button class="btn" data-dlg="back">${icon('back')} ${L('升级路线', 'Road map')}</button><button class="btn primary" data-dlg="ok">${L('好', 'OK')}</button></div>
+    </div>`);
+    if (v === 'back') showRoadmap();
+  },
   async 'rename-shop'() {
     const name = await promptDlg(L('给小店起个名字', 'Name your shop'), state.shop.name);
     if (name && name.trim()) {
@@ -1296,7 +1334,7 @@ const actions = {
     const st = s.recipe.steps.find((x) => x.id === el.dataset.id);
     if (!isTimed(st)) return;
     s.timers = s.timers.filter((t) => t.stepId !== st.id);
-    s.timers.push(createTimer({ label: st.text.slice(0, 20) || L('计时', 'Timer'), minutes: st.minutes, stepId: st.id }));
+    s.timers.push(createTimer({ label: st.text.slice(0, 20) || L('计时', 'Timer'), minutes: stepMin(st), stepId: st.id }));
     s.current = s.recipe.steps.indexOf(st);
     askNotifyPermission();
   }),
