@@ -58,13 +58,21 @@ export function guessStepKind(text) {
   if (/冷藏|冷冻|chill|fridge|refrigerat/.test(t)) return 'chill';
   if (/烤|烘|bake|oven/.test(t)) return 'bake';
   if (/静置|松弛|休息|rest|autolyse|autolyze|水合/.test(t)) return 'rest';
-  if (/揉|搅拌|混合|knead|mix|fold|折叠/.test(t)) return 'knead';
+  if (/揉|搅拌|混合|厨师机|打面|面包机|knead|mix|fold|折叠|stand mixer/.test(t)) return 'knead';
   return 'other';
 }
 
+// 用量写成范围「130-150克」「130~150g」：取小的那个当用量，范围记在备注里
+const RANGE = new RegExp(`(\\d+(?:\\.\\d+)?)\\s*[-~～–—至到]\\s*(\\d+(?:\\.\\d+)?)\\s*(${UNIT_RE})?\\s*$`, 'i');
+
 export function parseIngredient(line) {
-  const raw = line.replace(LIST_MARK, '').trim();
+  let raw = line.replace(LIST_MARK, '').replace(/\t+/g, ' ').trim();
   if (!raw) return null;
+  const range = raw.match(RANGE);
+  if (range) {
+    const name = raw.slice(0, range.index).trim().replace(/[:：]$/, '');
+    return { name, amount: parseNumber(range[1]), unit: range[3] || '', note: `${range[1]}-${range[2]}${range[3] || ''}` };
+  }
   let m = raw.match(NUM_HEAD);
   if (m && m[3] && !/^\d/.test(m[3])) {
     return { name: m[3].trim(), amount: parseNumber(m[1]), unit: m[2] || '', note: '' };
@@ -81,6 +89,15 @@ export function parseIngredient(line) {
   m = raw.match(FUZZY);
   if (m && m[1]) return { name: m[1].trim(), amount: null, unit: m[2], note: '' };
   return { name: raw, amount: null, unit: '', note: '' };
+}
+
+const GROUP_WORDS = /^(面包体|面团|主面团|馅料|内馅|夹馅|馅|表面装饰|表面|装饰|酥皮|酥粒|淋面|中种|中种面团|波兰种|液种|汤种|老面|蛋液|刷面|for the |dough|filling|topping|glaze|streusel|poolish|starter)/i;
+function isGroupHeader(line) {
+  const raw = line.replace(LIST_MARK, '').trim();
+  if (raw.length > 16) return false;
+  const bare = raw.replace(/[（(].*?[)）]/g, '').replace(/[:：]\s*$/, '').trim();
+  if (!bare || /\d/.test(bare)) return false;
+  return GROUP_WORDS.test(bare) || /[:：]\s*$/.test(raw);
 }
 
 function looksLikeIngredient(line) {
@@ -120,6 +137,7 @@ export function parseRecipeText(input) {
   const lines = tidyLines(String(input || '').split(/\r?\n/).map((l) => l.trim()));
   const recipe = { name: '', ingredients: [], steps: [], notes: '' };
   let mode = null;
+  let group = '';
   const notes = [];
 
   for (const line of lines) {
@@ -140,6 +158,8 @@ export function parseRecipeText(input) {
     }
 
     if (mode === 'note') { notes.push(line); continue; }
+    // 材料里的小分组：「面包体（10个）」「馅料」「表面装饰：」，记下来当后面材料的备注
+    if (mode === 'ing' && isGroupHeader(line)) { group = line.replace(/[（(].*?[)）]/g, '').replace(/[:：]\s*$/, '').trim(); continue; }
     const asIng = mode === 'ing' || (mode == null && looksLikeIngredient(line));
     if (asIng) {
       // 同一行里写了多个材料，比如 "面粉 250g、水 160g"
@@ -147,6 +167,7 @@ export function parseRecipeText(input) {
       const splittable = parts.length > 1 && parts.every(looksLikeIngredient);
       for (const p of splittable ? parts : [line]) {
         const ing = parseIngredient(p);
+        if (ing && group && !ing.note) ing.note = group;
         if (ing) recipe.ingredients.push(ing);
       }
     } else {

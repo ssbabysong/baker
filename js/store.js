@@ -92,6 +92,7 @@ export function guessShape(name = '') {
   if (/碱水|扭结|pretzel|brezel/.test(n)) return 'pretzel';
   if (/贝果|bagel|甜甜圈|donut/.test(n)) return 'bagel';
   if (/菠萝|蜜瓜|melon/.test(n)) return 'melonpan';
+  if (/巧克力|可可|脆脆珠|choco|cocoa/.test(n)) return 'chocobun';
   if (/红豆|豆沙|红豆包|anpan|あんぱん/.test(n)) return 'anpan';
   if (/吐司|toast|土司|食パン|生吐司/.test(n)) return 'toast';
   return 'loaf';
@@ -101,11 +102,11 @@ export function guessShape(name = '') {
 const PRICE_RANGE = {
   CNY: {
     cookie: [6, 12], muffin: [10, 16], anpan: [8, 14], melonpan: [8, 14], bagel: [10, 16], pretzel: [10, 16],
-    croissant: [12, 18], baguette: [14, 22], loaf: [16, 28], toast: [18, 32], cake: [28, 48],
+    croissant: [12, 18], baguette: [14, 22], loaf: [16, 28], toast: [18, 32], cake: [28, 48], chocobun: [12, 18],
   },
   USD: {
     cookie: [2, 4], muffin: [3, 5], anpan: [2.5, 4.5], melonpan: [2.5, 4.5], bagel: [3, 5], pretzel: [3, 5],
-    croissant: [3.5, 6], baguette: [4, 7], loaf: [6, 10], toast: [6, 11], cake: [28, 48],
+    croissant: [3.5, 6], baguette: [4, 7], loaf: [6, 10], toast: [6, 11], cake: [28, 48], chocobun: [3.5, 5.5],
   },
 };
 export function randomPrice(shape, cur = getCurrency()) {

@@ -59,6 +59,14 @@ const SHAPES = {
       <path d="M14 30 L30 44" stroke-width="1.5"/><path d="M22 22 L44 44" stroke-width="1.5"/><path d="M34 20 L52 36" stroke-width="1.5"/>
       <path d="M50 30 L34 44" stroke-width="1.5"/><path d="M42 22 L20 44" stroke-width="1.5"/><path d="M30 20 L12 36" stroke-width="1.5"/>`,
   },
+  // 巧克力脆脆珠面包：可可色圆面包，中间切开挤满甘纳许，开口和表面粘着一圈脆脆珠
+  chocobun: {
+    fill: [['choco', 'M8 44 C6 28 18 20 32 20 C46 20 58 28 56 44 Q32 48 8 44 Z']],
+    line: `<path d="M8 44 C6 28 18 20 32 20 C46 20 58 28 56 44"/><path d="M7 44.5 Q32 48 57 44"/>
+      <path d="M15 31 Q32 22 49 31" stroke-width="3.4" class="ganache"/>
+      <path class="pearl" d="M17 29 h.1 M22 26.6 h.1 M27.5 25.2 h.1 M33 24.8 h.1 M38.5 25.4 h.1 M44 27 h.1 M48 29.4 h.1 M14 36 h.1 M24 33 h.1 M40 33 h.1 M50 36 h.1 M31 37 h.1 M20 40 h.1 M44 40 h.1" stroke-width="3.2"/>
+      <path class="salt" d="M19.5 27.6 h.1 M30 24.8 h.1 M41.5 26 h.1 M27 35 h.1 M36 35 h.1" stroke-width="2.6"/>`,
+  },
   anpan: {
     fill: [['crust', 'M9 42 C7 27 19 19 32 19 C45 19 57 27 55 42 C51 48 13 48 9 42 Z']],
     line: `<path d="M9 42 C7 27 19 19 32 19 C45 19 57 27 55 42 C51 48 13 48 9 42"/>
@@ -81,11 +89,11 @@ const SHAPES = {
 
 export const SHAPE_NAMES = {
   loaf: '欧包', toast: '吐司', croissant: '可颂', baguette: '法棍',
-  cake: '蛋糕', cookie: '饼干', muffin: '玛芬', bagel: '贝果', pretzel: '碱水', melonpan: '蜜瓜包', anpan: '红豆包',
+  cake: '蛋糕', cookie: '饼干', muffin: '玛芬', bagel: '贝果', pretzel: '碱水', melonpan: '蜜瓜包', anpan: '红豆包', chocobun: '巧克力包',
 };
 export const SHAPE_NAMES_EN = {
   loaf: 'Loaf', toast: 'Shokupan', croissant: 'Croissant', baguette: 'Baguette',
-  cake: 'Cake', cookie: 'Cookie', muffin: 'Muffin', bagel: 'Bagel', pretzel: 'Pretzel', melonpan: 'Melon pan', anpan: 'Anpan',
+  cake: 'Cake', cookie: 'Cookie', muffin: 'Muffin', bagel: 'Bagel', pretzel: 'Pretzel', melonpan: 'Melon pan', anpan: 'Anpan', chocobun: 'Choco bun',
 };
 
 export const shape = (name, cls = '') => {

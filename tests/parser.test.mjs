@@ -121,3 +121,25 @@ test('parseRecipeText: 下厨房复制出来的排版（名字和用量分两行
   assert.equal(r.steps[2].kind, 'bake');
   assert.equal(r.notes, '出炉马上脱模');
 });
+
+test('parseRecipeText: 材料分组、用量范围、厨师机揉面', () => {
+  const r = parseRecipeText(`巧克力面包
+材料：
+面包体（10个）
+高筋面粉 250克
+牛奶\t130- 150克
+淡奶油 100克
+馅料（10个的量）
+淡奶油 190克
+巧克力脆脆珠 适量
+步骤：
+1. 面团材料全部加入厨师机，定时13分钟
+2. 一次发酵至2倍大`);
+  assert.equal(r.ingredients.length, 5);
+  assert.deepEqual(r.ingredients[1], { name: '牛奶', amount: 130, unit: '克', note: '130-150克' });
+  assert.equal(r.ingredients[0].note, '面包体');
+  assert.equal(r.ingredients[3].note, '馅料');
+  assert.equal(r.ingredients[4].name, '巧克力脆脆珠');
+  assert.equal(r.steps[0].kind, 'knead');
+  assert.equal(r.steps[0].minutes, 13);
+});

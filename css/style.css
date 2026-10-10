@@ -20,6 +20,7 @@
   --line: #4a3a2e;
   --doodle: #5b4636;         /* 线稿：可可色 */
   --crust: #e8b060;          /* 面包 */
+  --choco: #8d5b3c;          /* 可可面包 */
   --crust-soft: #f6e2c2;
   --wood: #d2a676;           /* 木头 */
   --tile: #a7aeb6;           /* 瓦 */
@@ -52,7 +53,7 @@
   :root:not([data-theme="light"]) {
     --paper: #221e1a; --paper-2: #2c2722; --card: #2a2520;
     --ink: #efe6d8; --ink-soft: #9b9083; --line: #d8ccb9; --doodle: #e2cfb6;
-    --crust: #cf9a4c; --crust-soft: #4a3a24; --wood: #8a6a48; --tile: #5d636b;
+    --crust: #cf9a4c; --choco: #9c6646; --crust-soft: #4a3a24; --wood: #8a6a48; --tile: #5d636b;
     --ai: #6d8cbc; --ai-soft: #2c3646; --shu: #e07a62; --sky: #6f93b5; --sky-soft: #2e3b47;
     --leaf: #9aab6a; --leaf-ink: #1f1d19; --blush: #c97c69; --brown: #d9a06a;
     --glass: rgba(42, 37, 32, .55); --glass-edge: rgba(255, 255, 255, .14); --glass-shade: rgba(0, 0, 0, .45); --lens: rgba(255, 255, 255, .1);
@@ -62,7 +63,7 @@
 :root[data-theme="dark"] {
   --paper: #221e1a; --paper-2: #2c2722; --card: #2a2520;
   --ink: #efe6d8; --ink-soft: #9b9083; --line: #d8ccb9; --doodle: #e2cfb6;
-  --crust: #cf9a4c; --crust-soft: #4a3a24; --wood: #8a6a48; --tile: #5d636b;
+  --crust: #cf9a4c; --choco: #9c6646; --crust-soft: #4a3a24; --wood: #8a6a48; --tile: #5d636b;
   --ai: #6d8cbc; --ai-soft: #2c3646; --shu: #e07a62; --sky: #6f93b5; --sky-soft: #2e3b47;
   --leaf: #9aab6a; --leaf-ink: #1f1d19; --blush: #c97c69; --brown: #d9a06a;
     --glass: rgba(42, 37, 32, .55); --glass-edge: rgba(255, 255, 255, .14); --glass-shade: rgba(0, 0, 0, .45); --lens: rgba(255, 255, 255, .1);
@@ -98,6 +99,9 @@ img { max-width: 100%; display: block; }
 .f-ai { fill: var(--ai); }
 .f-paper { fill: var(--card); }
 .f-shu { fill: var(--shu); }
+.f-choco { fill: var(--choco); }
+.ganache { stroke: #4a2c1e; }
+.pearl { stroke: var(--crust); }
 .ink-paper { stroke: #fffcf5; }
 .sk-text { font-family: var(--title); }
 .ink-fill { fill: #fffcf5; }
