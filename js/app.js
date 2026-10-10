@@ -908,7 +908,7 @@ async function viewFinish(sid) {
       : photo ? `<img src="${photo}" alt="">` : `${icon('camera')}<span>${L('拍一张 / 选一张照片', 'Take or pick a photo')}</span>`;
     // iOS 原生 app 里直接调系统相机 / 相册，不走网页的选文件
     return isNative() ? `<button type="button" class="photo-drop" data-act="native-photo" data-target="finish">${inner}</button>`
-      : `<label class="photo-drop">${inner}<input type="file" accept="image/*" capture="environment" hidden data-act-change="pick-photo"></label>`;
+      : `<label class="photo-drop">${inner}<input type="file" accept="image/*" hidden data-act-change="pick-photo"></label>`;
   })()}
 
   <h2>${esc(s.recipe.name)} <span class="small muted mono" style="font-weight:400">${L('用时', 'took')} ${fmtDur(Date.now() - s.startedAt)}</span></h2>
@@ -1684,3 +1684,6 @@ async function boot() {
 }
 
 boot();
+
+// 像 app 一样：iOS 不理会 user-scalable=no，双指缩放得自己拦
+for (const t of ['gesturestart', 'gesturechange']) document.addEventListener(t, (e) => e.preventDefault(), { passive: false });

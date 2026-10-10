@@ -72,6 +72,7 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; }
+html { touch-action: manipulation; -webkit-text-size-adjust: 100%; } /* 像 app 一样：不许双击放大 */
 body {
   background: var(--paper) var(--grain);
   color: var(--ink);
