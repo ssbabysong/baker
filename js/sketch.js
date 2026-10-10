@@ -2,8 +2,12 @@
 // 线条：砖红色单线（currentColor），故意不完全闭合，再叠 #rough 滤镜做出手抖感。
 // 上色：蜡笔质感的色块（#crayon 滤镜），并且和线条错开一点点——像手工印刷时套色没对准。
 
-const wrap = (body, vb = '0 0 64 64', cls = '', sw = 2.2) =>
-  `<svg class="sk ${cls}" viewBox="${vb}" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+// 开头垫一个看不见、和画布一样大的框：#rough 滤镜的范围跟着图形外框走，
+// 动画（打呼的 z、发酵的面团）一动外框就变，整张图的抖动纹理会跟着变，看起来一直在闪
+const wrap = (body, vb = '0 0 64 64', cls = '', sw = 2.2) => {
+  const [x, y, w, h] = vb.split(/[\s,]+/);
+  return `<svg class="sk ${cls}" viewBox="${vb}" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="${x}" y="${y}" width="${w}" height="${h}" stroke="none"/>${body}</svg>`;
+};
 
 // 蜡笔色块：[颜色, 路径]，整体往右下错开
 const crayon = (fills, dx = 1.6, dy = 1.8) =>
