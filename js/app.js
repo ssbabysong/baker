@@ -4,7 +4,7 @@ import {
   exportAll, importAll, guessShape,
 } from './store.js';
 import { parseRecipeText, formatAmount, formatMinutes, guessStepKind } from './parser.js';
-import { shape, icon, storefront, ovenScene, stageScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES } from './sketch.js';
+import { shape, icon, storefront, storefrontSign, ovenScene, stageScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES } from './sketch.js';
 import {
   remainingMs, formatClock, createTimer, pauseTimer, resumeTimer, addMinutes,
   unlockAudio, playChime, startRinging, stopRinging, askNotifyPermission, notify, keepAwake,
@@ -52,14 +52,14 @@ const growScale = (p) => (0.66 + 0.34 * Math.min(1, Math.max(0, p))).toFixed(3);
 
 const KIND_LABEL = { ferment: '发酵', bake: '烘烤', rest: '静置', chill: '冷藏', knead: '揉面', other: '' };
 
-// 店铺等级：出炉次数越多，小店越大
+// 店铺等级：私房烘焙的成长路线，出炉次数越多，小店越像样
 const LEVELS = [
-  { at: 0, name: '路边小摊' },
-  { at: 1, name: '街角小铺' },
-  { at: 5, name: '社区面包房' },
-  { at: 15, name: '人气烘焙店' },
-  { at: 40, name: '城中名店' },
-  { at: 100, name: '百年老字号' },
+  { at: 0, name: '周末小推车', desc: '在家开烤，推着小车分给邻居尝尝' },
+  { at: 1, name: '私房小铺', desc: '有了自己的小门面，挂上暖帘' },
+  { at: 5, name: '街角面包屋', desc: '橱窗里摆满面包，门口放了小黑板' },
+  { at: 15, name: '熟客小店', desc: '熟客常来，门口多了灯笼、长椅和打盹的猫' },
+  { at: 40, name: '人气面包店', desc: '加盖了二楼，挂上碱水面包招牌' },
+  { at: 100, name: '街区招牌店', desc: '成了街坊口中的招牌，门口种了松树' },
 ];
 function levelOf(n) {
   let i = 0;
@@ -67,6 +67,33 @@ function levelOf(n) {
   const cur = LEVELS[i];
   const next = LEVELS[i + 1];
   return { lv: i + 1, name: cur.name, next, progress: next ? (n - cur.at) / (next.at - cur.at) : 1 };
+}
+
+// 门店插画 + 叠在招牌上的店名
+function shopFront(level, name = '', small = false) {
+  const g = storefrontSign(level);
+  const style = `left:${(g.x / 240 * 100).toFixed(2)}%;width:${(g.w / 240 * 100).toFixed(2)}%;top:${(g.y / g.vbH * 100).toFixed(2)}%;height:${(g.h / g.vbH * 100).toFixed(2)}%`;
+  return `<div class="storefront ${small ? 'mini' : ''}">${storefront(level)}${name ? (small
+    ? `<span class="sign" style="${style}">${esc(name)}</span>`
+    : `<button class="sign" style="${style}" data-act="rename-shop" title="点一下改店名">${esc(name)}</button>`) : ''}</div>`;
+}
+
+// 升级路线：每一级的店面、需要的出炉次数，标出现在在哪
+async function showRoadmap() {
+  const n = (await listBakes()).length;
+  const cur = levelOf(n);
+  await dialog(`<div class="roadmap">
+    <h3>升级路线</h3>
+    <p class="small muted">每出炉一次就离下一级近一点。现在累计出炉 <b class="mono">${n}</b> 次。</p>
+    <ol>${LEVELS.map((L, i) => {
+      const state = i + 1 < cur.lv ? 'past' : i + 1 === cur.lv ? 'now' : 'next';
+      return `<li class="${state}">${shopFront(i + 1, '', true)}
+        <div class="t"><b>Lv.${i + 1} ${L.name}</b>
+          <span class="small muted">${L.desc}</span>
+          <span class="small ${state === 'now' ? 'here' : 'muted'}">${state === 'now' ? '你在这里' : state === 'past' ? '已达成' : `出炉 ${L.at} 次解锁`}</span></div></li>`;
+    }).join('')}</ol>
+    <div class="row" style="justify-content:center"><button class="btn primary" data-dlg="ok">知道啦</button></div>
+  </div>`);
 }
 
 // ---------- 弹窗 ----------
@@ -234,15 +261,12 @@ async function viewShop() {
   <div class="greet"><div class="t"><h1>${greeting()}</h1>
     <p>${today ? `今天已出炉 ${today} 炉` : s ? `「${esc(s.recipe.name)}」正在烤箱里` : '今天想烤点什么？'}</p></div>
     <a class="btn icon ghost" href="#/settings" aria-label="店务">${icon('gear')}</a></div>
-  <div class="storefront">
-    ${storefront()}
-    <button class="sign" data-act="rename-shop" title="点一下改店名">${esc(shop.name)}</button>
-  </div>
+  ${shopFront(lv.lv, shop.name)}
   <div class="shop-meta">
-    <span class="lv">Lv.${lv.lv} ${lv.name}</span>
+    <button class="lv" data-act="roadmap" aria-label="查看升级路线">Lv.${lv.lv} ${lv.name} ›</button>
     <span class="small muted"> · 营业第 <span class="mono">${days}</span> 天</span>
     ${lv.next ? `<div class="progress" title="再出炉 ${lv.next.at - bakes.length} 次升级"><i style="width:${Math.round(lv.progress * 100)}%"></i></div>
-      <div class="small muted">再出炉 ${lv.next.at - bakes.length} 次 → ${lv.next.name}</div>` : ''}
+      <button class="link-btn" data-act="roadmap">再出炉 ${lv.next.at - bakes.length} 次 → ${lv.next.name} · 升级路线</button>` : '<button class="link-btn" data-act="roadmap">已经是最高等级 · 升级路线</button>'}
   </div>
 
   <div class="stats">
@@ -817,8 +841,10 @@ async function celebrate(count, shapeName) {
   const a = levelOf(count - 1);
   const b = levelOf(count);
   playChime();
-  await dialog(`<div class="celebrate"><div class="duo">${shape(shapeName)}${mascot('yay')}</div>
-    <h3>${b.lv > a.lv ? `小店升级啦！Lv.${b.lv} ${b.name}` : `第 ${count} 炉出炉！`}</h3>
+  const up = b.lv > a.lv;
+  await dialog(`<div class="celebrate">${up ? shopFront(b.lv, state.shop.name, true) : `<div class="duo">${shape(shapeName)}${mascot('yay')}</div>`}
+    <h3>${up ? `小店升级啦！Lv.${b.lv} ${b.name}` : `第 ${count} 炉出炉！`}</h3>
+    ${up ? `<p class="small muted" style="margin-top:-4px">${LEVELS[b.lv - 1].desc}</p>` : ''}
     <p class="muted">${b.next ? `再出炉 ${b.next.at - count} 次，就能升级成「${b.next.name}」` : '已经是最高等级的小店了'}</p>
     <button class="btn primary" data-dlg="ok">好耶</button></div>`);
 }
@@ -962,6 +988,7 @@ function notFound() {
 // =====================================================================
 
 const actions = {
+  'roadmap'() { showRoadmap(); },
   async 'rename-shop'() {
     const name = await promptDlg('给小店起个名字', state.shop.name);
     if (name && name.trim()) {

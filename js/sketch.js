@@ -163,46 +163,39 @@ const tiles = (x0, x1, y, w) => {
   return d;
 };
 
-export function storefront(cls = '') {
+// 门店插画随店铺等级变化：
+// Lv1 周末小推车 → Lv2 私房小铺 → Lv3 街角面包屋 → Lv4 熟客小店（灯笼、长椅、打盹的猫）
+// → Lv5 人气面包店（加盖二楼、挂上碱水面包招牌）→ Lv6 街区招牌店（屋脊鬼瓦、「招牌」木牌、松树、石灯笼）
+// 招牌上的店名由 HTML 叠加，位置用 storefrontSign(level) 取
+
+const UPPER = 44; // Lv5 起加盖的二楼高度
+
+export function storefrontSign(level = 3) {
+  if (level <= 1) return { x: 72, y: 40, w: 96, h: 18, vbH: 190 };
+  const vbH = level >= 5 ? 190 + UPPER : 190;
+  return { x: 60, y: 38, w: 120, h: 22, vbH };
+}
+
+// 一楼（从瓦檐往下），按等级加东西
+function groundFloor(level) {
   const eaveRibs = Array.from({ length: 11 }, (_, i) => `<path d="M${42 + i * 15.2} 72 L${36 + i * 16} 86" stroke-width=".8" opacity=".55"/>`).join('');
-  const roofRibs = Array.from({ length: 12 }, (_, i) => `<path d="M${40 + i * 15} 23 V31" stroke-width=".8" opacity=".55"/>`).join('');
   const lattice = Array.from({ length: 9 }, (_, i) => `<path d="M${48 + i * 8} 100 V110" stroke-width="1.1"/>`).join('');
-  return wrap(`
-    ${crayon([
-      ['tile', 'M22 32 L30 22 H210 L218 32 Z'],
-      ['wood', 'M60 38 H180 V60 H60 Z'],
-      ['tile', 'M24 86 L34 72 H206 L216 86 Z'],
-      ['wood', 'M40 96 H120 V156 H40 Z M40 110 H120 M36 156 H124 V162 H36 Z'],
-      ['paper', 'M45 111 H115 V151 H45 Z'],
-      ['crust', 'M50 132 C49 124 54 120 60 120 C66 120 71 124 70 132 Z M76 132 C75 125 80 122 84 122 C88 122 93 125 92 132 Z M97 132 V122 C95 118 99 115 103 115 H107 C111 115 115 118 113 122 V132 Z M52 151 C51 145 55 142 59 142 C63 142 67 145 66 151 Z'],
-      ['wood', 'M136 92 H142 V178 H136 Z M194 92 H200 V178 H194 Z'],
-      ['ai', 'M142 97 H160 V128 H142 Z M162 97 H180 V128 H162 Z M182 97 H194 V128 H182 Z'],
-      ['wood', 'M202 100 H214 V138 H202 Z'],
-      ['wood', 'M211 168 L215 149 H227 L231 168 Z'],
-      ['leaf', 'M128 166 C120 164 120 152 128 152 C126 146 136 144 137 152 C144 151 144 164 136 166 Z'],
-      ['crust', 'M123 167 H139 L137 178 H125 Z'],
-    ])}
-    <path d="M4 178 Q120 180 236 177"/>
-    <!-- 屋顶小瓦 -->
-    <path d="M22 32 L30 22 H210 L218 32 Z"/>${roofRibs}
-    <path d="M30 32 V72"/><path d="M210 32 V72"/>
-    <!-- 木招牌 -->
-    <path d="M60 38 H180 V60 H60 Z"/><path d="M64 42 H176" stroke-width="0.8" opacity=".5"/>
-    <path d="M78 38 L82 32"/><path d="M162 38 L158 32"/>
-    <!-- 瓦檐 -->
+  const fills = [
+    ['tile', 'M24 86 L34 72 H206 L216 86 Z'],
+    ['wood', 'M40 96 H120 V156 H40 Z M40 110 H120 M36 156 H124 V162 H36 Z'],
+    ['paper', 'M45 111 H115 V151 H45 Z'],
+    ['crust', 'M50 132 C49 124 54 120 60 120 C66 120 71 124 70 132 Z M76 132 C75 125 80 122 84 122 C88 122 93 125 92 132 Z'],
+    ['wood', 'M136 92 H142 V178 H136 Z M194 92 H200 V178 H194 Z'],
+    ['ai', 'M142 97 H160 V128 H142 Z M162 97 H180 V128 H162 Z M182 97 H194 V128 H182 Z'],
+  ];
+  let lines = `
     <path d="M24 86 L34 72 H206 L216 86"/><path d="${tiles(24, 216, 86, 8)}"/>${eaveRibs}
     <path d="M36 92 V178"/><path d="M204 92 V178"/>
-    <!-- 木框橱窗：上面一排格子，里面两层面包 -->
     <path d="M40 96 H120 V156 H40 Z"/><path d="M45 111 H115 V151 H45 Z"/>${lattice}
     <path d="M45 132 H115"/>
     <path d="M50 132 C49 124 54 120 60 120 C66 120 71 124 70 132"/><path d="M54 124 L64 131 M58 121 L68 129 M66 121 L54 130 M70 126 L60 131" stroke-width="0.9"/>
     <path d="M76 132 C75 125 80 122 84 122 C88 122 93 125 92 132"/><path d="M84 125.5 h.5" stroke-width="2.4"/>
-    <path d="M97 132 V122 C95 118 99 115 103 115 H107 C111 115 115 118 113 122 V132"/>
-    <path d="M52 151 C51 145 55 142 59 142 C63 142 67 145 66 151"/>
-    <path d="M74 151 L76 144 H96 L98 151"/><path d="M80 144 l4 -9"/><path d="M86 144 l1 -10"/><path d="M92 144 l-2 -8"/>
-    <path d="M102 151 h10 M104 147 h6" stroke-width="1.1"/>
     <path d="M36 156 H124 V162 H36 Z"/>
-    <!-- 门口：门柱、暖帘、格子拉门 -->
     <path d="M136 92 H142 V178 H136 Z"/><path d="M194 92 H200 V178 H194 Z"/>
     <path d="M132 95 H204" stroke-width="2.2"/>
     <path d="M142 97 H160 V128 H142 Z"/><path d="M162 97 H180 V128 H162 Z"/><path d="M182 97 H194 V128 H182 Z"/>
@@ -211,22 +204,165 @@ export function storefront(cls = '') {
     <path d="M142 130 H194"/><path d="M168 130 V178"/>
     <path d="M142 146 H194 M142 162 H194 M155 130 V178 M181 130 V178" stroke-width="0.9"/>
     <path d="M164 152 v6" stroke-width="2"/><path d="M172 152 v6" stroke-width="2"/>
-    <path d="M130 178 V175 H206 V178"/>
-    <!-- 竖写吊牌「面包」 -->
+    <path d="M130 178 V175 H206 V178"/>`;
+
+  if (level >= 3) {
+    // 橱窗摆满、门口小树、小黑板
+    fills.push(
+      ['crust', 'M97 132 V122 C95 118 99 115 103 115 H107 C111 115 115 118 113 122 V132 Z M52 151 C51 145 55 142 59 142 C63 142 67 145 66 151 Z'],
+      ['wood', 'M211 168 L215 149 H227 L231 168 Z'],
+      ['leaf', 'M128 166 C120 164 120 152 128 152 C126 146 136 144 137 152 C144 151 144 164 136 166 Z'],
+      ['crust', 'M123 167 H139 L137 178 H125 Z'],
+    );
+    lines += `
+    <path d="M97 132 V122 C95 118 99 115 103 115 H107 C111 115 115 118 113 122 V132"/>
+    <path d="M52 151 C51 145 55 142 59 142 C63 142 67 145 66 151"/>
+    <path d="M74 151 L76 144 H96 L98 151"/><path d="M80 144 l4 -9"/><path d="M86 144 l1 -10"/><path d="M92 144 l-2 -8"/>
+    <path d="M102 151 h10 M104 147 h6" stroke-width="1.1"/>
+    <path d="M128 166 C120 164 120 152 128 152 C126 146 136 144 137 152 C144 151 144 164 136 166" stroke-width="1.3"/>
+    <path d="M131 167 V160 M131 162 l-3 -3" stroke-width="1.2"/>
+    <path d="M123 167 H139 L137 178 H125 Z"/>`;
+    if (level < 6) {
+      lines += `
+    <path d="M208 178 L215 146 H227 L234 178"/><path d="M211 168 L215 149 H227 L231 168 Z" stroke-width="1.2"/>
+    <path d="M217 155 h7 M216 160 h10" stroke-width="1"/>`;
+    }
+  }
+  if (level >= 3 && level < 5) {
+    // 竖写「面包」吊牌
+    fills.push(['wood', 'M202 100 H214 V138 H202 Z']);
+    lines += `
     <path d="M206 96 V100 M210 96 V100" stroke-width="1"/>
     <path d="M202 100 H214 V138 H202 Z"/>
     <text x="208" y="115" font-size="9.5" text-anchor="middle" stroke="none" fill="currentColor" class="sk-text">面</text>
-    <text x="208" y="129" font-size="9.5" text-anchor="middle" stroke="none" fill="currentColor" class="sk-text">包</text>
-    <!-- 小黑板 -->
-    <path d="M208 178 L215 146 H227 L234 178"/><path d="M211 168 L215 149 H227 L231 168 Z" stroke-width="1.2"/>
-    <path d="M217 155 h7 M216 160 h10" stroke-width="1"/>
-    <!-- 门口一盆小树 -->
-    <path d="M128 166 C120 164 120 152 128 152 C126 146 136 144 137 152 C144 151 144 164 136 166" stroke-width="1.3"/>
-    <path d="M131 167 V160 M131 162 l-3 -3" stroke-width="1.2"/>
-    <path d="M123 167 H139 L137 178 H125 Z"/>
-    <!-- 店长 -->
-    <g transform="translate(8 145) scale(0.6)" stroke-width="2.5">${mascotBody('wave')}</g>
-  `, '0 0 240 190', `store ${cls}`, 1.5);
+    <text x="208" y="129" font-size="9.5" text-anchor="middle" stroke="none" fill="currentColor" class="sk-text">包</text>`;
+  }
+  if (level >= 4) {
+    // 屋檐下的灯笼 + 橱窗前的长椅，椅子上一只打盹的猫和一篮面包
+    fills.push(
+      ['shu', 'M122 92 Q128 88 134 92 V106 Q128 110 122 106 Z'],
+      ['wood', 'M46 164 H114 V167 H46 Z'],
+      ['soft', 'M56 164 C55 157 61 153 68 153 C76 153 80 157 79 164 Z'],
+      ['crust', 'M95 158 C95 154 99 152 102 152 C105 152 108 154 107 158 Z'],
+    );
+    lines += `
+    <path d="M128 86 V90"/><path d="M122 92 Q128 88 134 92 V106 Q128 110 122 106 Z"/>
+    <path d="M122 97 H134 M122 101 H134" stroke-width=".8"/><path d="M128 108 V113" stroke-width="1.1"/>
+    <path d="M46 164 H114 V167 H46 Z"/><path d="M50 167 V178 M110 167 V178"/>
+    <path d="M56 164 C55 157 61 153 68 153 C76 153 80 157 79 164"/>
+    <path d="M60 156 l1 -4 l3 3"/><path d="M65 154 l2 -4 l2 4"/>
+    <path d="M61 159 q1.5 1 3 0" stroke-width="1"/><path d="M79 162 q6 0 5 -5" stroke-width="1.2"/>
+    <path d="M92 164 L94 158 H108 L110 164"/><path d="M95 158 C95 154 99 152 102 152 C105 152 108 154 107 158"/>`;
+  }
+  if (level >= 5) {
+    // 碱水面包招牌，挂在右边铁架上
+    const pz = 'M18 43 C22 36 28 30 32 26 C36 22 40 16 46 16 C54 16 58 24 56 34 C54 46 44 54 32 54 C20 54 10 46 8 34 C6 24 10 16 18 16 C24 16 28 22 32 26 C36 30 42 36 46 43';
+    lines += `
+    <path d="M204 98 H232 M204 106 L212 98" stroke-width="1.8"/><path d="M222 98 V104" stroke-width="1"/>
+    <g transform="translate(212 101) scale(.32)">
+      <path d="${pz}" stroke-width="9"/><path class="rope" d="${pz}" stroke-width="5"/>
+    </g>`;
+  }
+  if (level >= 6) {
+    // 石灯笼
+    fills.push(['tile', 'M212 178 H234 V172 H212 Z M219 172 V154 H227 V172 Z M210 142 L223 133 L236 142 Z'], ['crust', 'M220 152 V145 H226 V152 Z']);
+    lines += `
+    <path d="M212 178 H234 V172 H212 Z"/><path d="M219 172 V154 H227 V172"/>
+    <path d="M214 154 H232 V142 H214 Z"/><path d="M220 152 V145 H226 V152 Z" stroke-width="1"/>
+    <path d="M210 142 L223 133 L236 142 Z"/><path d="M223 133 v-3"/>`;
+  }
+  return { fills, lines };
+}
+
+// 二楼：两扇带窗帘的窗、窗台花箱；招牌店再挂一块「招牌」木牌
+function upperFloor(level) {
+  const y0 = 64;
+  const win = (x) => `
+    <path d="M${x} ${y0 + 6} H${x + 48} V${y0 + 36} H${x} Z"/><path d="M${x + 24} ${y0 + 6} V${y0 + 36} M${x} ${y0 + 21} H${x + 48}" stroke-width="1"/>
+    <path d="M${x + 2} ${y0 + 8} Q${x + 10} ${y0 + 18} ${x + 4} ${y0 + 34}" stroke-width="1.1"/><path d="M${x + 46} ${y0 + 8} Q${x + 38} ${y0 + 18} ${x + 44} ${y0 + 34}" stroke-width="1.1"/>
+    <path d="M${x - 2} ${y0 + 36} H${x + 50} V${y0 + 42} H${x - 2} Z"/>
+    <path d="M${x + 6} ${y0 + 36} q3 -6 6 0 M${x + 18} ${y0 + 36} q3 -7 6 0 M${x + 30} ${y0 + 36} q3 -6 6 0 M${x + 40} ${y0 + 36} q2 -5 5 0" stroke-width="1.1"/>`;
+  const fills = [
+    ['skysoft', `M56 ${y0 + 6} H104 V${y0 + 36} H56 Z M136 ${y0 + 6} H184 V${y0 + 36} H136 Z`],
+    ['wood', `M54 ${y0 + 36} H106 V${y0 + 42} H54 Z M134 ${y0 + 36} H186 V${y0 + 42} H134 Z`],
+    ['leaf', `M60 ${y0 + 36} q3 -6 6 0 Z M72 ${y0 + 36} q3 -7 6 0 Z M84 ${y0 + 36} q3 -6 6 0 Z M140 ${y0 + 36} q3 -6 6 0 Z M152 ${y0 + 36} q3 -7 6 0 Z M164 ${y0 + 36} q3 -6 6 0 Z`],
+    ['shu', `M95 ${y0 + 34} a2 2 0 1 0 .1 0 Z M175 ${y0 + 34} a2 2 0 1 0 .1 0 Z`],
+  ];
+  let lines = win(56) + win(136);
+  if (level >= 6) {
+    fills.push(['wood', `M112 ${y0 + 8} H128 V${y0 + 40} H112 Z`]);
+    lines += `<path d="M112 ${y0 + 8} H128 V${y0 + 40} H112 Z"/>
+      <text x="120" y="${y0 + 22}" font-size="9.5" text-anchor="middle" stroke="none" fill="currentColor" class="sk-text">招</text>
+      <text x="120" y="${y0 + 35}" font-size="9.5" text-anchor="middle" stroke="none" fill="currentColor" class="sk-text">牌</text>`;
+  }
+  return { fills, lines };
+}
+
+// Lv1：一辆木头面包小推车，布篷下挂着短暖帘，车上摆着几个面包
+function stallCart() {
+  return wrap(`
+    ${crayon([
+      ['wood', 'M72 40 H168 V58 H72 Z'],
+      ['tile', 'M48 76 L64 62 H176 L192 76 Z'],
+      ['ai', 'M64 78 H90 V96 H64 Z M94 78 H120 V96 H94 Z M124 78 H150 V96 H124 Z M154 78 H176 V96 H154 Z'],
+      ['wood', 'M60 124 H180 V156 H60 Z'],
+      ['crust', 'M70 124 C69 116 75 112 82 112 C89 112 95 116 94 124 Z M100 124 C99 117 104 114 110 114 C116 114 121 117 120 124 Z M128 124 V116 C126 112 130 109 134 109 H140 C144 109 148 112 146 116 V124 Z M154 124 C154 118 158 115 163 115 C168 115 171 118 171 124 Z'],
+      ['tile', 'M80 154 a12 12 0 1 0 .1 0 Z M160 154 a12 12 0 1 0 .1 0 Z'],
+    ])}
+    <path d="M4 178 Q120 180 236 177"/>
+    <path d="M72 40 H168 V58 H72 Z"/><path d="M84 58 V62 M156 58 V62"/>
+    <path d="M48 76 L64 62 H176 L192 76 Z"/><path d="M64 62 L60 76 M88 62 L86 76 M112 62 V76 M136 62 L138 76 M160 62 L164 76" stroke-width=".9" opacity=".6"/>
+    <path d="M64 78 H90 V96 H64 Z"/><path d="M94 78 H120 V96 H94 Z"/><path d="M124 78 H150 V96 H124 Z"/><path d="M154 78 H176 V96 H154 Z"/>
+    <path d="M62 76 V124"/><path d="M178 76 V124"/>
+    <path d="M70 124 C69 116 75 112 82 112 C89 112 95 116 94 124"/><path d="M78 115 q2 3 1 6 M84 114 q2 3 1 6" stroke-width="1"/>
+    <path d="M100 124 C99 117 104 114 110 114 C116 114 121 117 120 124"/>
+    <path d="M128 124 V116 C126 112 130 109 134 109 H140 C144 109 148 112 146 116 V124"/>
+    <path d="M154 124 C154 118 158 115 163 115 C168 115 171 118 171 124"/>
+    <path d="M56 124 H184"/><path d="M60 124 H180 V156 H60 Z"/><path d="M60 140 H180" stroke-width=".9" opacity=".6"/>
+    <path d="M180 132 H206 L212 126" stroke-width="2"/>
+    <path d="M80 154 a12 12 0 1 0 .1 0"/><path d="M80 160 V172 M74 166 H86" stroke-width="1"/>
+    <path d="M160 154 a12 12 0 1 0 .1 0"/><path d="M160 160 V172 M154 166 H166" stroke-width="1"/>
+    <g transform="translate(18 145) scale(0.6)" stroke-width="2.5">${mascotBody('wave')}</g>
+  `, '0 0 240 190', 'store', 1.5);
+}
+
+export function storefront(level = 3, cls = '') {
+  if (level <= 1) return stallCart().replace('class="sk store', `class="sk store ${cls}`);
+  const two = level >= 5;
+  const dy = two ? UPPER : 0;
+  const g = groundFloor(level);
+  const u = two ? upperFloor(level) : { fills: [], lines: '' };
+  const roofRibs = Array.from({ length: 12 }, (_, i) => `<path d="M${40 + i * 15} 23 V31" stroke-width=".8" opacity=".55"/>`).join('');
+  const crown = level >= 6 ? `
+    <path d="M26 20 H214" stroke-width="2.4"/>
+    <path d="M26 20 q-8 -1 -8 -9 q5 0 8 5"/><path d="M214 20 q8 -1 8 -9 q-5 0 -8 5"/>
+    <path d="M54 34 H186 V64 H54 Z" stroke-width="1"/>` : '';
+  const pine = level >= 6 ? `
+    ${crayon([['leaf', 'M2 96 q4 -9 14 -8 q6 -7 16 -2 q8 -1 9 6 q-6 6 -18 5 q-12 4 -21 -1 Z M0 124 q3 -8 12 -7 q6 -6 14 -1 q7 0 8 5 q-5 5 -15 4 q-10 3 -19 -1 Z M6 150 q3 -7 11 -6 q6 -5 13 0 q6 0 6 5 q-5 5 -14 4 q-9 2 -16 -3 Z']])}
+    <path d="M18 ${178 + dy} C20 ${158 + dy} 10 160 16 140 C21 124 12 112 20 94" stroke-width="2.2"/>
+    <path d="M16 140 l8 -4 M18 116 l-8 -3" stroke-width="1.4"/>
+    <path d="M2 96 q4 -9 14 -8 q6 -7 16 -2 q8 -1 9 6 q-6 6 -18 5 q-12 4 -21 -1"/>
+    <path d="M0 124 q3 -8 12 -7 q6 -6 14 -1 q7 0 8 5 q-5 5 -15 4 q-10 3 -19 -1"/>
+    <path d="M6 150 q3 -7 11 -6 q6 -5 13 0 q6 0 6 5 q-5 5 -14 4 q-9 2 -16 -3"/>` : '';;
+  return wrap(`
+    ${crayon([
+      ['tile', 'M22 32 L30 22 H210 L218 32 Z'],
+      ['wood', 'M60 38 H180 V60 H60 Z'],
+      ...u.fills,
+    ])}
+    ${pine}
+    <path d="M22 32 L30 22 H210 L218 32 Z"/>${roofRibs}${crown}
+    <path d="M30 32 V${72 + dy}"/><path d="M210 32 V${72 + dy}"/>
+    <path d="M60 38 H180 V60 H60 Z"/><path d="M64 42 H176" stroke-width="0.8" opacity=".5"/>
+    <path d="M78 38 L82 32"/><path d="M162 38 L158 32"/>
+    ${u.lines}
+    <g transform="translate(0 ${dy})">
+      ${crayon(g.fills)}
+      <path d="M4 178 Q120 180 236 177"/>
+      ${g.lines}
+      <g transform="translate(8 145) scale(0.6)" stroke-width="2.5">${mascotBody('wave')}</g>
+    </g>
+  `, `0 0 240 ${190 + dy}`, `store ${cls}`, 1.5);
 }
 
 // ---------- 烤箱：显示屏位置留给 HTML 叠加倒计时 ----------
