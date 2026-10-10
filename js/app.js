@@ -4,7 +4,7 @@ import {
   exportAll, importAll, guessShape,
 } from './store.js';
 import { parseRecipeText, formatAmount, formatMinutes, guessStepKind } from './parser.js';
-import { shape, icon, storefront, ovenScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES } from './sketch.js';
+import { shape, icon, storefront, ovenScene, stageScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES } from './sketch.js';
 import {
   remainingMs, formatClock, createTimer, pauseTimer, resumeTimer, addMinutes,
   unlockAudio, playChime, startRinging, stopRinging, askNotifyPermission, notify, keepAwake,
@@ -44,6 +44,10 @@ function toast(msg) {
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 2200);
 }
+
+// 只有发酵和烘烤这两种"等待"的步骤才有计时器；揉面、整形之类做完点一下就好
+const TIMED_KINDS = new Set(['ferment', 'bake']);
+const isTimed = (st) => !!(st && st.minutes && TIMED_KINDS.has(st.kind));
 
 const KIND_LABEL = { ferment: '发酵', bake: '烘烤', rest: '静置', chill: '冷藏', knead: '揉面', other: '' };
 
@@ -207,7 +211,7 @@ async function viewShop() {
     const cur = s.recipe.steps[s.current];
     const running = s.timers.filter((t) => !t.done);
     ovenHtml = `<a class="card oven-card" href="#/bake">
-      ${ovenScene('', true)}
+      ${stageScene(cur?.kind, running.length > 0)}
       <div class="info"><b>${esc(s.recipe.name)}</b>
         <span class="small muted">第 ${Math.min(s.current + 1, s.recipe.steps.length)}/${s.recipe.steps.length} 步${cur ? ` · ${esc(cur.text.slice(0, 16))}` : ''}</span>
         ${running.map((t) => `<div class="small">${icon('timer')} <span class="mono" data-clock="${t.id}">${formatClock(remainingMs(t))}</span> ${esc(t.label)}</div>`).join('')}
@@ -530,7 +534,7 @@ function viewBake() {
       <div class="stext" data-act="focus-step" data-i="${n}">${esc(st.text)}</div>
       ${timers.map(timerBox).join('')}
       ${!done ? `<div class="meta">
-        ${st.minutes && !timers.some((t) => !t.done) ? `<button class="btn sm ${cur ? 'crust' : ''}" data-act="timer-start" data-id="${st.id}">${icon('play')} 计时 ${formatMinutes(st.minutes)}</button>` : ''}
+        ${isTimed(st) && !timers.some((t) => !t.done) ? `<button class="btn sm ${cur ? 'crust' : ''}" data-act="timer-start" data-id="${st.id}">${icon('play')} 计时 ${formatMinutes(st.minutes)}</button>` : ''}
         ${cur ? `<button class="btn sm" data-act="step-done" data-id="${st.id}">${icon('check')} 这步好了</button>` : ''}
       </div>` : ''}
     </li>`;
@@ -549,7 +553,7 @@ function viewBake() {
   <h2>称料 <span class="row" style="margin-left:auto;gap:6px">${scaleBtns}</span></h2>
   ${ingHtml}
 
-  <h2>步骤 <button class="more btn sm ghost" data-act="quick-timer">${icon('plus')} 计时</button></h2>
+  <h2>步骤</h2>
   ${s.timers.filter((t) => !t.stepId).map(timerBox).join('')}
   <ol class="steps bake-steps">${stepsHtml}</ol>
   ${ed ? `<button class="btn sm" data-act="bake-add-step">${icon('plus')} 加步骤</button>` : ''}
@@ -561,34 +565,56 @@ function viewBake() {
 }
 
 // 顶部的大烤箱：显示屏上就是当前计时，旁边站着吐司店长
-const START_WORD = { bake: '放进烤箱', ferment: '开始发酵', rest: '开始静置', chill: '放进冰箱', knead: '开始揉面' };
+const START_WORD = { bake: '放进烤箱', ferment: '开始发酵' };
 
 function bakeHero(s) {
   const r = s.recipe;
   const cur = r.steps[s.current];
   const live = s.timers.filter((t) => !t.done).sort((a, b) => remainingMs(a) - remainingMs(b));
   const ringing = s.timers.find((t) => t.done);
-  const shown = ringing || live[0];
   const curTimer = cur && s.timers.find((t) => t.stepId === cur.id);
-  const mood = !cur ? 'yay' : live.length ? 'wait' : 'wave';
-  const display = shown
-    ? `<span class="display ${ringing ? 'ring' : ''}" data-clock="${shown.id}">${shown.done ? '时间到！' : formatClock(remainingMs(shown))}</span>`
-    : `<span class="display">${cur?.minutes ? formatClock(cur.minutes * 60000) : '--:--'}</span>`;
+  const kind = cur?.kind;
+  const timed = isTimed(cur);
+  const running = !!(curTimer && !curTimer.done);
+  const mood = !cur ? 'yay' : running ? 'wait' : 'wave';
+  const clockText = (t) => (t.done ? '时间到！' : formatClock(remainingMs(t)));
+
+  // 烤箱：倒计时显示在烤箱面板上；发酵：大号倒计时在碗下面；其他步骤：不计时，只放揉面动画
+  let scene;
+  if (!cur) {
+    scene = `<div class="oven-wrap">${ovenScene('', false)}<span class="display">出炉啦</span>${mascot('yay')}</div>`;
+  } else if (kind === 'bake') {
+    const t = curTimer;
+    const display = t ? `<span class="display ${t.done ? 'ring' : ''}" data-clock="${t.id}">${clockText(t)}</span>`
+      : `<span class="display">${timed ? formatClock(cur.minutes * 60000) : '--:--'}</span>`;
+    scene = `<div class="oven-wrap">${ovenScene('', running)}${display}${mascot(mood)}</div>`;
+  } else if (kind === 'ferment') {
+    const t = curTimer;
+    const clock = t ? `<div class="hero-clock ${t.done ? 'ring' : ''}" data-clock="${t.id}">${clockText(t)}</div>`
+      : timed ? `<div class="hero-clock">${formatClock(cur.minutes * 60000)}</div>` : '';
+    scene = `<div class="oven-wrap">${stageScene('ferment', running)}${mascot(mood)}</div>${clock}`;
+  } else {
+    // 别的步骤在做的时候，如果之前的发酵/烘烤计时还在跑，用一行小字提醒
+    const other = ringing || live[0];
+    scene = `<div class="oven-wrap">${stageScene(kind, true)}${mascot('wave')}</div>
+      ${other ? `<div class="hero-clock small">${icon(other.done ? 'bell' : 'timer')} <span data-clock="${other.id}">${clockText(other)}</span> · ${esc(other.label.slice(0, 10))}</div>` : ''}`;
+  }
 
   let action;
   let hint;
   if (!cur) {
     action = `<button class="btn primary big block" data-act="go-finish">${icon('camera')} 出炉啦！拍照记录</button>`;
     hint = '每一步都完成了，辛苦啦';
-  } else if (cur.minutes && !curTimer) {
-    action = `<button class="btn primary big block" data-act="timer-start" data-id="${cur.id}">${START_WORD[cur.kind] || '开始计时'} · ${formatMinutes(cur.minutes)}</button>`;
+  } else if (timed && !curTimer) {
+    action = `<button class="btn primary big block" data-act="timer-start" data-id="${cur.id}">${START_WORD[kind]} · ${formatMinutes(cur.minutes)}</button>`;
     hint = '按下就开始计时，时间到会叫你';
   } else {
     action = `<button class="btn primary big block" data-act="step-done" data-id="${cur.id}">${icon('check')} 这步好了，下一步</button>`;
-    hint = curTimer && !curTimer.done ? '安心去做别的吧，时间到我会叫你' : '做完这步就点一下';
+    hint = running ? (kind === 'ferment' ? '面团在睡觉长大，安心去做别的吧' : '烤箱在努力，时间到我会叫你')
+      : curTimer?.done ? '时间到啦，看看状态再进行下一步' : '慢慢来，做完这步就点一下';
   }
   return `<div class="bake-hero">
-    <div class="oven-wrap">${ovenScene('', live.length > 0)}${display}${mascot(mood)}</div>
+    ${scene}
     ${cur ? `<div class="card step-pill"><span class="n">${s.current + 1}/${r.steps.length}</span>
       <div class="s"><b>${esc(cur.text)}</b>${cur.minutes || KIND_LABEL[cur.kind] ? `<span class="small muted">${[KIND_LABEL[cur.kind], cur.minutes ? formatMinutes(cur.minutes) : ''].filter(Boolean).join(' · ')}</span>` : ''}</div></div>` : ''}
     ${action}
@@ -1018,20 +1044,14 @@ const actions = {
     unlockAudio();
     const s = state.session;
     const st = s.recipe.steps.find((x) => x.id === el.dataset.id);
+    if (!isTimed(st)) return;
     s.timers = s.timers.filter((t) => t.stepId !== st.id);
     s.timers.push(createTimer({ label: st.text.slice(0, 20) || '计时', minutes: st.minutes, stepId: st.id }));
     s.current = s.recipe.steps.indexOf(st);
     askNotifyPermission();
     persistSession(); rerender();
   },
-  async 'quick-timer'() {
-    const v = await promptDlg('计时多少分钟？', '10', 'number');
-    const min = Number(v);
-    if (!v || !(min > 0)) return;
-    unlockAudio();
-    state.session.timers.push(createTimer({ label: `${formatMinutes(min)} 计时`, minutes: min }));
-    persistSession(); rerender();
-  },
+
   'timer-pause'(el) { pauseTimer(findTimer(el)); persistSession(); rerender(); },
   'timer-resume'(el) { resumeTimer(findTimer(el)); persistSession(); rerender(); },
   'timer-add'(el) { addMinutes(findTimer(el), 5); stopRinging(); persistSession(); rerender(); },

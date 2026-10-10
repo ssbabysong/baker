@@ -227,6 +227,7 @@ export function storefront(cls = '') {
 export function ovenScene(cls = '', baking = false) {
   return wrap(`
     ${crayon([['soft', 'M10 22 H110 V92 H10 Z'], ['skysoft', 'M22 46 H98 V82 H22 Z'], ['sky', 'M10 92 H110 V97 H10 Z']], 1.6, 1.8)}
+    ${baking ? '<rect class="oven-glow" x="23" y="47" width="74" height="34" rx="2" stroke="none"/>' : ''}
     ${baking ? crayon([['crust', 'M36 76 C34 64 46 58 60 58 C74 58 86 64 84 76 Z']], 0, 0).replace('class="crayon"', 'class="crayon rise"') : ''}
     <path d="M10 22 H110 V92 H10 Z"/><path d="M10 36 H110"/>
     <path d="M22 46 H98 V82 H22 Z"/>
@@ -237,6 +238,52 @@ export function ovenScene(cls = '', baking = false) {
     ${baking ? `<path d="M36 76 C34 64 46 58 60 58 C74 58 86 64 84 76 Z" class="rise"/>
       <path d="M30 18 q-4 -5 0 -10" class="steam"/><path d="M60 16 q-4 -5 0 -10" class="steam s2"/><path d="M90 18 q-4 -5 0 -10" class="steam s3"/>` : '<path d="M44 76 H76" stroke-dasharray="3 5"/>'}
   `, '0 0 120 104', cls);
+}
+
+// 发酵：盖着的碗里，面团闭着眼睛慢慢鼓起来，冒小泡泡，飘出 z z
+export function proofScene(cls = '', running = false) {
+  return wrap(`
+    ${crayon([['skysoft', 'M16 60 C18 88 38 96 60 96 C82 96 102 88 104 60 Z'], ['ai', 'M16 60 C18 66 22 72 26 76 H94 C98 72 102 66 104 60 Z']], 1.4, 1.6)}
+    <g class="${running ? 'proof' : ''}">
+      ${crayon([['soft', 'M24 60 C24 40 42 30 60 30 C78 30 96 40 96 60 Z']], 0.8, 1)}
+      <path d="M24 60 C24 40 42 30 60 30 C78 30 96 40 96 60"/>
+      <path d="M48 46 q3 3 6 0" stroke-width="1.8"/><path d="M66 46 q3 3 6 0" stroke-width="1.8"/>
+      <path d="M56 53 q4 2.5 8 0" stroke-width="1.6"/>
+      <path d="M42 50 h3" class="blush" stroke-width="2.4"/><path d="M75 50 h3" class="blush" stroke-width="2.4"/>
+      ${running ? '<circle class="bub" cx="36" cy="48" r="2" stroke-width="1.2"/><circle class="bub b2" cx="82" cy="44" r="1.6" stroke-width="1.2"/><circle class="bub b3" cx="60" cy="36" r="1.4" stroke-width="1.2"/>' : ''}
+    </g>
+    <path d="M12 60 H108"/>
+    <path d="M16 60 C18 88 38 96 60 96 C82 96 102 88 104 60"/>
+    <path d="M26 76 H94" stroke-width="1.4"/>
+    <path d="M44 96 L42 100 H78 L76 96" stroke-width="1.8"/>
+    ${running ? `<text class="zz" x="96" y="26" font-size="12" stroke="none" fill="currentColor" font-family="Courier Prime, monospace">z</text>
+      <text class="zz z2" x="104" y="16" font-size="9" stroke="none" fill="currentColor" font-family="Courier Prime, monospace">z</text>` : ''}
+  `, '0 0 120 104', cls);
+}
+
+// 其他步骤（揉面、整形、混合……）：案板上的面团被擀面杖压来压去，扬起一点面粉
+export function makeScene(cls = '', running = true) {
+  return wrap(`
+    ${crayon([['wood', 'M8 84 H112 V92 H8 Z'], ['wood', 'M24 52 H96 V58 H24 Z']], 1.2, 1.4)}
+    <g class="${running ? 'knead' : ''}">
+      ${crayon([['soft', 'M34 84 C32 72 44 66 60 66 C76 66 88 72 86 84 Z']], 0.8, 1)}
+      <path d="M34 84 C32 72 44 66 60 66 C76 66 88 72 86 84"/>
+    </g>
+    <g class="${running ? 'roll' : ''}">
+      <path d="M24 52 H96 V58 H24 Z"/><path d="M24 55 H12"/><path d="M96 55 H108"/>
+      <path d="M12 52 v6 M108 52 v6" stroke-width="2.6"/>
+    </g>
+    ${running ? '<g class="flour"><circle cx="30" cy="76" r="1"/><circle cx="92" cy="72" r="1.2"/><circle cx="24" cy="68" r=".8"/><circle cx="98" cy="80" r=".9"/></g>' : ''}
+    <path d="M8 84 H112 V92 H8 Z"/>
+    <path d="M14 92 v8 M106 92 v8"/>
+  `, '0 0 120 104', cls);
+}
+
+// 按步骤类型选画面：烘烤 → 烤箱，发酵 → 发酵碗，其他 → 揉面
+export function stageScene(kind, running = false, cls = '') {
+  if (kind === 'bake') return ovenScene(cls, running);
+  if (kind === 'ferment') return proofScene(cls, running);
+  return makeScene(cls, true);
 }
 
 // 空状态：空空的木架子
