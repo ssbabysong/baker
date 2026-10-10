@@ -103,6 +103,11 @@ img { max-width: 100%; display: block; }
 .f-paper { fill: var(--card); }
 .f-shu { fill: var(--shu); }
 .f-choco { fill: var(--choco); }
+.f-pink { fill: #efb3ad; }
+.f-custard { fill: #f1c55a; }
+.sp1 { stroke: #d9604c; } .sp2 { stroke: #5f86c0; } .sp3 { stroke: #7d9150; }
+.herb { stroke: #6e8a45; }
+.spot { stroke: #a0642c; }
 .ganache { stroke: #4a2c1e; }
 .pearl { stroke: var(--crust); }
 .ink-paper { stroke: #fffcf5; }

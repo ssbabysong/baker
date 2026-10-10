@@ -93,11 +93,19 @@ export function guessShape(name = '') {
   if (/饼干|曲奇|cookie|biscuit/.test(n)) return 'cookie';
   if (/玛芬|麦芬|muffin|纸杯|cupcake/.test(n)) return 'muffin';
   if (/碱水|扭结|pretzel|brezel/.test(n)) return 'pretzel';
-  if (/贝果|bagel|甜甜圈|donut/.test(n)) return 'bagel';
-  if (/菠萝|蜜瓜|melon/.test(n)) return 'melonpan';
+  if (/甜甜圈|多拿滋|donut|doughnut/.test(n)) return 'donut';
+  if (/贝果|bagel/.test(n)) return 'bagel';
+  if (/菠萝|蜜瓜|melon|pineapple/.test(n)) return 'melonpan';
+  if (/肉桂卷|肉桂|cinnamon/.test(n)) return 'cinnamon';
+  if (/司康|scone/.test(n)) return 'scone';
+  if (/佛卡夏|福卡夏|focaccia/.test(n)) return 'focaccia';
+  if (/布里欧|布里奥|brioche/.test(n)) return 'brioche';
+  if (/蛋挞|葡挞|tart/.test(n)) return 'eggtart';
+  if (/泡芙|puff|choux|éclair|eclair/.test(n)) return 'puff';
   if (/巧克力|可可|脆脆珠|choco|cocoa/.test(n)) return 'chocobun';
   if (/红豆|豆沙|红豆包|anpan|あんぱん/.test(n)) return 'anpan';
   if (/吐司|toast|土司|食パン|生吐司/.test(n)) return 'toast';
+  if (/餐包|手撕包|排包|小面包|dinner rolls?|pull-apart/.test(n)) return 'rolls';
   return 'loaf';
 }
 
@@ -106,10 +114,12 @@ const PRICE_RANGE = {
   CNY: {
     cookie: [6, 12], muffin: [10, 16], anpan: [8, 14], melonpan: [8, 14], bagel: [10, 16], pretzel: [10, 16],
     croissant: [12, 18], baguette: [14, 22], loaf: [16, 28], toast: [18, 32], cake: [28, 48], chocobun: [12, 18],
+    donut: [8, 14], cinnamon: [12, 20], scone: [10, 16], focaccia: [16, 26], brioche: [14, 22], eggtart: [6, 10], rolls: [12, 20], puff: [8, 14],
   },
   USD: {
     cookie: [2, 4], muffin: [3, 5], anpan: [2.5, 4.5], melonpan: [2.5, 4.5], bagel: [3, 5], pretzel: [3, 5],
     croissant: [3.5, 6], baguette: [4, 7], loaf: [6, 10], toast: [6, 11], cake: [28, 48], chocobun: [3.5, 5.5],
+    donut: [2, 4], cinnamon: [3.5, 6], scone: [3, 5], focaccia: [5, 9], brioche: [4, 7], eggtart: [2, 3.5], rolls: [4, 7], puff: [2.5, 4.5],
   },
 };
 export function randomPrice(shape, cur = getCurrency()) {

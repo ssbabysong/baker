@@ -89,15 +89,83 @@ const SHAPES = {
       <path d="M32 27 C37 27 40 29.5 40 33 C40 36.5 36.5 38 32 38 C27 38 24 36 24 33 C24 29.5 27 27 31 27"/>
       <path d="M18 22 l2 1"/><path d="M44 21 l2 -1"/><path d="M47 42 l2 1"/>`,
   },
+  // 甜甜圈：粉色糖霜盖住上半圈，撒几根彩针
+  donut: {
+    fill: [['crust', 'M32 13 C46 13 56 21 56 33 C56 45 45 52 32 52 C18 52 8 45 8 33 C8 22 18 13 32 13 Z'],
+      ['pink', 'M11 31 C11 21 21 15 32 15 C43 15 53 21 53 31 Q50 35 46 32 Q42 37 38 33 Q34 37 30 33 Q26 37 22 33 Q18 36 14 33 Q12 34 11 31 Z'],
+      ['paper', 'M32 26 C37 26 40 28.5 40 31.5 C40 34.5 36.5 36 32 36 C27 36 24 34.5 24 31.5 C24 28.5 27 26 32 26 Z']],
+    line: `<path d="M32 13 C46 13 56 21 56 33 C56 45 45 52 32 52 C18 52 8 45 8 33 C8 22 18 13.5 30 13"/>
+      <path d="M11 31 Q14 35 18 33 Q22 37 26 33 Q30 37 34 33 Q38 37 42 33 Q46 36 50 32 Q52 33 53 30" stroke-width="1.6"/>
+      <path d="M32 26 C37 26 40 28.5 40 31.5 C40 34.5 36.5 36 32 36 C27 36 24 34.5 24 31.5 C24 28.5 27 26 31 26"/>
+      <path class="sp1" d="M18 24 l3 -1 M44 21 l2 2" stroke-width="2"/><path class="sp2" d="M26 19 l2 2 M47 28 l3 0" stroke-width="2"/><path class="sp3" d="M36 18 l2 -1 M15 29 l2 1" stroke-width="2"/>`,
+  },
+  // 肉桂卷：从上往下看，一圈圈卷起来，淋了白色糖霜
+  cinnamon: {
+    fill: [['crust', 'M32 10 C45 10 55 20 55 32 C55 45 45 54 32 54 C19 54 9 45 9 32 C9 20 19 10 32 10 Z']],
+    line: `<path d="M32 10 C45 10 55 20 55 32 C55 45 45 54 32 54 C19 54 9 45 9 32 C9 20 19 10 30 10"/>
+      <path d="M32 32 c0 -3 4 -3 4 0 c0 5 -8 5 -8 0 c0 -7 12 -7 12 0 c0 9 -16 9 -16 0 c0 -11 20 -11 20 0 c0 13 -24 13 -24 0"/>
+      <path class="salt" d="M15 25 L28 18 M14 36 L46 17 M20 47 L50 30" stroke-width="2.2"/>`,
+  },
+  // 司康：矮矮的圆柱，腰上一圈裂口，表面几粒葡萄干
+  scone: {
+    fill: [['crust', 'M14 50 L16 30 C17 22 24 19 32 19 C40 19 47 22 48 30 L50 50 Q32 53 14 50 Z'], ['soft', 'M16 33 Q32 38 48 33 L48.5 38 Q32 42 15.6 38 Z']],
+    line: `<path d="M14 50 L16 30 C17 22 24 19 32 19 C40 19 47 22 48 30 L50 50"/><path d="M13 50 Q32 53 51 50"/>
+      <path d="M16 33 Q32 38 48 33"/><path d="M20 27 l3 -2 M38 23 l4 2 M30 24 l1 2" stroke-width="1.4" opacity=".6"/>
+      <path d="M19 45 h.1 M27 42 h.1 M36 46 h.1 M44 43 h.1 M41 48 h.1" stroke-width="3.2"/>`,
+  },
+  // 佛卡夏：扁扁的一大块，手指戳出来的小坑，几根迷迭香
+  focaccia: {
+    fill: [['crust', 'M8 44 C7 38 9 31 14 30 L50 28 C55 28 57 33 56 42 C55 47 52 49 46 49 L14 50 C10 50 8 48 8 44 Z']],
+    line: `<path d="M8 44 C7 38 9 31 14 30 L50 28 C55 28 57 33 56 42 C55 47 52 49 46 49 L14 50 C10 50 8 48 8 44"/>
+      <path d="M17 36 a1.4 1.4 0 1 0 .1 0 M27 41 a1.4 1.4 0 1 0 .1 0 M38 35 a1.4 1.4 0 1 0 .1 0 M47 41 a1.4 1.4 0 1 0 .1 0 M21 44 a1 1 0 1 0 .1 0 M33 45 a1 1 0 1 0 .1 0" stroke-width="1.6"/>
+      <path class="herb" d="M24 34 q3 -2 6 -1 M29 33 l-1 -2 M27 33.6 l0 2 M42 42 q3 -2 6 -1 M47 41 l-1 -2 M45 41.6 l0 2" stroke-width="1.8"/>`,
+  },
+  // 布里欧修：花边模子里一个圆身子，头上顶着一个小圆球
+  brioche: {
+    fill: [['tile', 'M11 40 L16 54 H48 L53 40 Z'], ['crust', 'M10 41 C9 31 19 26 32 26 C45 26 55 31 54 41 Z'], ['crust', 'M32 13 C38 13 41 17 41 22 C41 27 37 30 32 30 C27 30 23 27 23 22 C23 17 27 13 32 13 Z']],
+    line: `<path d="M11 41 L16 54 H48 L53 41"/>
+      <path d="M21 42 l2 12 M27 42 l1 12 M32 42 v12 M37 42 l-1 12 M43 42 l-2 12" stroke-width="1.5"/>
+      <path d="M10 41 C9 31 19 26 32 26 C45 26 55 31 54 41 Q32 44 10 41"/>
+      <path d="M32 13 C38 13 41 17 41 22 C41 27 37 30 32 30 C27 30 23 27 23 22 C23 17 27 13 31 13"/>
+      <path d="M27 18 q3 -2 6 -1" stroke-width="1.4" opacity=".6"/>`,
+  },
+  // 蛋挞：酥皮小碗，顶上黄澄澄的蛋液，烤出几个焦点
+  eggtart: {
+    fill: [['crust', 'M8 30 L14 50 H50 L56 30 C56 38 8 38 8 30 Z'], ['crust', 'M7 30 C7 18 57 18 57 30 C57 39 7 39 7 30 Z'], ['custard', 'M12 30 C12 22 52 22 52 30 C52 35.5 12 35.5 12 30 Z']],
+    line: `<path d="M8 31 L14 50 H50 L56 31"/><path d="M13 49 Q32 52 51 49"/>
+      <path d="M17 38 l3 11 M25 39 l1.5 11 M32 39 v11 M39 39 l-1.5 11 M47 38 l-3 11" stroke-width="1.5"/>
+      <path d="M7 30 C7 18 57 18 57 30 C57 39 7 39 7 30"/>
+      <path d="M12 30 C12 22 52 22 52 30 C52 35.5 12 35.5 12 30" stroke-width="1.5"/>
+      <path class="spot" d="M23 27 h.1 M35 30 h.1 M43 26 h.1 M29 32 h.1 M40 32 h.1" stroke-width="3.2"/>`,
+  },
+  // 餐包 / 手撕包：一盘挤在一起的三个小圆包，刷了蛋液亮亮的
+  rolls: {
+    fill: [['crust', 'M5 46 C4 34 12 28 21 28 C30 28 35 34 34 46 Z'], ['crust', 'M30 46 C29 34 34 28 43 28 C52 28 60 34 59 46 Z'], ['crust', 'M15 49 C14 35 22 26 32 26 C42 26 50 35 49 49 Z']],
+    line: `<path d="M5 46 C4 34 12 28 21 28 C25 28 28 29 30 31"/><path d="M34 31 C36 29 39 28 43 28 C52 28 60 34 59 46"/>
+      <path d="M15 49 C14 35 22 26 32 26 C42 26 50 35 49 49"/><path d="M4 47 Q32 52 60 47"/>
+      <path d="M23 33 q4 -3 9 -3" stroke-width="1.4" opacity=".6"/><path d="M10 36 q3 -3 7 -3 M47 34 q3 -2 7 -1" stroke-width="1.3" opacity=".5"/>`,
+  },
+  // 泡芙：下半个壳、中间一圈奶油、上面一顶裂开的酥皮盖子，撒点糖粉
+  puff: {
+    fill: [['crust', 'M11 40 C11 47 19 51 32 51 C45 51 53 47 53 40 Z'], ['paper', 'M10 40 Q14 35 20 38 Q26 34 32 38 Q38 34 44 38 Q50 35 54 40 Q50 44 44 41 Q38 45 32 41 Q26 45 20 41 Q14 44 10 40 Z'],
+      ['crust', 'M12 36 C11 24 22 15 32 15 C42 15 53 24 52 36 Z']],
+    line: `<path d="M11 40 C11 47 19 51 32 51 C45 51 53 47 53 40"/>
+      <path d="M10 40 Q14 35 20 38 Q26 34 32 38 Q38 34 44 38 Q50 35 54 40"/>
+      <path d="M12 36 C11 24 22 15 32 15 C42 15 53 24 52 36 Q32 39 12 36"/>
+      <path d="M15 29 l5 -3 l4 3 l5 -4 l4 3 l5 -3 l4 3 l5 -2" stroke-width="1.4"/><path d="M24 20 l3 2 M38 19 l2 3" stroke-width="1.3" opacity=".6"/>
+      <path class="salt" d="M22 19 h.1 M30 18 h.1 M41 20 h.1 M46 27 h.1 M17 30 h.1" stroke-width="2.4"/>`,
+  },
 };
 
 export const SHAPE_NAMES = {
   loaf: '欧包', toast: '吐司', croissant: '可颂', baguette: '法棍',
-  cake: '蛋糕', cookie: '饼干', muffin: '玛芬', bagel: '贝果', pretzel: '碱水', melonpan: '蜜瓜包', anpan: '红豆包', chocobun: '巧克力包',
+  cake: '蛋糕', cookie: '饼干', muffin: '玛芬', bagel: '贝果', pretzel: '碱水', melonpan: '菠萝包', anpan: '红豆包', chocobun: '巧克力包',
+  donut: '甜甜圈', cinnamon: '肉桂卷', scone: '司康', focaccia: '佛卡夏', brioche: '布里欧修', eggtart: '蛋挞', rolls: '餐包', puff: '泡芙',
 };
 export const SHAPE_NAMES_EN = {
   loaf: 'Loaf', toast: 'Shokupan', croissant: 'Croissant', baguette: 'Baguette',
-  cake: 'Cake', cookie: 'Cookie', muffin: 'Muffin', bagel: 'Bagel', pretzel: 'Pretzel', melonpan: 'Melon pan', anpan: 'Anpan', chocobun: 'Choco bun',
+  cake: 'Cake', cookie: 'Cookie', muffin: 'Muffin', bagel: 'Bagel', pretzel: 'Pretzel', melonpan: 'Pineapple bun', anpan: 'Anpan', chocobun: 'Choco bun',
+  donut: 'Donut', cinnamon: 'Cinnamon roll', scone: 'Scone', focaccia: 'Focaccia', brioche: 'Brioche', eggtart: 'Egg tart', rolls: 'Dinner rolls', puff: 'Cream puff',
 };
 
 export const shape = (name, cls = '') => {
