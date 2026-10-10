@@ -509,17 +509,19 @@ textarea.input.tall { min-height: 260px; }
 .photo-drop svg.ic { width: 44px; height: 44px; }
 button.photo-drop { width: 100%; font: inherit; padding: 0; }
 .photo-drop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-/* 打分：五个小面包，点亮的是烤好的，没点亮的是生面团；下面一句评语 */
+/* 打分：五颗手绘星星，点亮的上金黄色，没点亮的只是淡淡的线；下面一句评语 */
 .rating-wrap { display: grid; justify-items: center; gap: 2px; margin-top: 8px; }
-.rating { display: flex; gap: 4px; justify-content: center; }
-.rating button { background: none; border: 0; padding: 2px; cursor: pointer; transition: transform .15s ease; }
-.rating button:active { transform: scale(.9) translateY(1px); }
-.rating button svg { width: 44px; height: 35px; display: block; }
+.rating { display: flex; gap: 2px; justify-content: center; }
+.rating button { background: none; border: 0; padding: 3px; cursor: pointer; transition: transform .15s ease; }
+.rating button:active { transform: scale(.88); }
+.rating button svg { width: 40px; height: 40px; display: block; }
+.rate-star { color: var(--doodle); }
+.rate-star:not(.on) { color: color-mix(in srgb, var(--doodle) 35%, transparent); }
 .rating button.on svg { animation: pop .25s ease-out; }
-@keyframes pop { 0% { transform: scale(.8); } 70% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@keyframes pop { 0% { transform: scale(.75) rotate(-8deg); } 70% { transform: scale(1.12) rotate(3deg); } 100% { transform: scale(1); } }
 .rating-word { font-size: 14px; color: var(--ink-soft); letter-spacing: .04em; min-height: 1.5em; }
-.mini-rate { display: inline-flex; gap: 1px; vertical-align: -3px; margin-right: 6px; }
-.mini-rate svg { width: 18px; height: 14px; }
+.mini-rate { display: inline-flex; gap: 0; vertical-align: -3px; margin-right: 6px; }
+.mini-rate svg { width: 15px; height: 15px; }
 @media (prefers-reduced-motion: reduce) { .rating button.on svg { animation: none; } }
 .choice { display: grid; gap: 8px; }
 .choice label { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border: 1px solid var(--hair); border-radius: 16px; cursor: pointer; background: var(--card); }
