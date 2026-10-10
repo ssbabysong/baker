@@ -917,6 +917,31 @@ export function hanko(text, cls = '') {
   `, '0 0 64 64', `hanko ${cls}`, 1.6);
 }
 
+// 首页最下面的小房子：和 app 图标同一栋店（瓦檐、木招牌、藏青暖帘、门口挂着碱水面包），线条跟着主题色
+export function houseLogo(cls = '') {
+  return `<svg class="sk house-logo ${cls}" viewBox="56 56 410 384" fill="none" stroke="currentColor" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <g class="crayon" transform="translate(6 7)" stroke="none">
+      <path class="f-tile" d="M70 196 L96 150 H416 L442 196 Z"/>
+      <path class="f-wood" d="M150 84 H362 V132 H150 Z M136 206 H150 V420 H136 Z M362 206 H376 V420 H362 Z"/>
+      <path class="f-ai" d="M150 214 H230 V316 H150 Z M240 214 H272 V316 H240 Z M282 214 H362 V316 H282 Z"/>
+    </g>
+    <path d="M150 84 H362 V132 H150 Z"/><path d="M190 84 L200 66"/><path d="M322 84 L312 66"/>
+    <path d="M70 196 L96 150 H416 L442 196"/>
+    <path d="M70 196 ${'q9 10 18 0 '.repeat(20)}q9 10 4 0"/>
+    <path d="M136 206 H150 V420 H136 Z"/><path d="M362 206 H376 V420 H362 Z"/>
+    <path d="M126 210 H386" stroke-width="17"/>
+    <path d="M150 214 H230 V316 H150 Z"/><path d="M240 214 H272 V316 H240 Z"/><path d="M282 214 H362 V316 H282 Z"/>
+    <path d="M150 326 H362"/><path d="M256 326 V420"/>
+    <path d="M150 372 H362 M203 326 V420 M309 326 V420" stroke-width="8"/>
+    <path d="M86 424 Q256 432 426 422"/>
+    <path d="M376 228 H456 M376 254 L406 228" stroke-width="10"/><path d="M425 228 V268" stroke-width="6"/>
+    <g transform="translate(379 249) scale(1.45)">
+      <path d="M18 43 C22 36 28 30 32 26 C36 22 40 16 46 16 C54 16 58 24 56 34 C54 46 44 54 32 54 C20 54 10 46 8 34 C6 24 10 16 18 16 C24 16 28 22 32 26 C36 30 42 36 46 43" stroke-width="12"/>
+      <path class="pretzel-in" d="M18 43 C22 36 28 30 32 26 C36 22 40 16 46 16 C54 16 58 24 56 34 C54 46 44 54 32 54 C20 54 10 46 8 34 C6 24 10 16 18 16 C24 16 28 22 32 26 C36 30 42 36 46 43" stroke-width="6.5"/>
+    </g>
+  </svg>`;
+}
+
 // 空状态：空空的木架子
 export function emptyShelf(cls = '') {
   return wrap(`

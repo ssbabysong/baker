@@ -587,7 +587,6 @@ button.photo-drop { width: 100%; font: inherit; padding: 0; }
 .diary .photo .ph-empty { aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; }
 .diary .photo .ph-empty svg { width: 34%; }
 .diary .meta { font-family: var(--mono); font-size: 13px; color: var(--ink-soft); margin-top: 10px; }
-.diary-foot { text-align: center; font-family: var(--mono); margin-top: 34px; padding-top: 12px; border-top: 1.5px dashed var(--hair); font-size: 14px; letter-spacing: .12em; color: var(--ink-soft); }
 
 details > summary { cursor: pointer; list-style: none; }
 details > summary::-webkit-details-marker { display: none; }
@@ -712,6 +711,8 @@ dialog h3 { margin: 0 0 8px; font-size: 21px; }
 @keyframes cal-in-next { from { transform: translateX(28px); opacity: 0; } }
 @keyframes cal-in-prev { from { transform: translateX(-28px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .cal-swipe { animation: none !important; } }
+.cal .d.future { opacity: .3; }
+.cal-head .m button:disabled { opacity: .2; pointer-events: none; }
 .day-head { margin: 28px 2px 10px; display: flex; align-items: baseline; gap: 8px; font-family: var(--mono); }
 .day-head b { font-size: 17px; }
 .day-head span { color: var(--ink-soft); font-size: 13px; }
@@ -727,3 +728,8 @@ dialog h3 { margin: 0 0 8px; font-size: 21px; }
 .bf-when .f:last-child:nth-child(3) { grid-column: 1 / -1; }
 .bf-when .input { width: 100%; }
 .edit-time { display: inline-flex; margin-left: 4px; font-size: 13px; padding: 2px 8px; }
+
+/* 首页最下面的小房子 */
+.home-foot { display: flex; justify-content: center; margin: 40px 0 0; }
+.house-logo { width: 46px; height: 46px; color: var(--doodle); opacity: .85; }
+.house-logo .pretzel-in { stroke: var(--crust); }

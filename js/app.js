@@ -4,7 +4,7 @@ import {
   exportAll, importAll, guessShape, setPrice, randomPrice, getPrice,
 } from './store.js';
 import { parseRecipeText, formatAmount, formatMinutes, guessStepKind } from './parser.js';
-import { rateStar, hanko, shape, icon, storefront, storefrontSign, ovenScene, stageScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES, SHAPE_NAMES_EN } from './sketch.js';
+import { rateStar, hanko, houseLogo, shape, icon, storefront, storefrontSign, ovenScene, stageScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES, SHAPE_NAMES_EN } from './sketch.js';
 import {
   remainingMs, formatClock, createTimer, pauseTimer, resumeTimer, addMinutes,
   unlockAudio, playChime, playLevelUp, haptic, startRinging, stopRinging, askNotifyPermission, notify, keepAwake,
@@ -368,6 +368,7 @@ async function viewShop() {
   <h2>${L('作品墙', 'Bake wall')} <a class="more" href="#/logs">${L('日历', 'Diary')} ›</a></h2>
   ${recent.length ? `<div class="wall">${recent.map((b, i) => polaroid(b, thumbs[i])).join('')}</div>`
     : `<div class="empty">${emptyShelf()}<div>${L('还没有作品，第一炉在等你', 'Nothing here yet. Your first batch awaits')}</div></div>`}
+  <div class="home-foot">${houseLogo()}</div>
   `;
 }
 
@@ -1020,14 +1021,15 @@ async function celebrate(count, shapeName) {
 const WEEK = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const weekday = (d) => L(['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'], ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'])[d];
 const ymd = (t) => { const d = new Date(t); return `${d.getFullYear()}.${pad2(d.getMonth() + 1)}.${pad2(d.getDate())}`; };
-// 日记页脚：app 名 + 第几炉的编号
-const diaryFoot = (no) => `<div class="diary-foot">${esc(APP_NAME())}${no ? ` · No.${String(no).padStart(4, '0')}` : ''}</div>`;
 
 // 烘焙日历：做过面包的日子画上那款面包
 async function viewLogs(ym) {
   const now = new Date();
   let [y, m] = ym ? ym.split('-').map(Number) : [now.getFullYear(), now.getMonth() + 1];
   if (!(m >= 1 && m <= 12)) [y, m] = [now.getFullYear(), now.getMonth() + 1];
+  // 还没到的月份不让翻过去
+  const atNow = y > now.getFullYear() || (y === now.getFullYear() && m >= now.getMonth() + 1);
+  if (atNow) [y, m] = [now.getFullYear(), now.getMonth() + 1];
   const from = new Date(y, m - 1, 1).getTime();
   const to = new Date(y, m, 1).getTime();
   const all = await listBakes();
@@ -1052,7 +1054,7 @@ async function viewLogs(ym) {
   return `
   <div class="cal-head">
     <div class="y">${y}</div>
-    <div class="m"><button data-go="#/logs/${prev}" aria-label="${L('上个月', 'Previous month')}">${icon('back')}</button>${MONTHS[m - 1]}<button data-go="#/logs/${next}" aria-label="${L('下个月', 'Next month')}">${icon('next')}</button></div>
+    <div class="m"><button data-go="#/logs/${prev}" aria-label="${L('上个月', 'Previous month')}">${icon('back')}</button>${MONTHS[m - 1]}<button data-go="#/logs/${next}" aria-label="${L('下个月', 'Next month')}" ${atNow ? 'disabled' : ''}>${icon('next')}</button></div>
   </div>
   <div class="cal-swipe ${state.calSlide ? `slide-${state.calSlide}` : ''}">${monthGrid(y, m, bakes, true, sel)}</div>
 
@@ -1093,7 +1095,8 @@ function monthGrid(y, m, bakes, links, sel = null) {
     const list = byDay.get(d);
     const key = `${y}-${pad2(m)}-${pad2(d)}`;
     const today = y === now.getFullYear() && m === now.getMonth() + 1 && d === now.getDate();
-    const cls = `d ${list ? 'has' : ''} ${today ? 'today' : ''} ${key === sel ? 'sel' : ''}`;
+    const future = new Date(y, m - 1, d) > now;
+    const cls = `d ${list ? 'has' : ''} ${today ? 'today' : ''} ${key === sel ? 'sel' : ''} ${future ? 'future' : ''}`;
     const inner = list ? `${shape(list[0].shape)}${list.length > 1 ? `<span class="cnt">${list.length}</span>` : ''}` : d;
     const title = list ? ` title="${esc(list.map((b) => b.recipeName).join(', '))}"` : '';
     cells.push(links && (list || new Date(y, m - 1, d) <= now)
@@ -1244,8 +1247,7 @@ async function viewLog(id) {
     <button class="btn sm primary" data-act="start-bake" data-id="${recipe.id}">${icon('oven')} ${L('再做一次', 'Bake again')}</button>` : ''}
     <span style="flex:1"></span>
     <button class="btn icon sm danger" data-act="delete-bake" data-id="${b.id}" aria-label="${L('删除', 'Delete')}">${icon('trash')}</button>
-  </div>
-  ${diaryFoot(no)}`;
+  </div>`;
 }
 
 // =====================================================================
@@ -1912,7 +1914,7 @@ document.addEventListener('touchend', (e) => {
   swipe = null;
   if (!fast || Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
   const btn = document.querySelectorAll('.cal-head .m button')[dx < 0 ? 1 : 0];
-  if (!btn) return;
+  if (!btn || btn.disabled) return; // 已经是这个月了，不往后翻
   state.calSlide = dx < 0 ? 'next' : 'prev';
   haptic();
   go(btn.dataset.go);
