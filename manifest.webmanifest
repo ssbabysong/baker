@@ -1,6 +1,6 @@
 {
-  "name": "面包小票 · Bread Receipt",
-  "short_name": "面包小票",
+  "name": "面包物语 · Bread Receipt",
+  "short_name": "面包物语",
   "description": "经营你的简笔画小面包店：导入配方、多炉同时计时、出炉拍照记录。Run your own little sketch bakery.",
   "lang": "zh-CN",
   "start_url": "./",

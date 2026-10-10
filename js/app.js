@@ -1361,7 +1361,7 @@ const actions = {
     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `${L('面包小票备份', 'bread-receipt-backup')}-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `${L('面包物语备份', 'bread-receipt-backup')}-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   },
