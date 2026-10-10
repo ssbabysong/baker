@@ -199,6 +199,7 @@ const ROUTES = [
   [/^#\/import$/, viewImport, 'recipes'],
   [/^#\/bake(?:\/([\w-]+))?$/, viewBake, 'shop'],
   [/^#\/finish\/([\w-]+)$/, viewFinish, 'shop'],
+  [/^#\/backfill(?:\/(\d{4}-\d{2}-\d{2}))?$/, viewBackfill, 'logs'],
   [/^#\/logs(?:\/(\d{4}-\d{1,2}))?$/, viewLogs, 'logs'],
   [/^#\/log\/([\w-]+)$/, viewLog, 'logs'],
   [/^#\/settings$/, viewSettings, 'shop'],
@@ -1044,6 +1045,7 @@ async function viewLogs(ym) {
     <div class="m"><button data-go="#/logs/${prev}" aria-label="${L('上个月', 'Previous month')}">${icon('back')}</button>${MONTHS[m - 1]}<button data-go="#/logs/${next}" aria-label="${L('下个月', 'Next month')}">${icon('next')}</button></div>
   </div>
   ${monthGrid(y, m, bakes, true)}
+  <div class="backfill-cta"><a class="link-btn" href="#/backfill">${icon('plus')} ${L('补记一炉', 'Add a past bake')}</a><span class="small muted">${L('或者点日历上空着的日子', 'or tap an empty day')}</span></div>
 
   <div class="stats cal-stats">
     <div class="stat"><b>${bakes.length}</b><span>loaves baked</span></div>
@@ -1078,9 +1080,109 @@ function monthGrid(y, m, bakes, links) {
     const today = y === now.getFullYear() && m === now.getMonth() + 1 && d === now.getDate();
     cells.push(list
       ? `<${links ? `a href="#/log/${list[0].id}"` : 'span'} class="d" title="${esc(list.map((b) => b.recipeName).join(', '))}">${shape(list[0].shape)}${list.length > 1 ? `<span class="cnt">${list.length}</span>` : ''}</${links ? 'a' : 'span'}>`
-      : `<span class="d ${today ? 'today' : ''}">${d}</span>`);
+      : links && new Date(y, m - 1, d) <= now
+        ? `<a class="d empty ${today ? 'today' : ''}" href="#/backfill/${y}-${pad2(m)}-${pad2(d)}" aria-label="${L('补记这一天', 'Add a bake on this day')}">${d}</a>`
+        : `<span class="d ${today ? 'today' : ''}">${d}</span>`);
   }
   return `<div class="cal">${WEEK.map((w) => `<span class="wd">${w}</span>`).join('')}${cells.join('')}</div>`;
+}
+
+// =====================================================================
+// 补记一炉：以前烤过、当时没记的，事后补一条（日期、时间、用时、照片、打分、笔记）
+// =====================================================================
+
+const ymdInput = (t) => { const d = new Date(t); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; };
+
+function backfillDraft(date) {
+  const today = ymdInput(Date.now());
+  if (!state.backfill) state.backfill = { recipeId: null, date: date || today, time: '16:00', hours: '', photoId: null, rating: 0, notes: '' };
+  if (date && state.backfill.date !== date && !state.backfill.touched) state.backfill.date = date;
+  return state.backfill;
+}
+
+async function viewBackfill(date) {
+  const f = backfillDraft(date);
+  const recipes = await listRecipes();
+  if (!f.recipeId && recipes.length) f.recipeId = recipes[0].id;
+  const r = recipes.find((x) => x.id === f.recipeId);
+  const photo = f.photoId ? await photoUrl(f.photoId) : '';
+  const estimate = r ? Math.round(totalMinutes(r) / 6) / 10 : '';
+  const inner = state.photoBusy ? `<span class="small muted">${L('照片处理中…', 'Processing photo…')}</span>`
+    : photo ? `<img src="${photo}" alt="">` : `${icon('camera')}<span>${L('有照片的话放一张', 'Add a photo if you have one')}</span>`;
+  return `
+  <div class="topbar"><a class="btn icon ghost" href="#/logs" data-act="backfill-cancel" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1>${L('补记一炉', 'Add a past bake')}</h1></div>
+  <p class="small muted" style="margin-top:-4px">${L('以前烤过、当时没来得及记的，在这里补上，也会算进出炉次数。', 'Record a bake you didn’t log at the time. It counts toward your shop level too.')}</p>
+
+  <h2>${L('烤的是哪个', 'Which recipe')}</h2>
+  ${recipes.length ? `<div class="bf-recipes">${recipes.map((x) => `<button type="button" class="${x.id === f.recipeId ? 'on' : ''}" data-act="bf-recipe" data-id="${x.id}">${shape(x.shape)}<span>${esc(x.name)}</span></button>`).join('')}</div>`
+    : `<p class="muted">${L('配方架上还没有配方，', 'No recipes yet. ')}<a href="#/import">${L('先上新一个', 'Add one first')}</a></p>`}
+
+  <h2>${L('什么时候', 'When')}</h2>
+  <div class="bf-when">
+    <label class="f"><span>${L('日期', 'Date')}</span><input class="input" type="date" data-bf="date" value="${f.date}" max="${ymdInput(Date.now())}"></label>
+    <label class="f"><span>${L('出炉时间', 'Out at')}</span><input class="input" type="time" data-bf="time" value="${f.time}"></label>
+    <label class="f"><span>${L('大概花了几小时', 'Hours it took')}</span><input class="input num" type="number" inputmode="decimal" step="0.5" min="0" data-bf="hours" value="${esc(f.hours)}" placeholder="${estimate || ''}"></label>
+  </div>
+
+  <h2>${L('照片', 'Photo')}</h2>
+  <label class="photo-drop">${inner}<input type="file" accept="image/*" hidden data-act-change="bf-photo"></label>
+
+  <h2>${L('打分', 'Rating')}</h2>
+  ${ratingRow(f.rating, 'bf-rate')}
+
+  <label class="f" style="margin-top:16px"><span>${L('笔记', 'Notes')}</span>
+    <textarea class="input" data-bf="notes" placeholder="${L('还记得那一炉怎么样吗？', 'Anything you remember about it?')}">${esc(f.notes)}</textarea></label>
+
+  <button class="btn primary block" style="margin-top:24px" data-act="bf-save" ${r ? '' : 'disabled'}>${icon('check')} ${L('放上作品墙', 'Pin it to the wall')}</button>`;
+}
+
+async function saveBackfill() {
+  const f = state.backfill;
+  const r = f && await getRecipe(f.recipeId);
+  if (!r) { toast(L('先选一个配方', 'Pick a recipe first')); return; }
+  const [y, mo, d] = f.date.split('-').map(Number);
+  const [hh, mm] = (f.time || '16:00').split(':').map(Number);
+  let finishedAt = new Date(y, mo - 1, d, hh || 0, mm || 0).getTime();
+  if (!Number.isFinite(finishedAt)) { toast(L('日期不对', 'That date doesn’t look right')); return; }
+  if (finishedAt > Date.now()) finishedAt = Date.now();
+  const hours = f.hours === '' || Number.isNaN(Number(f.hours)) ? totalMinutes(r) / 60 : Number(f.hours);
+  const before = (await listBakes()).length;
+  const bake = {
+    id: uid(), recipeId: r.id, recipeName: r.name, shape: r.shape, snapshot: clone(r), scale: 1,
+    changes: [], changeMode: 'none',
+    startedAt: finishedAt - Math.max(0, hours) * 3600000, finishedAt,
+    photoId: f.photoId, rating: f.rating, notes: f.notes, backfilled: true,
+  };
+  await saveBake(bake);
+  state.backfill = null;
+  go(`#/log/${bake.id}`);
+  setTimeout(() => celebrate(before + 1, bake.shape), 250);
+}
+
+// 日记页：改这一炉的日期和出炉时间（补记错了、或者当时忘了点出炉）
+async function editBakeTime(id) {
+  const b = await getBake(id);
+  if (!b) return;
+  const d = new Date(b.finishedAt);
+  const v = await dialog(`<h3>${L('改日期和时间', 'Change date & time')}</h3>
+    <div class="bf-when">
+      <label class="f"><span>${L('日期', 'Date')}</span><input class="input" type="date" id="et-date" value="${ymdInput(b.finishedAt)}" max="${ymdInput(Date.now())}"></label>
+      <label class="f"><span>${L('出炉时间', 'Out at')}</span><input class="input" type="time" id="et-time" value="${pad2(d.getHours())}:${pad2(d.getMinutes())}"></label>
+    </div>
+    <div class="row end" style="margin-top:16px"><button class="btn ghost" data-dlg="cancel">${L('算了', 'Cancel')}</button><button class="btn primary" data-dlg="save">${L('好', 'OK')}</button></div>`, {
+    onOpen: (dl) => { dl.querySelector('[data-dlg="save"]').addEventListener('click', () => { dl.dataset.date = dl.querySelector('#et-date').value; dl.dataset.time = dl.querySelector('#et-time').value; }, { capture: true }); },
+  });
+  if (v !== 'save') return;
+  const [y, mo, dd] = ($dlg.dataset.date || '').split('-').map(Number);
+  const [hh, mm] = ($dlg.dataset.time || '').split(':').map(Number);
+  const t = new Date(y, mo - 1, dd, hh || 0, mm || 0).getTime();
+  if (!Number.isFinite(t)) return;
+  const took = b.finishedAt - b.startedAt;
+  b.finishedAt = Math.min(t, Date.now());
+  b.startedAt = b.finishedAt - took;
+  await saveBake(b);
+  toast(L('日期改好了', 'Date updated'));
+  rerender();
 }
 
 // 一炉一页的烘焙日记
@@ -1102,7 +1204,8 @@ async function viewLog(id) {
     ${shape(b.shape)}
     <div class="name">${esc(b.recipeName)}</div>
     <div class="photo">${url ? `<img src="${url}" alt="">` : `<div class="ph-empty">${shape(b.shape)}</div>`}<span class="hanko">${L('出炉', 'Baked')}</span></div>
-    <div class="meta">${L(`${fmtTime(b.finishedAt)} 出炉 · 用时 ${fmtDur(b.finishedAt - b.startedAt)}`, `Out at ${fmtTime(b.finishedAt)} · took ${fmtDur(b.finishedAt - b.startedAt)}`)}${b.scale !== 1 ? ` · ×${b.scale}` : ''}</div>
+    <div class="meta">${L(`${fmtTime(b.finishedAt)} 出炉 · 用时 ${fmtDur(b.finishedAt - b.startedAt)}`, `Out at ${fmtTime(b.finishedAt)} · took ${fmtDur(b.finishedAt - b.startedAt)}`)}${b.scale !== 1 ? ` · ×${b.scale}` : ''}${b.backfilled ? ` · ${L('补记', 'added later')}` : ''}
+      <button class="link-btn edit-time" data-act="edit-bake-time" data-id="${b.id}">${icon('pencil')} ${L('改日期', 'Change date')}</button></div>
     ${ratingRow(b.rating, 'log-rate', b.id)}
   </div>
 
@@ -1290,6 +1393,16 @@ function withSession(fn) {
 
 const actions = {
   'roadmap'() { showRoadmap(); },
+  // 补记一炉
+  'bf-recipe'(el) { backfillDraft().recipeId = el.dataset.id; rerender(); },
+  'bf-rate'(el) { backfillDraft().rating = Number(el.dataset.v); rerender(); },
+  'bf-save'(el) { el.disabled = true; saveBackfill().finally(() => { el.disabled = false; }); },
+  async 'backfill-cancel'() {
+    const f = state.backfill;
+    if (f?.photoId) await db.del('photos', f.photoId); // 没存下来的照片别留着占地方
+    state.backfill = null;
+  },
+  'edit-bake-time'(el) { editBakeTime(el.dataset.id); },
   async 'catalog-take'(el) {
     const r = await getRecipe(el.dataset.id);
     if (!r) return;
@@ -1518,6 +1631,19 @@ const changeActions = {
     const file = el.files?.[0];
     if (file) await replaceLogPhoto(el.dataset.id, file);
   },
+  async 'bf-photo'(el) {
+    const file = el.files?.[0];
+    el.value = '';
+    if (!file) return;
+    const f = backfillDraft();
+    state.photoBusy = true; rerender();
+    try {
+      const id = await savePhoto(await compressImage(file));
+      if (f.photoId) await db.del('photos', f.photoId);
+      f.photoId = id;
+    } catch { toast(L('这张照片读不了，换一张试试', 'Couldn’t read that photo, try another')); }
+    state.photoBusy = false; rerender();
+  },
 
   'mode'(el) { const s = routeSession(); if (s) { finishDraft(s.id).mode = el.value; persistSessions(); } },
   async 'import-file'(el) {
@@ -1629,6 +1755,10 @@ document.addEventListener('input', (e) => {
     if (/\.amount$/.test(el.dataset.s) && v !== '') v = String(Number(v) / s.scale);
     applyField(s.recipe, el.dataset.s, v);
     persistSessions(400);
+  } else if (el.dataset.bf != null) {
+    const f = backfillDraft();
+    f[el.dataset.bf] = el.value;
+    if (el.dataset.bf === 'date') f.touched = true;
   } else if (el.dataset.f != null) { const s = routeSession(); if (s) { finishDraft(s.id)[el.dataset.f] = el.value; persistSessions(400); } }
   else if (el.dataset.actInput === 'filter') {
     state.filter = el.value;
@@ -1705,7 +1835,7 @@ async function boot() {
     // 新版本接管后，等手上没事的时候再刷新一次（不在拍照、烘焙、编辑这些页面上刷，免得打断）。第一次安装不刷
     const hadController = !!navigator.serviceWorker.controller;
     let pending = false;
-    const busy = () => /^#\/(bake|finish|edit|import)/.test(location.hash) || state.photoBusy || Date.now() - lastFilePick < 120000;
+    const busy = () => /^#\/(bake|finish|edit|import|backfill)/.test(location.hash) || state.photoBusy || Date.now() - lastFilePick < 120000;
     const tryReload = () => { if (pending && !busy()) { pending = false; location.reload(); } };
     navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) { pending = true; tryReload(); } });
     window.addEventListener('hashchange', tryReload);
