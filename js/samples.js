@@ -1,6 +1,31 @@
-// 第一次打开时放到配方架上的两份示例配方，让小店不至于空荡荡。
+// 第一次打开时放到配方架上的几份示例配方，让小店不至于空荡荡。
 
 export const SAMPLE_RECIPES = [
+  {
+    name: '红豆面包',
+    shape: 'anpan',
+    yield: '8 个',
+    ingredients: [
+      { name: '高筋面粉', amount: 250, unit: 'g' },
+      { name: '细砂糖', amount: 30, unit: 'g' },
+      { name: '盐', amount: 3, unit: 'g' },
+      { name: '即发干酵母', amount: 3, unit: 'g' },
+      { name: '全蛋液', amount: 25, unit: 'g' },
+      { name: '牛奶', amount: 140, unit: 'g' },
+      { name: '黄油', amount: 20, unit: 'g', note: '软化' },
+      { name: '红豆馅', amount: 320, unit: 'g', note: '每个 40g' },
+      { name: '黑芝麻', amount: null, unit: '少许' },
+    ],
+    steps: [
+      { text: '除黄油外的材料揉成团，再加黄油揉到扩展阶段', minutes: 15, kind: 'knead' },
+      { text: '一次发酵到 2 倍大', minutes: 50, kind: 'ferment' },
+      { text: '分成 8 份滚圆，盖保鲜膜松弛', minutes: 15, kind: 'rest' },
+      { text: '包入红豆馅收口，压扁，中间按一个小窝撒芝麻', minutes: null, kind: 'other' },
+      { text: '二次发酵', minutes: 40, kind: 'ferment' },
+      { text: '刷蛋液，180°C 烤', minutes: 13, kind: 'bake' },
+    ],
+    notes: '日式面包店的经典款。中间按的小窝要按到底，不然烤的时候会鼓起来。',
+  },
   {
     name: '乡村欧包',
     shape: 'loaf',

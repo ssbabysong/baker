@@ -4,7 +4,7 @@ import {
   exportAll, importAll, guessShape,
 } from './store.js';
 import { parseRecipeText, formatAmount, formatMinutes, guessStepKind } from './parser.js';
-import { shape, icon, storefront, ovenScene, emptyShelf, mascot, SHAPE_NAMES } from './sketch.js';
+import { shape, icon, storefront, ovenScene, emptyShelf, mascot, tabIcon, blob, SHAPE_NAMES } from './sketch.js';
 import {
   remainingMs, formatClock, createTimer, pauseTimer, resumeTimer, addMinutes,
   unlockAudio, playChime, startRinging, stopRinging, askNotifyPermission, notify, keepAwake,
@@ -147,10 +147,11 @@ async function rerender() {
 }
 
 function renderTabs(active) {
-  const tabs = [['shop', '#/', '店铺'], ['recipes', '#/recipes', '配方本'], ['logs', '#/logs', '日历']];
-  const ic = { shop: 'shop', recipes: 'book', logs: 'calendar' };
-  $tabs.innerHTML = tabs.map(([k, href, label]) =>
-    `<a href="${href}" class="${k === active ? 'on' : ''}">${icon(ic[k])}<span>${label}</span></a>`).join('');
+  const tabs = [['shop', '#/', '店铺', 'shop'], ['recipes', '#/recipes', '配方本', 'book'], ['logs', '#/logs', '日历', 'calendar']];
+  $tabs.innerHTML = tabs.map(([k, href, label, ic]) => {
+    const on = k === active;
+    return `<a href="${href}" class="${on ? 'on' : ''}">${on ? blob() : ''}${tabIcon(ic, on)}<span>${label}</span></a>`;
+  }).join('');
 }
 
 // =====================================================================
@@ -218,17 +219,17 @@ async function viewShop() {
     <div class="stat"><b>${thisMonth}</b><span>本月出炉</span></div>
   </div>
 
-  <h2>烤箱 <span class="hand u">fresh from the oven</span></h2>
+  <h2>烤箱</h2>
   ${ovenHtml}
 
-  <h2>配方架 <span class="hand u">so many breads</span> <a class="more" href="#/recipes">全部 ›</a></h2>
+  <h2>配方架 <a class="more" href="#/recipes">全部 ›</a></h2>
   <div class="shelf">
     ${recipes.map((r) => `<a class="item" href="#/r/${r.id}">${shape(r.shape)}<span>${esc(r.name)}</span><small>${bakeCount(r.id) ? `做过 ${bakeCount(r.id)} 次` : '还没做过'}</small></a>`).join('')}
     <a class="item add" href="#/import">${icon('plus')}<span class="muted">上新配方</span></a>
   </div>
   <div class="shelf-board"></div>
 
-  <h2>作品墙 <span class="hand u">little things</span> <a class="more" href="#/logs">日历 ›</a></h2>
+  <h2>作品墙 <a class="more" href="#/logs">日历 ›</a></h2>
   ${recent.length ? `<div class="wall">${recent.map((b, i) => polaroid(b, thumbs[i])).join('')}</div>`
     : `<div class="empty">${emptyShelf()}<div>还没有作品，第一炉在等你</div></div>`}
   `;
@@ -285,15 +286,15 @@ async function viewRecipe(id) {
 
   <div style="margin:18px 0 4px"><button class="btn primary big block" data-act="start-bake" data-id="${r.id}">${icon('oven')} 开烤！</button></div>
 
-  <h2>材料 <span class="hand u">ingredients</span></h2>
+  <h2>材料</h2>
   ${ingTable(r.ingredients)}
 
-  <h2>步骤 <span class="hand u">step by step</span></h2>
+  <h2>步骤</h2>
   <ol class="steps">${r.steps.map((s) => `<li>${esc(s.text)}${stepMeta(s)}</li>`).join('')}</ol>
 
-  ${r.notes ? `<h2>备注 <span class="hand u">notes</span></h2><div class="card fill notes">${esc(r.notes)}</div>` : ''}
+  ${r.notes ? `<h2>备注</h2><div class="card fill notes">${esc(r.notes)}</div>` : ''}
 
-  ${bakes.length ? `<h2>这款的作品 <span class="hand u">so good</span></h2><div class="wall">${bakes.slice(0, 6).map((b, i) => polaroid(b, thumbs[i])).join('')}</div>` : ''}
+  ${bakes.length ? `<h2>这款的作品</h2><div class="wall">${bakes.slice(0, 6).map((b, i) => polaroid(b, thumbs[i])).join('')}</div>` : ''}
 
   <div class="row" style="margin-top:32px"><button class="btn danger sm" data-act="delete-recipe" data-id="${r.id}">${icon('trash')} 删除配方</button>
     <span class="small muted grow" style="text-align:right">v${r.version} · 更新于 ${fmtDate(r.updatedAt)}</span></div>`;
@@ -523,10 +524,10 @@ function viewBake() {
 
   ${ed ? '' : bakeHero(s)}
 
-  <h2>称料 <span class="hand u">weigh it</span> <span class="row" style="margin-left:auto;gap:6px">${scaleBtns}</span></h2>
+  <h2>称料 <span class="row" style="margin-left:auto;gap:6px">${scaleBtns}</span></h2>
   ${ingHtml}
 
-  <h2>步骤 <span class="hand u">step by step</span> <button class="more btn sm ghost" data-act="quick-timer">${icon('plus')} 计时</button></h2>
+  <h2>步骤 <button class="more btn sm ghost" data-act="quick-timer">${icon('plus')} 计时</button></h2>
   ${s.timers.filter((t) => !t.stepId).map(timerBox).join('')}
   <ol class="steps bake-steps">${stepsHtml}</ol>
   ${ed ? `<button class="btn sm" data-act="bake-add-step">${icon('plus')} 加步骤</button>` : ''}
@@ -677,7 +678,7 @@ function viewFinish() {
   const f = state.finish;
   const changes = diffRecipe(s.original, s.recipe);
   return `
-  <div class="topbar"><a class="btn icon ghost" href="#/bake" aria-label="返回">${icon('back')}</a><h1>出炉啦 <span class="hand" style="font-size:22px">freshly baked</span></h1></div>
+  <div class="topbar"><a class="btn icon ghost" href="#/bake" aria-label="返回">${icon('back')}</a><h1>出炉啦</h1></div>
   <label class="photo-drop">
     ${f.photoUrl ? `<img src="${f.photoUrl}" alt="">` : `${icon('camera')}<span>拍一张 / 选一张照片</span>`}
     <input type="file" accept="image/*" capture="environment" hidden data-act-change="pick-photo">
@@ -692,7 +693,7 @@ function viewFinish() {
     <textarea class="input" data-f="notes" placeholder="组织怎么样？下次想调整什么？">${esc(f.notes)}</textarea></label>
 
   ${changes.length ? `
-  <h2>这次改了配方 <span class="hand u">tweaks</span></h2>
+  <h2>这次改了配方</h2>
   <ul class="diff">${changes.map((c) => `<li>${esc(c.t)}${c.old != null ? ` <span class="old">${esc(c.old)}</span>` : ''}</li>`).join('')}</ul>
   <div class="choice" style="margin-top:12px">
     <label><input type="radio" name="mode" value="update" ${f.mode === 'update' ? 'checked' : ''} data-act-change="mode"><span>更新原配方<small>以后就按这次的来</small></span></label>
@@ -835,12 +836,12 @@ async function viewLog(id) {
     <div class="wday">${WEEK_ZH[d.getDay()]}</div>
     ${shape(b.shape)}
     <div class="name">${esc(b.recipeName)}</div>
-    <div class="photo">${url ? `<img src="${url}" alt="">` : `<div class="ph-empty">${shape(b.shape)}</div>`}</div>
+    <div class="photo">${url ? `<img src="${url}" alt="">` : `<div class="ph-empty">${shape(b.shape)}</div>`}<span class="hanko">出炉</span></div>
     <div class="meta">${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} 出炉 · 用时 ${fmtDur(b.finishedAt - b.startedAt)}${b.scale !== 1 ? ` · ×${b.scale}` : ''}</div>
     <div class="rating" style="justify-content:center;margin-top:8px">${[1, 2, 3, 4, 5].map((n) => `<button class="${b.rating >= n ? 'on' : ''}" data-act="log-rate" data-id="${b.id}" data-v="${n}" aria-label="${n} 分">${icon('star')}</button>`).join('')}</div>
   </div>
 
-  <h2>笔记 <span class="hand u">a warm slice of bread</span></h2>
+  <h2>笔记</h2>
   <textarea class="input" data-l="${b.id}" placeholder="组织怎么样？下次想调整什么？">${esc(b.notes)}</textarea>
 
   ${b.changes?.length ? `<h2>这次的改动 <span class="badge">${modeText}</span></h2>
@@ -876,6 +877,10 @@ function viewSettings() {
     <div class="card alt"><div class="row"><div class="grow"><b>计时提醒通知</b><div class="small muted">${permText}</div></div>
       <button class="btn sm" data-act="notify-perm">开启</button><button class="btn sm" data-act="test-sound">${icon('bell')} 试听</button></div>
       <p class="small muted" style="margin:8px 0 0">计时时屏幕会保持常亮。把 app 添加到主屏幕后，切到后台也能收到提醒（iOS 需 16.4 以上）。</p></div>
+    <div class="card"><div class="row"><div class="grow"><b>字体</b><div class="small muted">${state.fontName ? `正在用：${esc(state.fontName)}` : '也字工厂花卷体（设备上装了就会用，没装时用站酷快乐体）'}</div></div>
+      <label class="btn sm">${icon('upload')} 上传字体<input type="file" accept=".ttf,.otf,.woff,.woff2,font/*" hidden data-act-change="font-file"></label>
+      ${state.fontName ? '<button class="btn sm ghost" data-act="font-reset">恢复默认</button>' : ''}</div>
+      <p class="small muted" style="margin:8px 0 0">字体文件只存在这台设备里，不会上传到别处。请使用你有授权的字体文件。</p></div>
     <div class="card"><div class="row"><div class="grow"><b>外观</b></div>
       ${[['auto', '跟随系统'], ['light', '白纸'], ['dark', '黑板']].map(([k, l]) => `<button class="chip ${theme === k ? 'on' : ''}" data-act="theme" data-v="${k}">${l}</button>`).join('')}</div></div>
     <div class="card alt"><b>备份</b><p class="small muted" style="margin:2px 0 10px">所有数据只存在这台设备的浏览器里。换手机前记得导出。</p>
@@ -1058,6 +1063,10 @@ const actions = {
   },
 
   // 设置
+  async 'font-reset'() {
+    await db.delKv('font');
+    location.reload();
+  },
   async 'notify-perm'() {
     const p = await askNotifyPermission();
     toast(p === 'granted' ? '通知已开启' : '没有拿到通知权限');
@@ -1083,6 +1092,17 @@ const actions = {
 };
 
 const changeActions = {
+  async 'font-file'(el) {
+    const file = el.files?.[0];
+    if (!file) return;
+    try {
+      await applyFont(file);
+      await db.setKv('font', { name: file.name.replace(/\.[^.]+$/, ''), blob: file });
+      state.fontName = file.name.replace(/\.[^.]+$/, '');
+      toast('字体换好啦');
+      rerender();
+    } catch { toast('这个字体文件读不了'); }
+  },
   async 'pick-photo'(el) {
     const file = el.files?.[0];
     if (!file) return;
@@ -1119,7 +1139,11 @@ const changeActions = {
     if (!file) return;
     try {
       await importAll(JSON.parse(await file.text()));
-      state.shop = await getShop();
+      const font = await db.getKv('font').catch(() => null);
+  if (font?.blob) {
+    try { await applyFont(font.blob); state.fontName = font.name; } catch { /* 坏文件就忽略 */ }
+  }
+  state.shop = await getShop();
       toast('备份已恢复');
       go('#/');
     } catch (e) { toast(e.message || '文件读不了'); }
@@ -1190,12 +1214,23 @@ document.addEventListener('visibilitychange', () => {
 // 启动
 // =====================================================================
 
+// 用户上传的字体：注册成 Huajuan，整站的标题和正文都会用上
+async function applyFont(blob) {
+  const face = new FontFace('Huajuan', await blob.arrayBuffer());
+  await face.load();
+  document.fonts.add(face);
+}
+
 async function boot() {
   try {
     const t = localStorage.getItem('baker-theme');
     if (t && t !== 'auto') document.documentElement.dataset.theme = t;
   } catch { /* 无痕模式 */ }
 
+  const font = await db.getKv('font').catch(() => null);
+  if (font?.blob) {
+    try { await applyFont(font.blob); state.fontName = font.name; } catch { /* 坏文件就忽略 */ }
+  }
   state.shop = await getShop();
   if (!(await db.getKv('shop'))) await saveShop(state.shop);
   if (!(await db.getKv('seeded'))) {

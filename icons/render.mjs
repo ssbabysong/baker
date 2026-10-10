@@ -8,7 +8,7 @@ const dir = dirname(fileURLToPath(import.meta.url));
 const svg = readFileSync(join(dir, 'icon.svg'), 'utf8');
 // maskable 图标需要安全区：把图案缩到 80%，背景铺满
 const maskable = svg
-  .replace('<rect width="512" height="512" rx="112" fill="#fbf7ef"/>', '<rect width="512" height="512" fill="#fbf7ef"/><g transform="translate(51.2 51.2) scale(0.8)">')
+  .replace('<rect width="512" height="512" rx="112" fill="#f7f2e8"/>', '<rect width="512" height="512" fill="#f7f2e8"/><g transform="translate(51.2 51.2) scale(0.8)">')
   .replace('</svg>', '</g></svg>');
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -20,7 +20,7 @@ for (const [name, size, src, bg] of [
   ['apple-touch-icon.png', 180, maskable, true],
 ]) {
   await page.setViewportSize({ width: size, height: size });
-  await page.setContent(`<style>html,body{margin:0;background:${bg ? '#fbf7ef' : 'transparent'}}svg{width:${size}px;height:${size}px;display:block}</style>${src}`);
+  await page.setContent(`<style>html,body{margin:0;background:${bg ? '#f7f2e8' : 'transparent'}}svg{width:${size}px;height:${size}px;display:block}</style>${src}`);
   await page.screenshot({ path: join(dir, name), omitBackground: !bg });
   console.log('wrote', name);
 }

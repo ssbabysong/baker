@@ -2,8 +2,8 @@
 // 线条：砖红色单线（currentColor），故意不完全闭合，再叠 #rough 滤镜做出手抖感。
 // 上色：蜡笔质感的色块（#crayon 滤镜），并且和线条错开一点点——像手工印刷时套色没对准。
 
-const wrap = (body, vb = '0 0 64 64', cls = '') =>
-  `<svg class="sk ${cls}" viewBox="${vb}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+const wrap = (body, vb = '0 0 64 64', cls = '', sw = 2.2) =>
+  `<svg class="sk ${cls}" viewBox="${vb}" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 
 // 蜡笔色块：[颜色, 路径]，整体往右下错开
 const crayon = (fills, dx = 1.6, dy = 1.8) =>
@@ -53,6 +53,17 @@ const SHAPES = {
       <path d="M26 38 l1 15"/><path d="M32 38 v15"/><path d="M38 38 l-1 15"/>
       <path d="M14 37 C9 29 19 21 25 23 C27 14 40 13 42 22 C49 20 56 29 50 37 Z"/>`,
   },
+  melonpan: {
+    fill: [['crust', 'M9 44 C7 28 19 19 32 19 C45 19 57 28 55 44 Q32 47.5 9 44 Z']],
+    line: `<path d="M9 44 C7 28 19 19 32 19 C45 19 57 28 55 44"/><path d="M8 44.5 Q32 47.5 56 44"/>
+      <path d="M14 30 L30 44" stroke-width="1.5"/><path d="M22 22 L44 44" stroke-width="1.5"/><path d="M34 20 L52 36" stroke-width="1.5"/>
+      <path d="M50 30 L34 44" stroke-width="1.5"/><path d="M42 22 L20 44" stroke-width="1.5"/><path d="M30 20 L12 36" stroke-width="1.5"/>`,
+  },
+  anpan: {
+    fill: [['crust', 'M9 42 C7 27 19 19 32 19 C45 19 57 27 55 42 C51 48 13 48 9 42 Z']],
+    line: `<path d="M9 42 C7 27 19 19 32 19 C45 19 57 27 55 42 C51 48 13 48 9 42"/>
+      <path d="M32 25 a3 3 0 1 0 .1 0"/><path d="M26 30 l1 .5"/><path d="M37 29 l1 -.5"/><path d="M31 33 l.5 1"/>`,
+  },
   bagel: {
     fill: [['crust', 'M32 13 C46 13 56 21 56 33 C56 45 45 52 32 52 C18 52 8 45 8 33 C8 22 18 13 32 13 Z M32 27 C27 27 24 29.5 24 33 C24 36 27 38 32 38 C36.5 38 40 36.5 40 33 C40 29.5 37 27 32 27 Z']],
     line: `<path d="M32 13 C46 13 56 21 56 33 C56 45 45 52 32 52 C18 52 8 45 8 33 C8 22 18 13.5 30 13"/>
@@ -63,7 +74,7 @@ const SHAPES = {
 
 export const SHAPE_NAMES = {
   loaf: '欧包', toast: '吐司', croissant: '可颂', baguette: '法棍',
-  cake: '蛋糕', cookie: '饼干', muffin: '玛芬', bagel: '贝果',
+  cake: '蛋糕', cookie: '饼干', muffin: '玛芬', bagel: '贝果', melonpan: '蜜瓜包', anpan: '红豆包',
 };
 
 export const shape = (name, cls = '') => {
@@ -124,6 +135,8 @@ function mascotBody(mood = 'wave') {
   return `
     ${crayon([['crust', 'M6 46 V22 C-1 20 0 6 11 5 Q20 3 29 5 C40 6 41 20 34 22 V46 Z'], ['soft', 'M11 22 C8 19 9 11 15 11 Q20 10 25 11 C31 11 32 19 29 22 V40 H11 Z']], 1.2, 1.4)}
     <path d="M6 46 V22 C-1 20 0 6 11 5 Q20 3 29 5 C40 6 41 20 34 22 V46 Z"/>
+    ${crayon([['ai', 'M2 11 C8 3 32 3 38 11 L37 15 C30 9 10 9 3 15 Z']], 0.6, 0.8)}
+    <path d="M2 11 C8 3 32 3 38 11"/><path d="M3 15 C10 9 30 9 37 15"/><path d="M38 12 l5 -4 M38 12 l6 1"/>
     <path d="M14 23 v1.5" stroke-width="3"/><path d="M26 23 v1.5" stroke-width="3"/>
     ${mouth}
     <path d="M9 28 h3" class="blush" stroke-width="2.6"/><path d="M28 28 h3" class="blush" stroke-width="2.6"/>
@@ -133,35 +146,80 @@ function mascotBody(mood = 'wave') {
 
 export const mascot = (mood = 'wave', cls = '') => wrap(mascotBody(mood), '-8 0 54 56', `mascot ${cls}`);
 
-// ---------- 门店 ----------
+// ---------- 门店：日式街角面包店 ----------
+// 瓦檐 + 木招牌 + 藏青暖帘 + 格子木门 + 木框橱窗。招牌上的店名由 HTML 叠加（见 css .storefront .sign）
+
+// 一排瓦当：檐口下沿的小半圆
+const tiles = (x0, x1, y, w) => {
+  let d = `M${x0} ${y}`;
+  for (let x = x0; x < x1 - 0.1; x += w) d += ` q${w / 2} ${w * 0.55} ${w} 0`;
+  return d;
+};
 
 export function storefront(cls = '') {
+  const eaveRibs = Array.from({ length: 11 }, (_, i) => `<path d="M${42 + i * 15.2} 72 L${36 + i * 16} 86" stroke-width=".8" opacity=".55"/>`).join('');
+  const roofRibs = Array.from({ length: 12 }, (_, i) => `<path d="M${40 + i * 15} 23 V31" stroke-width=".8" opacity=".55"/>`).join('');
+  const lattice = Array.from({ length: 9 }, (_, i) => `<path d="M${48 + i * 8} 100 V110" stroke-width="1.1"/>`).join('');
   return wrap(`
     ${crayon([
-      ['crust', 'M18 52 L26 50 H174 L182 52 q-8 9 -16.4 0 q-8 9 -16.4 0 q-8 9 -16.4 0 q-8 9 -16.4 0 q-8 9 -16.4 0 q-8 9 -16.4 0 q-8 9 -16.4 0 q-8 9 -16.4 0 q-8 9 -16.4 0 q-8 9 -16.4 0 Z'],
-      ['sky', 'M112 128 V74 Q130 66 148 74 V128 Z'],
-      ['skysoft', 'M40 74 H96 V112 H40 Z'],
-      ['crust', 'M50 96 C48 87 54 82 60 82 C66 82 71 87 69 96 Z M74 96 Q76 86 84 85 Q91 86 90 96 Z'],
-    ], 2, 2.4)}
-    <path d="M150 22 V8 H164 V30"/>
-    <path d="M154 4 q-4 -4 2 -7 q6 -3 2 -8" stroke-width="1.6"/>
-    <path d="M28 52 V128"/><path d="M172 52 V128"/>
-    <path d="M10 129 Q120 131.5 236 128.5"/>
-    <path d="M20 30 L100 18 L180 30"/>
-    <path d="M26 33 H174 V50 H26 Z"/>
-    <path d="M18 52 L26 50"/><path d="M182 52 L174 50"/>
-    <path d="M18 52 q8 9 16.4 0 q8 9 16.4 0 q8 9 16.4 0 q8 9 16.4 0 q8 9 16.4 0 q8 9 16.4 0 q8 9 16.4 0 q8 9 16.4 0 q8 9 16.4 0 q8 9 16.4 0"/>
-    <path d="M34.4 52 l-3 9"/><path d="M67.2 52 l-1 9"/><path d="M100 52 v9"/><path d="M132.8 52 l1 9"/><path d="M165.6 52 l3 9"/>
-    <path d="M40 74 H96 V112 H40 Z"/><path d="M40 96 H96"/>
-    <path d="M50 96 C48 87 54 82 60 82 C66 82 71 87 69 96"/>
-    <path d="M74 96 Q76 86 84 85 Q91 86 90 96"/><path d="M78 88 q2 3 0 7" stroke-width="1.6"/>
-    <path d="M112 128 V74 Q130 66 148 74 V128"/>
-    <path d="M140 102 h1"/>
-    ${crayon([['leaf', 'M13 110 q-7 -2 -8 -8 q7 0 8 8 Z M13 105 q6 -3 8 -9 q-7 0 -8 9 Z'], ['crust', 'M6 116 H20 L18 128 H8 Z']], 1.2, 1.4)}
-    <path d="M6 116 H20 L18 128 H8 Z" stroke-width="1.8"/><path d="M13 116 V101" stroke-width="1.8"/>
-    <path d="M13 110 q-7 -2 -8 -8 q7 0 8 8" stroke-width="1.6"/><path d="M13 105 q6 -3 8 -9 q-7 0 -8 9" stroke-width="1.6"/>
-    <g transform="translate(200 82) scale(0.86)">${mascotBody('wave')}</g>
-  `, '0 -14 240 150', cls);
+      ['tile', 'M22 32 L30 22 H210 L218 32 Z'],
+      ['wood', 'M60 38 H180 V60 H60 Z'],
+      ['tile', 'M24 86 L34 72 H206 L216 86 Z'],
+      ['wood', 'M40 96 H120 V156 H40 Z M40 110 H120 M36 156 H124 V162 H36 Z'],
+      ['paper', 'M45 111 H115 V151 H45 Z'],
+      ['crust', 'M50 132 C49 124 54 120 60 120 C66 120 71 124 70 132 Z M76 132 C75 125 80 122 84 122 C88 122 93 125 92 132 Z M97 132 V122 C95 118 99 115 103 115 H107 C111 115 115 118 113 122 V132 Z M52 151 C51 145 55 142 59 142 C63 142 67 145 66 151 Z'],
+      ['wood', 'M136 92 H142 V178 H136 Z M194 92 H200 V178 H194 Z'],
+      ['ai', 'M142 97 H160 V128 H142 Z M162 97 H180 V128 H162 Z M182 97 H194 V128 H182 Z'],
+      ['wood', 'M202 100 H214 V138 H202 Z'],
+      ['wood', 'M211 168 L215 149 H227 L231 168 Z'],
+      ['leaf', 'M128 166 C120 164 120 152 128 152 C126 146 136 144 137 152 C144 151 144 164 136 166 Z'],
+      ['crust', 'M123 167 H139 L137 178 H125 Z'],
+    ])}
+    <path d="M4 178 Q120 180 236 177"/>
+    <!-- 屋顶小瓦 -->
+    <path d="M22 32 L30 22 H210 L218 32 Z"/>${roofRibs}
+    <path d="M30 32 V72"/><path d="M210 32 V72"/>
+    <!-- 木招牌 -->
+    <path d="M60 38 H180 V60 H60 Z"/><path d="M64 42 H176" stroke-width="0.8" opacity=".5"/>
+    <path d="M78 38 L82 32"/><path d="M162 38 L158 32"/>
+    <!-- 瓦檐 -->
+    <path d="M24 86 L34 72 H206 L216 86"/><path d="${tiles(24, 216, 86, 8)}"/>${eaveRibs}
+    <path d="M36 92 V178"/><path d="M204 92 V178"/>
+    <!-- 木框橱窗：上面一排格子，里面两层面包 -->
+    <path d="M40 96 H120 V156 H40 Z"/><path d="M45 111 H115 V151 H45 Z"/>${lattice}
+    <path d="M45 132 H115"/>
+    <path d="M50 132 C49 124 54 120 60 120 C66 120 71 124 70 132"/><path d="M54 124 L64 131 M58 121 L68 129 M66 121 L54 130 M70 126 L60 131" stroke-width="0.9"/>
+    <path d="M76 132 C75 125 80 122 84 122 C88 122 93 125 92 132"/><path d="M84 125.5 h.5" stroke-width="2.4"/>
+    <path d="M97 132 V122 C95 118 99 115 103 115 H107 C111 115 115 118 113 122 V132"/>
+    <path d="M52 151 C51 145 55 142 59 142 C63 142 67 145 66 151"/>
+    <path d="M74 151 L76 144 H96 L98 151"/><path d="M80 144 l4 -9"/><path d="M86 144 l1 -10"/><path d="M92 144 l-2 -8"/>
+    <path d="M102 151 h10 M104 147 h6" stroke-width="1.1"/>
+    <path d="M36 156 H124 V162 H36 Z"/>
+    <!-- 门口：门柱、暖帘、格子拉门 -->
+    <path d="M136 92 H142 V178 H136 Z"/><path d="M194 92 H200 V178 H194 Z"/>
+    <path d="M132 95 H204" stroke-width="2.2"/>
+    <path d="M142 97 H160 V128 H142 Z"/><path d="M162 97 H180 V128 H162 Z"/><path d="M182 97 H194 V128 H182 Z"/>
+    <path d="M171 106 C175 106 177 108.5 177 112 C177 115.5 175 118 171 118 C167 118 165 115.5 165 112 C165 108.5 167 106 170 106" class="ink-paper"/>
+    <path d="M167 114.5 C167 111 169 109.5 171 109.5 C173 109.5 175 111 175 114.5 Z" class="ink-paper" stroke-width="1.2"/>
+    <path d="M142 130 H194"/><path d="M168 130 V178"/>
+    <path d="M142 146 H194 M142 162 H194 M155 130 V178 M181 130 V178" stroke-width="0.9"/>
+    <path d="M164 152 v6" stroke-width="2"/><path d="M172 152 v6" stroke-width="2"/>
+    <path d="M130 178 V175 H206 V178"/>
+    <!-- 竖写吊牌「面包」 -->
+    <path d="M206 96 V100 M210 96 V100" stroke-width="1"/>
+    <path d="M202 100 H214 V138 H202 Z"/>
+    <text x="208" y="115" font-size="9.5" text-anchor="middle" stroke="none" fill="currentColor" class="sk-text">面</text>
+    <text x="208" y="129" font-size="9.5" text-anchor="middle" stroke="none" fill="currentColor" class="sk-text">包</text>
+    <!-- 小黑板 -->
+    <path d="M208 178 L215 146 H227 L234 178"/><path d="M211 168 L215 149 H227 L231 168 Z" stroke-width="1.2"/>
+    <path d="M217 155 h7 M216 160 h10" stroke-width="1"/>
+    <!-- 门口一盆小树 -->
+    <path d="M128 166 C120 164 120 152 128 152 C126 146 136 144 137 152 C144 151 144 164 136 166" stroke-width="1.3"/>
+    <path d="M131 167 V160 M131 162 l-3 -3" stroke-width="1.2"/>
+    <path d="M123 167 H139 L137 178 H125 Z"/>
+    <!-- 店长 -->
+    <g transform="translate(8 145) scale(0.6)" stroke-width="2.5">${mascotBody('wave')}</g>
+  `, '0 0 240 190', `store ${cls}`, 1.5);
 }
 
 // ---------- 烤箱：显示屏位置留给 HTML 叠加倒计时 ----------
@@ -191,4 +249,27 @@ export function emptyShelf(cls = '') {
     <path d="M110 90 C108 80 116 74 124 74 C132 74 140 80 138 90"/>
     <path d="M60 30 q6 -4 12 0" stroke-dasharray="2 3"/>
   `, '0 20 160 84', cls);
+}
+
+// ---------- 菜单栏图标（可上色版本） ----------
+export const TAB_ICONS = {
+  shop: {
+    fill: [['tile', 'M6 22 L12 12 H52 L58 22 Z'], ['ai', 'M17 26 H31 V40 H17 Z M33 26 H47 V40 H33 Z']],
+    line: '<path d="M6 22 L12 12 H52 L58 22 Z"/><path d="M12 22 V54"/><path d="M52 22 V54"/><path d="M14 26 H50"/><path d="M17 26 H31 V40 H17 Z"/><path d="M33 26 H47 V40 H33 Z"/><path d="M8 54 H56"/><path d="M32 40 V54"/>',
+  },
+  book: {
+    fill: [['wood', 'M14 9 H50 V55 H14 Z'], ['paper', 'M36 15 H44 V33 H36 Z']],
+    line: '<path d="M14 9 H50 V55 H14 Z"/><path d="M22 9 V55"/><path d="M14 17 H22 M14 27 H22 M14 37 H22 M14 47 H22" stroke-width="1.6"/><path d="M36 15 H44 V33 H36 Z" stroke-width="1.8"/>',
+  },
+  calendar: {
+    fill: [['soft', 'M10 16 H54 V54 H10 Z'], ['crust', 'M10 16 H54 V26 H10 Z']],
+    line: '<path d="M10 16 H54 V54 H10 Z"/><path d="M10 26 H54"/><path d="M22 10 V20"/><path d="M42 10 V20"/><path d="M26 44 C25 38 29 35 32 35 C35 35 39 38 38 44 Z"/>',
+  },
+};
+export function tabIcon(name, active) {
+  const t = TAB_ICONS[name];
+  return wrap((active ? crayon(t.fill, 1.2, 1.4) : '') + t.line, '0 0 64 64', 'ti', 2.6);
+}
+export function blob() {
+  return wrap(crayon([['soft', 'M8 34 C4 18 22 8 34 10 C50 12 60 22 56 36 C52 50 34 56 22 52 C12 49 9 42 8 34 Z']], 0, 0), '0 0 64 64', 'blob');
 }
