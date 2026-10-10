@@ -1490,6 +1490,20 @@ document.addEventListener('visibilitychange', () => {
 // 启动
 // =====================================================================
 
+// 把还没上过架的内置配方放上去：按 key 记着哪些放过，用户删掉的不会再回来；同名的已经有了就不重复放
+async function seedSamples() {
+  let done = await db.getKv('seededSamples');
+  if (!Array.isArray(done)) done = (await db.getKv('seeded')) ? ['anpan', 'country', 'milk'] : [];
+  const todo = (isEn() ? SAMPLE_RECIPES_EN : SAMPLE_RECIPES).filter((r) => !done.includes(r.key));
+  if (!todo.length) return;
+  const names = new Set((await db.all('recipes')).map((r) => r.name));
+  for (const r of todo) {
+    if (!names.has(r.name)) await saveRecipe(r);
+    done.push(r.key);
+  }
+  await db.setKv('seededSamples', done);
+}
+
 async function boot() {
   try {
     const t = localStorage.getItem('baker-theme');
@@ -1500,10 +1514,7 @@ async function boot() {
 
   state.shop = await getShop();
   if (!(await db.getKv('shop'))) await saveShop(state.shop);
-  if (!(await db.getKv('seeded'))) {
-    for (const r of isEn() ? SAMPLE_RECIPES_EN : SAMPLE_RECIPES) await saveRecipe(r);
-    await db.setKv('seeded', true);
-  }
+  await seedSamples();
   state.sessions = await getSessions();
   for (const s of state.sessions) s.editing = false;
 

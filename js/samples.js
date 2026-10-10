@@ -1,7 +1,9 @@
-// 第一次打开时放到配方架上的几份示例配方，让小店不至于空荡荡。
+// 内置配方：第一次打开时放到配方架上，让小店不至于空荡荡。
+// 每份有一个固定的 key；以后新加的内置配方，老用户下次打开时也会补上架（删掉过的不会再出现）。
 
 export const SAMPLE_RECIPES = [
   {
+    key: 'anpan',
     name: '红豆面包',
     shape: 'anpan',
     yield: '8 个',
@@ -27,6 +29,7 @@ export const SAMPLE_RECIPES = [
     notes: '日式面包店的经典款。中间按的小窝要按到底，不然烤的时候会鼓起来。',
   },
   {
+    key: 'country',
     name: '乡村欧包',
     shape: 'loaf',
     yield: '1 个 · 约 800g',
@@ -51,6 +54,7 @@ export const SAMPLE_RECIPES = [
     notes: '面团状态比时间更重要：一次发酵到体积约 1.5 倍、表面有气泡就可以了。',
   },
   {
+    key: 'milk',
     name: '牛奶吐司',
     shape: 'toast',
     yield: '450g 吐司模 1 个',
@@ -77,6 +81,7 @@ export const SAMPLE_RECIPES = [
 // 英文界面第一次打开时放的示例
 export const SAMPLE_RECIPES_EN = [
   {
+    key: 'anpan',
     name: 'Anpan (Red Bean Buns)',
     shape: 'anpan',
     yield: '8 buns',
@@ -102,6 +107,7 @@ export const SAMPLE_RECIPES_EN = [
     notes: 'A Japanese bakery classic. Press the dimple all the way down or it puffs up in the oven.',
   },
   {
+    key: 'country',
     name: 'Country Loaf',
     shape: 'loaf',
     yield: '1 loaf · about 800g',
@@ -126,6 +132,7 @@ export const SAMPLE_RECIPES_EN = [
     notes: 'Watch the dough, not the clock: bulk is done at about 1.5x with bubbles on top.',
   },
   {
+    key: 'milk',
     name: 'Milk Bread',
     shape: 'toast',
     yield: '1 loaf pan (450g)',
