@@ -887,6 +887,14 @@ export function stageScene(kind, running = false, cls = '', progress = 0) {
   return makeScene(cls, true);
 }
 
+// 打分用的小面包：点亮的是烤得金黄、带割纹的小面包；没点亮的是一团还没烤的生面团（浅色、虚线）
+export function rateBun(on, cls = '') {
+  const dome = 'M5 27 C4 16 12 9 20 9 C28 9 36 16 35 27 Q20 30 5 27 Z';
+  return on
+    ? wrap(`${crayon([['crust', dome]], 1, 1.2)}<path d="${dome}"/><path d="M14 15 q3 3 2 7 M21 13 q3 3 2 7 M28 15 q3 3 2 7" stroke-width="1.6"/>`, '0 0 40 32', `rate-bun on ${cls}`)
+    : wrap(`${crayon([['soft', 'M8 27 C7 19 13 13 20 13 C27 13 33 19 32 27 Q20 29.5 8 27 Z']], 0.8, 1)}<path d="M8 27 C7 19 13 13 20 13 C27 13 33 19 32 27 Q20 29.5 8 27 Z" stroke-dasharray="3 3" opacity=".55"/>`, '0 0 40 32', `rate-bun ${cls}`);
+}
+
 // 空状态：空空的木架子
 export function emptyShelf(cls = '') {
   return wrap(`

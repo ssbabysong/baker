@@ -4,7 +4,7 @@ import {
   exportAll, importAll, guessShape, setPrice, randomPrice, getPrice,
 } from './store.js';
 import { parseRecipeText, formatAmount, formatMinutes, guessStepKind } from './parser.js';
-import { shape, icon, storefront, storefrontSign, ovenScene, stageScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES, SHAPE_NAMES_EN } from './sketch.js';
+import { rateBun, shape, icon, storefront, storefrontSign, ovenScene, stageScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES, SHAPE_NAMES_EN } from './sketch.js';
 import {
   remainingMs, formatClock, createTimer, pauseTimer, resumeTimer, addMinutes,
   unlockAudio, playChime, startRinging, stopRinging, askNotifyPermission, notify, keepAwake,
@@ -932,9 +932,7 @@ async function viewFinish(sid) {
   })()}
 
   <h2>${esc(s.recipe.name)} <span class="small muted mono" style="font-weight:400">${L('用时', 'took')} ${fmtDur(Date.now() - s.startedAt)}</span></h2>
-  <div class="rating" role="radiogroup" aria-label="${L('打分', 'Rating')}">
-    ${[1, 2, 3, 4, 5].map((n) => `<button class="${f.rating >= n ? 'on' : ''}" data-act="rate" data-v="${n}" aria-label="${n}">${icon('star')}</button>`).join('')}
-  </div>
+  ${ratingRow(f.rating, 'rate')}
 
   <label class="f" style="margin-top:16px"><span>${L('这一炉的笔记', 'Notes on this batch')}</span>
     <textarea class="input" data-f="notes" placeholder="${L('组织怎么样？下次想调整什么？', 'How was the crumb? Anything to change next time?')}">${esc(f.notes)}</textarea></label>
@@ -949,6 +947,15 @@ async function viewFinish(sid) {
   </div>` : ''}
 
   <button class="btn primary block" style="margin-top:24px" data-act="save-bake">${icon('check')} ${L('放上作品墙', 'Pin it to the wall')}</button>`;
+}
+
+// 打分：一排五个小面包，点亮几个就是几分；下面一句话说说这一炉怎么样
+const RATE_WORDS = () => L(['差点意思', '还行', '不错', '很好吃', '完美出炉'], ['Meh', 'Okay', 'Good', 'Delicious', 'Perfect bake']);
+function ratingRow(value, act, id = '') {
+  const v = value || 0;
+  return `<div class="rating-wrap"><div class="rating" role="radiogroup" aria-label="${L('打分', 'Rating')}">
+    ${[1, 2, 3, 4, 5].map((n) => `<button class="${v >= n ? 'on' : ''}" data-act="${act}" ${id ? `data-id="${id}"` : ''} data-v="${n}" role="radio" aria-checked="${v === n}" aria-label="${n} · ${RATE_WORDS()[n - 1]}">${rateBun(v >= n)}</button>`).join('')}
+  </div><div class="rating-word">${v ? RATE_WORDS()[v - 1] : L('烤得怎么样？点一下面包打分', 'How did it turn out? Tap a bun')}</div></div>`;
 }
 
 async function saveFinish() {
@@ -1047,7 +1054,7 @@ async function viewLogs(ym) {
   ${bakes.length ? `<div class="diary-list" style="margin-top:30px">${bakes.map((b, i) => `<a class="card ${i % 2 ? 'alt' : ''} diary-row" href="#/log/${b.id}">
       <span class="ph">${urls[i] ? `<img src="${urls[i]}" alt="" loading="lazy">` : shape(b.shape)}</span>
       <span class="t"><span class="date">${ymd(b.finishedAt)} · ${weekday(new Date(b.finishedAt).getDay())}</span><b>${esc(b.recipeName)}</b>
-      <span class="small muted">${'★'.repeat(b.rating || 0)}${b.notes ? ` ${esc(b.notes.slice(0, 22))}${b.notes.length > 22 ? '…' : ''}` : ''}</span></span></a>`).join('')}</div>`
+      <span class="small muted">${b.rating ? `<span class="mini-rate">${rateBun(true).repeat(b.rating)}</span>` : ''}${b.notes ? ` ${esc(b.notes.slice(0, 22))}${b.notes.length > 22 ? '…' : ''}` : ''}</span></span></a>`).join('')}</div>`
     : `<div class="empty" style="margin-top:20px">${mascot('wait')}<p>${L('这个月还没有开炉', 'No bakes this month yet')}</p></div>`}
 
   ${diaryFoot()}`;
@@ -1096,7 +1103,7 @@ async function viewLog(id) {
     <div class="name">${esc(b.recipeName)}</div>
     <div class="photo">${url ? `<img src="${url}" alt="">` : `<div class="ph-empty">${shape(b.shape)}</div>`}<span class="hanko">${L('出炉', 'Baked')}</span></div>
     <div class="meta">${L(`${fmtTime(b.finishedAt)} 出炉 · 用时 ${fmtDur(b.finishedAt - b.startedAt)}`, `Out at ${fmtTime(b.finishedAt)} · took ${fmtDur(b.finishedAt - b.startedAt)}`)}${b.scale !== 1 ? ` · ×${b.scale}` : ''}</div>
-    <div class="rating" style="justify-content:center;margin-top:8px">${[1, 2, 3, 4, 5].map((n) => `<button class="${b.rating >= n ? 'on' : ''}" data-act="log-rate" data-id="${b.id}" data-v="${n}" aria-label="${n}">${icon('star')}</button>`).join('')}</div>
+    ${ratingRow(b.rating, 'log-rate', b.id)}
   </div>
 
   <h2>${L('笔记', 'Notes')}</h2>
