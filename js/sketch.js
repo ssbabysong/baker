@@ -83,6 +83,10 @@ export const SHAPE_NAMES = {
   loaf: '欧包', toast: '吐司', croissant: '可颂', baguette: '法棍',
   cake: '蛋糕', cookie: '饼干', muffin: '玛芬', bagel: '贝果', pretzel: '碱水', melonpan: '蜜瓜包', anpan: '红豆包',
 };
+export const SHAPE_NAMES_EN = {
+  loaf: 'Loaf', toast: 'Shokupan', croissant: 'Croissant', baguette: 'Baguette',
+  cake: 'Cake', cookie: 'Cookie', muffin: 'Muffin', bagel: 'Bagel', pretzel: 'Pretzel', melonpan: 'Melon pan', anpan: 'Anpan',
+};
 
 export const shape = (name, cls = '') => {
   const s = SHAPES[name] || SHAPES.loaf;

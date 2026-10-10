@@ -1,3 +1,5 @@
+import { getLang } from './i18n.js';
+
 // 把一段随手粘贴的食谱文字解析成结构化配方。
 // 兼容中英文：「高筋面粉 250g」「250 g bread flour」「一次发酵 1.5小时」「Bake 25 min」等。
 
@@ -132,7 +134,7 @@ export function parseRecipeText(input) {
     }
   }
   recipe.notes = notes.join('\n');
-  if (!recipe.name) recipe.name = '未命名配方';
+  if (!recipe.name) recipe.name = getLang() === 'en' ? 'Untitled recipe' : '未命名配方';
   return recipe;
 }
 
@@ -150,9 +152,10 @@ export function formatMinutes(min) {
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
+  const en = getLang() === 'en';
   const parts = [];
-  if (h) parts.push(`${h}小时`);
-  if (m) parts.push(`${m}分钟`);
-  if (s && !h) parts.push(`${s}秒`);
-  return parts.join('') || '0分钟';
+  if (h) parts.push(en ? `${h} h` : `${h}小时`);
+  if (m) parts.push(en ? `${m} min` : `${m}分钟`);
+  if (s && !h) parts.push(en ? `${s} s` : `${s}秒`);
+  return parts.join(en ? ' ' : '') || (en ? '0 min' : '0分钟');
 }

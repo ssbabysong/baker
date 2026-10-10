@@ -73,3 +73,78 @@ export const SAMPLE_RECIPES = [
     notes: '',
   },
 ];
+
+// 英文界面第一次打开时放的示例
+export const SAMPLE_RECIPES_EN = [
+  {
+    name: 'Anpan (Red Bean Buns)',
+    shape: 'anpan',
+    yield: '8 buns',
+    ingredients: [
+      { name: 'Bread flour', amount: 250, unit: 'g' },
+      { name: 'Sugar', amount: 30, unit: 'g' },
+      { name: 'Salt', amount: 3, unit: 'g' },
+      { name: 'Instant yeast', amount: 3, unit: 'g' },
+      { name: 'Beaten egg', amount: 25, unit: 'g' },
+      { name: 'Milk', amount: 140, unit: 'g' },
+      { name: 'Butter', amount: 20, unit: 'g', note: 'softened' },
+      { name: 'Red bean paste', amount: 320, unit: 'g', note: '40g each' },
+      { name: 'Black sesame', amount: null, unit: 'a pinch' },
+    ],
+    steps: [
+      { text: 'Knead everything except butter, then add butter and knead until smooth', minutes: 15, kind: 'knead' },
+      { text: 'First proof until doubled', minutes: 50, kind: 'ferment' },
+      { text: 'Divide into 8, round and rest', minutes: 15, kind: 'rest' },
+      { text: 'Fill with bean paste, flatten, press a dimple and add sesame', minutes: null, kind: 'other' },
+      { text: 'Second proof', minutes: 40, kind: 'ferment' },
+      { text: 'Egg wash and bake at 180°C', minutes: 13, kind: 'bake' },
+    ],
+    notes: 'A Japanese bakery classic. Press the dimple all the way down or it puffs up in the oven.',
+  },
+  {
+    name: 'Country Loaf',
+    shape: 'loaf',
+    yield: '1 loaf · about 800g',
+    ingredients: [
+      { name: 'Bread flour', amount: 400, unit: 'g' },
+      { name: 'Whole wheat flour', amount: 100, unit: 'g' },
+      { name: 'Water', amount: 360, unit: 'g', note: 'about 30°C' },
+      { name: 'Salt', amount: 10, unit: 'g' },
+      { name: 'Instant yeast', amount: 3, unit: 'g' },
+    ],
+    steps: [
+      { text: 'Mix flour and water, rest (autolyse)', minutes: 30, kind: 'rest' },
+      { text: 'Add salt and yeast, knead until smooth', minutes: 10, kind: 'knead' },
+      { text: 'Bulk ferment, fold every 30 min', minutes: 120, kind: 'ferment' },
+      { text: 'Pre-shape and rest', minutes: 20, kind: 'rest' },
+      { text: 'Shape into a banneton, final proof', minutes: 60, kind: 'ferment' },
+      { text: 'Preheat oven and Dutch oven to 250°C', minutes: 45, kind: 'bake' },
+      { text: 'Score and bake with the lid on', minutes: 20, kind: 'bake' },
+      { text: 'Lid off, bake at 230°C until deep brown', minutes: 20, kind: 'bake' },
+      { text: 'Cool before slicing', minutes: 60, kind: 'rest' },
+    ],
+    notes: 'Watch the dough, not the clock: bulk is done at about 1.5x with bubbles on top.',
+  },
+  {
+    name: 'Milk Bread',
+    shape: 'toast',
+    yield: '1 loaf pan (450g)',
+    ingredients: [
+      { name: 'Bread flour', amount: 300, unit: 'g' },
+      { name: 'Milk', amount: 200, unit: 'g' },
+      { name: 'Sugar', amount: 30, unit: 'g' },
+      { name: 'Salt', amount: 4, unit: 'g' },
+      { name: 'Instant yeast', amount: 4, unit: 'g' },
+      { name: 'Butter', amount: 25, unit: 'g', note: 'softened' },
+    ],
+    steps: [
+      { text: 'Knead everything except butter into a dough', minutes: 8, kind: 'knead' },
+      { text: 'Add butter, knead to windowpane', minutes: 12, kind: 'knead' },
+      { text: 'First proof until doubled', minutes: 60, kind: 'ferment' },
+      { text: 'Divide into 3, round and rest', minutes: 15, kind: 'rest' },
+      { text: 'Roll up into the pan, proof until 80% full', minutes: 50, kind: 'ferment' },
+      { text: 'Bake at 180°C', minutes: 35, kind: 'bake' },
+    ],
+    notes: '',
+  },
+];

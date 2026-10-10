@@ -1,15 +1,16 @@
 import {
   db, uid, listRecipes, getRecipe, saveRecipe, deleteRecipe, listBakes, getBake, saveBake, deleteBake,
-  savePhoto, photoUrl, compressImage, getShop, saveShop, getSession, saveSession, clearSession,
-  exportAll, importAll, guessShape, setPrice, randomPrice,
+  savePhoto, photoUrl, compressImage, getShop, saveShop, getSessions, saveSessions,
+  exportAll, importAll, guessShape, setPrice, randomPrice, getPrice,
 } from './store.js';
 import { parseRecipeText, formatAmount, formatMinutes, guessStepKind } from './parser.js';
-import { shape, icon, storefront, storefrontSign, ovenScene, stageScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES } from './sketch.js';
+import { shape, icon, storefront, storefrontSign, ovenScene, stageScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES, SHAPE_NAMES_EN } from './sketch.js';
 import {
   remainingMs, formatClock, createTimer, pauseTimer, resumeTimer, addMinutes,
   unlockAudio, playChime, startRinging, stopRinging, askNotifyPermission, notify, keepAwake,
 } from './timers.js';
-import { SAMPLE_RECIPES } from './samples.js';
+import { SAMPLE_RECIPES, SAMPLE_RECIPES_EN } from './samples.js';
+import { L, isEn, getLang, setLang, getCurrency, setCurrency, currencySymbol, formatPrice, APP_NAME } from './i18n.js';
 
 const $app = document.getElementById('app');
 const $tabs = document.getElementById('tabs');
@@ -17,10 +18,10 @@ const $dlg = document.getElementById('dlg');
 
 const state = {
   shop: null,
-  session: null,
+  sessions: [],       // 正在烤的每一炉，可以同时好几炉
   draft: null,        // 正在编辑 / 导入的配方
   draftFor: null,
-  finish: { photo: null, photoUrl: '', rating: 0, notes: '', mode: 'update' },
+  finish: null,       // 出炉页的草稿 { sid, photo, photoUrl, rating, notes, mode }
   filter: '',
   alarmOpen: null,
 };
@@ -30,10 +31,14 @@ const state = {
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clone = (o) => JSON.parse(JSON.stringify(o));
 const DAY = 86400000;
-const fmtDate = (t) => { const d = new Date(t); return `${d.getMonth() + 1}月${d.getDate()}日`; };
-const fmtDateFull = (t) => { const d = new Date(t); return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const pad2 = (n) => String(n).padStart(2, '0');
+const fmtDate = (t) => { const d = new Date(t); return L(`${d.getMonth() + 1}月${d.getDate()}日`, `${MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}`); };
+const fmtTime = (t) => { const d = new Date(t); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
 const fmtDur = (ms) => formatMinutes(Math.round(ms / 60000));
 const go = (hash) => { if (location.hash === hash) route(); else location.hash = hash; };
+const shapeNames = () => (isEn() ? SHAPE_NAMES_EN : SHAPE_NAMES);
+const times = (n) => L(`${n} 次`, n === 1 ? '1 time' : `${n} times`);
 
 function toast(msg) {
   document.querySelectorAll('.toast').forEach((t) => t.remove());
@@ -50,25 +55,28 @@ const isTimed = (st) => !!(st && st.minutes && TIMED_KINDS.has(st.kind));
 const progressOf = (t) => (t ? (t.done ? 1 : 1 - remainingMs(t) / t.durationMs) : 0);
 const growScale = (p) => (0.66 + 0.34 * Math.min(1, Math.max(0, p))).toFixed(3);
 
-const KIND_LABEL = { ferment: '发酵', bake: '烘烤', rest: '静置', chill: '冷藏', knead: '揉面', other: '' };
+const kindLabel = (k) => ({
+  ferment: L('发酵', 'Proof'), bake: L('烘烤', 'Bake'), rest: L('静置', 'Rest'), chill: L('冷藏', 'Chill'), knead: L('揉面', 'Knead'),
+}[k] || '');
 
 // 店铺等级：私房烘焙的成长路线，出炉次数越多，小店越像样
 const LEVELS = [
-  { at: 0, name: '周末小推车', desc: '在家开烤，推着小车分给邻居尝尝' },
-  { at: 1, name: '私房小铺', desc: '有了一间小小的铺子，开了一扇售卖窗' },
-  { at: 5, name: '熟客小店', desc: '熟客常来，门口摆了红毡长凳和红伞，坐下来就能吃个面包' },
-  { at: 12, name: '街角面包店', desc: '搬到街角，门面变宽，多了一扇大橱窗，门口停着送面包的自行车' },
-  { at: 25, name: '排队小店', desc: '换成复古小店：红白条纹布篷、拱形橱窗，门口开始排队' },
-  { at: 45, name: '两层小楼', desc: '加盖了带拱窗的二楼，屋顶立起一个大碱水面包' },
-  { at: 70, name: '露台面包店', desc: '盖了两层的新店，楼下落地窗，旁边开了露台' },
-  { at: 100, name: '旗舰面包店', desc: '三层的旗舰店，屋顶也开了空中露台，成了街区的地标' },
+  { at: 0, name: ['周末小推车', 'Weekend Cart'], desc: ['在家开烤，推着小车分给邻居尝尝', 'Baking at home and wheeling a cart round to the neighbors'] },
+  { at: 1, name: ['私房小铺', 'Tiny Window Shop'], desc: ['有了一间小小的铺子，开了一扇售卖窗', 'A tiny shop of your own, with one little sales window'] },
+  { at: 5, name: ['熟客小店', "Regulars' Corner"], desc: ['熟客常来，门口摆了红毡长凳和红伞，坐下来就能吃个面包', 'Regulars drop by; a red bench and parasol out front for a quick bite'] },
+  { at: 12, name: ['街角面包店', 'Corner Bakery'], desc: ['搬到街角，门面变宽，多了一扇大橱窗，门口停着送面包的自行车', 'On the corner now: a wider front, a big display window and a delivery bike'] },
+  { at: 25, name: ['排队小店', 'Line Out the Door'], desc: ['换成复古小店：红白条纹布篷、拱形橱窗，门口开始排队', 'A retro shop with a striped awning and arched windows, and a line outside'] },
+  { at: 45, name: ['两层小楼', 'Two-Story Bakery'], desc: ['加盖了带拱窗的二楼，屋顶立起一个大碱水面包', 'A second floor with arched windows and a giant pretzel on the roof'] },
+  { at: 70, name: ['露台面包店', 'Terrace Bakery'], desc: ['盖了两层的新店，楼下落地窗，旁边开了露台', 'A new two-story shop with a glass front and a terrace next door'] },
+  { at: 100, name: ['旗舰面包店', 'Flagship Bakery'], desc: ['三层的旗舰店，屋顶也开了空中露台，成了街区的地标', 'Three floors and a rooftop terrace: a neighborhood landmark'] },
 ];
+const lvName = (i) => L(...LEVELS[i].name);
+const lvDesc = (i) => L(...LEVELS[i].desc);
 function levelOf(n) {
   let i = 0;
   while (i + 1 < LEVELS.length && n >= LEVELS[i + 1].at) i++;
-  const cur = LEVELS[i];
   const next = LEVELS[i + 1];
-  return { lv: i + 1, name: cur.name, next, progress: next ? (n - cur.at) / (next.at - cur.at) : 1 };
+  return { lv: i + 1, name: lvName(i), next: next ? { at: next.at, name: lvName(i + 1) } : null, progress: next ? (n - LEVELS[i].at) / (next.at - LEVELS[i].at) : 1 };
 }
 
 // 门店插画 + 叠在招牌上的店名
@@ -77,7 +85,7 @@ function shopFront(level, name = '', small = false) {
   const style = `left:${(g.x / g.vbW * 100).toFixed(2)}%;width:${(g.w / g.vbW * 100).toFixed(2)}%;top:${(g.y / g.vbH * 100).toFixed(2)}%;height:${(g.h / g.vbH * 100).toFixed(2)}%`;
   return `<div class="storefront ${small ? 'mini' : ''}">${storefront(level)}${name ? (small
     ? `<span class="sign" style="${style}">${esc(name)}</span>`
-    : `<button class="sign" style="${style}" data-act="rename-shop" title="点一下改店名">${esc(name)}</button>`) : ''}</div>`;
+    : `<button class="sign" style="${style}" data-act="rename-shop" title="${L('点一下改店名', 'Tap to rename')}">${esc(name)}</button>`) : ''}</div>`;
 }
 
 // 升级路线：每一级的店面、需要的出炉次数，标出现在在哪
@@ -85,16 +93,17 @@ async function showRoadmap() {
   const n = (await listBakes()).length;
   const cur = levelOf(n);
   await dialog(`<div class="roadmap">
-    <h3>升级路线</h3>
-    <p class="small muted">每出炉一次就离下一级近一点。现在累计出炉 <b class="need">${n}</b> 次。</p>
-    <ol>${LEVELS.map((L, i) => {
-      const state = i + 1 < cur.lv ? 'past' : i + 1 === cur.lv ? 'now' : 'next';
-      return `<li class="${state}">${shopFront(i + 1, '', true)}
-        <div class="t"><b>Lv.${i + 1} ${L.name}</b>
-          <span class="small muted">${L.desc}</span>
-          <span class="small ${state === 'now' ? 'here' : 'muted'}">${state === 'now' ? '你在这里' : state === 'past' ? '已达成' : `出炉 <b class="need">${L.at}</b> 次解锁`}</span></div></li>`;
+    <h3>${L('升级路线', 'Road to the flagship')}</h3>
+    <p class="small muted">${L(`每出炉一次就离下一级近一点。现在累计出炉 <b class="need">${n}</b> 次。`, `Every bake gets you closer. Baked so far: <b class="need">${n}</b>.`)}</p>
+    <ol>${LEVELS.map((lvl, i) => {
+      const st = i + 1 < cur.lv ? 'past' : i + 1 === cur.lv ? 'now' : 'next';
+      return `<li class="${st}">${shopFront(i + 1, '', true)}
+        <div class="t"><b>Lv.${i + 1} ${lvName(i)}</b>
+          <span class="small muted">${lvDesc(i)}</span>
+          <span class="small ${st === 'now' ? 'here' : 'muted'}">${st === 'now' ? L('你在这里', 'You are here') : st === 'past' ? L('已达成', 'Done')
+            : L(`出炉 <b class="need">${lvl.at}</b> 次解锁`, `Unlocks at <b class="need">${lvl.at}</b> bakes`)}</span></div></li>`;
     }).join('')}</ol>
-    <div class="row" style="justify-content:center"><button class="btn primary" data-dlg="ok">知道啦</button></div>
+    <div class="row" style="justify-content:center"><button class="btn primary" data-dlg="ok">${L('知道啦', 'Got it')}</button></div>
   </div>`);
 }
 
@@ -118,16 +127,34 @@ function dialog(html, { onOpen } = {}) {
   });
 }
 
-const confirmDlg = (title, body = '', ok = '确定', danger = false) => dialog(`
+const confirmDlg = (title, body = '', ok = L('确定', 'OK'), danger = false) => dialog(`
   <h3>${esc(title)}</h3>${body ? `<p class="muted">${esc(body)}</p>` : ''}
-  <div class="row end"><button class="btn ghost" data-dlg="cancel">算了</button><button class="btn ${danger ? 'danger' : 'primary'}" data-dlg="ok">${esc(ok)}</button></div>
+  <div class="row end"><button class="btn ghost" data-dlg="cancel">${L('算了', 'Cancel')}</button><button class="btn ${danger ? 'danger' : 'primary'}" data-dlg="ok">${esc(ok)}</button></div>
 `).then((v) => v === 'ok');
 
 const promptDlg = (title, value = '', type = 'text') => dialog(`
   <h3>${esc(title)}</h3>
   <input class="input" data-dlg-input type="${type}" ${type === 'number' ? 'inputmode="decimal" step="any"' : ''} value="${esc(value)}">
-  <div class="row end" style="margin-top:16px"><button class="btn ghost" data-dlg="cancel">算了</button><button class="btn primary" data-dlg="ok">好</button></div>
+  <div class="row end" style="margin-top:16px"><button class="btn ghost" data-dlg="cancel">${L('算了', 'Cancel')}</button><button class="btn primary" data-dlg="ok">${L('好', 'OK')}</button></div>
 `).then((v) => (v === 'cancel' ? null : v));
+
+// ---------- 正在烤的几炉 ----------
+
+const sessionById = (id) => state.sessions.find((s) => s.id === id);
+// 烘焙页 / 出炉页地址里带着是哪一炉
+const routeSid = () => location.hash.match(/^#\/(?:bake|finish)\/([\w-]+)/)?.[1];
+const routeSession = () => sessionById(routeSid());
+const allTimers = () => state.sessions.flatMap((s) => s.timers);
+const sessionOfTimer = (tid) => state.sessions.find((s) => s.timers.some((t) => t.id === tid));
+
+let saveTimer = null;
+function persistSessions(debounce = 0) {
+  clearTimeout(saveTimer);
+  const run = () => saveSessions(state.sessions);
+  if (!debounce) return run();
+  saveTimer = setTimeout(run, debounce);
+  return Promise.resolve();
+}
 
 // ---------- 路由 ----------
 
@@ -137,11 +164,12 @@ const ROUTES = [
   [/^#\/r\/([\w-]+)$/, viewRecipe, 'recipes'],
   [/^#\/edit\/([\w-]+)$/, viewEdit, 'recipes'],
   [/^#\/import$/, viewImport, 'recipes'],
-  [/^#\/bake$/, viewBake, 'shop'],
-  [/^#\/finish$/, viewFinish, 'shop'],
+  [/^#\/bake(?:\/([\w-]+))?$/, viewBake, 'shop'],
+  [/^#\/finish\/([\w-]+)$/, viewFinish, 'shop'],
   [/^#\/logs(?:\/(\d{4}-\d{1,2}))?$/, viewLogs, 'logs'],
   [/^#\/log\/([\w-]+)$/, viewLog, 'logs'],
   [/^#\/settings$/, viewSettings, 'shop'],
+  [/^#\/widgets$/, viewWidgets, 'shop'],
 ];
 
 function resolve(hash) {
@@ -158,16 +186,18 @@ async function route() {
   const token = ++routeToken;
   const r = resolve(hash);
   if (!r) { go('#/'); return; }
-  if (hash !== '#/bake' && state.session?.editing) {
-    state.session.editing = false;
-    persistSession();
-  }
+  // 离开某一炉的烘焙页，就退出它的修改模式
+  const sid = routeSid();
+  let changed = false;
+  for (const s of state.sessions) if (s.editing && !(hash.startsWith('#/bake/') && s.id === sid)) { s.editing = false; changed = true; }
+  if (changed) persistSessions();
   const html = await r.view(...r.args);
   if (token !== routeToken) return; // 期间又跳转了
+  if (html == null) return;          // 视图自己跳走了
   $app.innerHTML = html;
   renderTabs(r.tab);
   renderTabClock();
-  keepAwake(hash === '#/bake');
+  keepAwake(hash.startsWith('#/bake/'));
   window.scrollTo(0, 0);
 }
 
@@ -178,21 +208,22 @@ async function rerender() {
   const y = window.scrollY;
   const token = routeToken;
   const html = await r.view(...r.args);
-  if (token !== routeToken) return;
+  if (token !== routeToken || html == null) return;
   $app.innerHTML = html;
   renderTabClock();
   window.scrollTo(0, y);
 }
 
-const TABS = [['shop', '#/', '店铺', 'shop'], ['recipes', '#/recipes', '配方架', 'rack'], ['logs', '#/logs', '日历', 'calendar']];
+const TABS = () => [['shop', '#/', L('店铺', 'Shop'), 'shop'], ['recipes', '#/recipes', L('配方架', 'Recipes'), 'rack'], ['logs', '#/logs', L('日历', 'Diary'), 'calendar']];
 
-// 只在第一次画出整排按钮；之后切换只改选中状态，这样镜片能平滑地滑过去
+// 只在第一次画出整排按钮；之后切换只改选中状态，这样镜片能平滑地滑过去（换语言时重画）
 function renderTabs(active) {
-  if (!$tabs.querySelector('.lens')) {
-    $tabs.innerHTML = '<span class="lens" aria-hidden="true"></span>' + TABS.map(([k, href, label]) =>
+  if (!$tabs.querySelector('.lens') || $tabs.dataset.lang !== getLang()) {
+    $tabs.dataset.lang = getLang();
+    $tabs.innerHTML = '<span class="lens" aria-hidden="true"></span>' + TABS().map(([k, href, label]) =>
       `<a href="${href}" data-tab="${k}"><i class="tab-ic"></i><span>${label}</span></a>`).join('');
   }
-  TABS.forEach(([k, , , ic], i) => {
+  TABS().forEach(([k, , , ic], i) => {
     const a = $tabs.querySelector(`[data-tab="${k}"]`);
     const on = k === active;
     if (a.classList.contains('on') === on && a.dataset.drawn) return;
@@ -220,14 +251,30 @@ window.addEventListener('scroll', () => {
 
 function greeting() {
   const h = new Date().getHours();
-  if (h < 5) return '夜深了';
-  if (h < 11) return '早上好';
-  if (h < 14) return '中午好';
-  if (h < 18) return '下午好';
-  return '晚上好';
+  if (h < 5) return L('夜深了', 'Up late?');
+  if (h < 11) return L('早上好', 'Good morning');
+  if (h < 14) return L('中午好', 'Good noon');
+  if (h < 18) return L('下午好', 'Good afternoon');
+  return L('晚上好', 'Good evening');
 }
 
 const isToday = (t) => new Date(t).toDateString() === new Date().toDateString();
+
+// 首页的一台烤箱：一炉一张卡片
+function ovenCard(s) {
+  const cur = s.recipe.steps[s.current];
+  const running = s.timers.filter((t) => !t.done);
+  // 有计时在跑时，小插画跟着计时的那一步走（比如边发酵边做别的，就画发酵）
+  const curT = running[0] || (cur && s.timers.find((t) => t.stepId === cur.id));
+  const sceneStep = (curT && s.recipe.steps.find((st) => st.id === curT.stepId)) || cur;
+  const n = s.recipe.steps.length;
+  return `<a class="card oven-card" href="#/bake/${s.id}" ${curT ? `data-grow="${curT.id}"` : ''}>
+    ${cur ? stageScene(sceneStep?.kind, running.length > 0, '', progressOf(curT)) : ovenScene('', false, true)}
+    <div class="info"><b>${esc(s.recipe.name)}</b>
+      <span class="small muted step-line">${cur ? `${L(`第 ${s.current + 1}/${n} 步`, `Step ${s.current + 1}/${n}`)} · ${esc(cur.text)}` : L('可以出炉啦', 'Ready to come out')}</span>
+      ${running.length ? `<div class="small clock-line">${icon('timer')}<span class="mono" data-clock="${running[0].id}">${formatClock(remainingMs(running[0]))}</span><span class="lbl">${esc(running[0].label)}</span></div>` : ''}
+    </div>${icon('next')}</a>`;
+}
 
 async function viewShop() {
   const [recipes, bakes] = await Promise.all([listRecipes(), listBakes()]);
@@ -238,60 +285,54 @@ async function viewShop() {
   const thisMonth = bakes.filter((b) => b.finishedAt >= monthStart.getTime()).length;
   const today = bakes.filter((b) => isToday(b.finishedAt)).length;
   const bakeCount = (id) => bakes.filter((b) => b.recipeId === id).length;
+  const ss = state.sessions;
 
-  const s = state.session;
-  let ovenHtml;
-  if (s) {
-    const cur = s.recipe.steps[s.current];
-    const running = s.timers.filter((t) => !t.done);
-    // 有计时在跑时，小插画跟着计时的那一步走（比如边发酵边做别的，就画发酵）
-    const curT = running[0] || (cur && s.timers.find((t) => t.stepId === cur.id));
-    const sceneStep = (curT && s.recipe.steps.find((st) => st.id === curT.stepId)) || cur;
-    ovenHtml = `<a class="card oven-card" href="#/bake" ${curT ? `data-grow="${curT.id}"` : ''}>
-      ${stageScene(sceneStep?.kind, running.length > 0, '', progressOf(curT))}
-      <div class="info"><b>${esc(s.recipe.name)}</b>
-        <span class="small muted step-line">第 ${Math.min(s.current + 1, s.recipe.steps.length)}/${s.recipe.steps.length} 步${cur ? ` · ${esc(cur.text)}` : ''}</span>
-        ${running.length ? `<div class="small clock-line">${icon('timer')}<span class="mono" data-clock="${running[0].id}">${formatClock(remainingMs(running[0]))}</span><span class="lbl">${esc(running[0].label)}</span></div>` : ''}
-      </div>${icon('next')}</a>`;
-  } else {
-    ovenHtml = `<div class="card dashed oven-card">${ovenScene()}
-      <div class="info"><b>烤箱空着</b><span class="small muted">从配方架上挑一个，开烤吧</span></div></div>`;
-  }
+  // 几炉一起烤：一台烤箱一张卡，最后留一台空烤箱可以再开一炉
+  const ovens = ss.map(ovenCard).join('') + (ss.length
+    ? `<a class="oven-add" href="#/recipes">${icon('plus')}<span>${L('再开一炉', 'Start another batch')}</span></a>`
+    : `<div class="card dashed oven-card">${ovenScene()}
+      <div class="info"><b>${L('烤箱空着', 'Oven is free')}</b><span class="small muted">${L('从配方架上挑一个，开烤吧', 'Pick a recipe from the shelf and start')}</span></div></div>`);
+
+  const sub = today ? L(`今天已出炉 ${today} 炉`, `${today} batch${today > 1 ? 'es' : ''} out today`)
+    : ss.length === 1 ? L(`「${esc(ss[0].recipe.name)}」正在烤箱里`, `${esc(ss[0].recipe.name)} is in the oven`)
+    : ss.length ? L(`${ss.length} 炉正在烤`, `${ss.length} batches on the go`)
+    : L('今天想烤点什么？', 'What shall we bake today?');
 
   const recent = bakes.slice(0, 6);
   const thumbs = await Promise.all(recent.map((b) => photoUrl(b.photoId)));
+  const left = lv.next ? lv.next.at - bakes.length : 0;
 
   return `
-  <div class="greet"><div class="t"><h1>${greeting()}</h1>
-    <p>${today ? `今天已出炉 ${today} 炉` : s ? `「${esc(s.recipe.name)}」正在烤箱里` : '今天想烤点什么？'}</p></div>
-    <a class="btn icon ghost" href="#/settings" aria-label="店务">${icon('gear')}</a></div>
+  <div class="greet"><div class="t"><h1>${greeting()}</h1><p>${sub}</p></div>
+    <a class="btn icon ghost" href="#/settings" aria-label="${L('店务', 'Settings')}">${icon('gear')}</a></div>
   ${shopFront(lv.lv, shop.name)}
   <div class="shop-meta">
-    <button class="lv" data-act="roadmap" aria-label="查看升级路线">Lv.${lv.lv} ${lv.name} ›</button>
-    <span class="small muted"> · 营业第 <span class="mono">${days}</span> 天</span>
-    ${lv.next ? `<div class="progress" title="再出炉 ${lv.next.at - bakes.length} 次升级"><i style="width:${Math.round(lv.progress * 100)}%"></i></div>
-      <div class="small muted">再出炉 <b class="need">${lv.next.at - bakes.length}</b> 次 → ${lv.next.name}</div>` : '<div class="small muted">已经是最高等级啦</div>'}
+    <button class="lv" data-act="roadmap" aria-label="${L('查看升级路线', 'See the road map')}">Lv.${lv.lv} ${lv.name} ›</button>
+    <span class="small muted"> · ${L(`营业第 <span class="mono">${days}</span> 天`, `Day <span class="mono">${days}</span>`)}</span>
+    ${lv.next ? `<div class="progress"><i style="width:${Math.round(lv.progress * 100)}%"></i></div>
+      <div class="small muted">${L(`再出炉 <b class="need">${left}</b> 次 → ${lv.next.name}`, `<b class="need">${left}</b> more bake${left > 1 ? 's' : ''} → ${lv.next.name}`)}</div>`
+      : `<div class="small muted">${L('已经是最高等级啦', 'Top level reached')}</div>`}
   </div>
 
   <div class="stats">
-    <div class="stat"><b>${recipes.length}</b><span>本店配方</span></div>
-    <div class="stat"><b>${bakes.length}</b><span>累计出炉</span></div>
-    <div class="stat"><b>${thisMonth}</b><span>本月出炉</span></div>
+    <div class="stat"><b>${recipes.length}</b><span>${L('本店配方', 'Recipes')}</span></div>
+    <div class="stat"><b>${bakes.length}</b><span>${L('累计出炉', 'Baked')}</span></div>
+    <div class="stat"><b>${thisMonth}</b><span>${L('本月出炉', 'This month')}</span></div>
   </div>
 
-  <h2>烤箱</h2>
-  ${ovenHtml}
+  <h2>${L('烤箱', 'Ovens')}${ss.length > 1 ? ` <span class="small muted" style="font-weight:400">${L(`${ss.length} 台在烤`, `${ss.length} busy`)}</span>` : ''}</h2>
+  <div class="ovens">${ovens}</div>
 
-  <h2>配方架 <a class="more" href="#/recipes">全部 ›</a></h2>
+  <h2>${L('配方架', 'Recipe shelf')} <a class="more" href="#/recipes">${L('全部', 'All')} ›</a></h2>
   <div class="shelf">
-    ${recipes.map((r) => `<a class="item" href="#/r/${r.id}"><span class="pic">${shape(r.shape)}${priceTag(r.price)}</span><span>${esc(r.name)}</span><small>${bakeCount(r.id) ? `做过 ${bakeCount(r.id)} 次` : '还没做过'}</small></a>`).join('')}
-    <a class="item add" href="#/import">${icon('plus')}<span class="muted">上新配方</span></a>
+    ${recipes.map((r) => `<a class="item" href="#/r/${r.id}"><span class="pic">${shape(r.shape)}${priceTag(r)}</span><span>${esc(r.name)}</span><small>${bakeCount(r.id) ? L(`做过 ${bakeCount(r.id)} 次`, `Baked ${times(bakeCount(r.id))}`) : L('还没做过', 'Not yet baked')}</small></a>`).join('')}
+    <a class="item add" href="#/import">${icon('plus')}<span class="muted">${L('上新配方', 'New recipe')}</span></a>
   </div>
   <div class="shelf-board"></div>
 
-  <h2>作品墙 <a class="more" href="#/logs">日历 ›</a></h2>
+  <h2>${L('作品墙', 'Bake wall')} <a class="more" href="#/logs">${L('日历', 'Diary')} ›</a></h2>
   ${recent.length ? `<div class="wall">${recent.map((b, i) => polaroid(b, thumbs[i])).join('')}</div>`
-    : `<div class="empty">${emptyShelf()}<div>还没有作品，第一炉在等你</div></div>`}
+    : `<div class="empty">${emptyShelf()}<div>${L('还没有作品，第一炉在等你', 'Nothing here yet. Your first batch awaits')}</div></div>`}
   `;
 }
 
@@ -305,8 +346,9 @@ function polaroid(b, url) {
 // 配方
 // =====================================================================
 
-// 面包旁边立一张小价签（元）
-const priceTag = (p) => (p != null ? `<span class="price">¥${formatAmount(p)}</span>` : '');
+// 面包旁边立一张小价签（按当前货币）
+const priceTag = (r) => { const p = getPrice(r); return p != null ? `<span class="price">${formatPrice(p)}</span>` : ''; };
+const totalMinutes = (r) => r.steps.reduce((a, st) => a + (st.minutes || 0), 0);
 
 // 配方架：和首页一样的轻木板，每层三个面包，面包下面是牛皮纸名签，旁边立着价签；最后留一个空位上新配方
 async function viewRecipes() {
@@ -315,61 +357,63 @@ async function viewRecipes() {
   const list = q ? recipes.filter((r) => r.name.toLowerCase().includes(q) || r.ingredients.some((i) => i.name.toLowerCase().includes(q))) : recipes;
   const count = (id) => bakes.filter((b) => b.recipeId === id).length;
   const items = list.map((r) => {
-    const total = r.steps.reduce((a, st) => a + (st.minutes || 0), 0);
+    const total = totalMinutes(r);
     const n = count(r.id);
-    return `<a class="rack-item" href="#/r/${r.id}"><span class="pic">${shape(r.shape)}${priceTag(r.price)}</span>
+    return `<a class="rack-item" href="#/r/${r.id}"><span class="pic">${shape(r.shape)}${priceTag(r)}</span>
       <span class="tag">${esc(r.name)}</span>
-      <small>${total ? `约 ${formatMinutes(total)}` : `${r.steps.length} 步`}${n ? ` · 做过 ${n} 次` : ''}</small></a>`;
+      <small>${total ? `${L('约', '~')} ${formatMinutes(total)}` : L(`${r.steps.length} 步`, `${r.steps.length} steps`)}${n ? ` · ${L(`做过 ${n} 次`, `×${n}`)}` : ''}</small></a>`;
   });
-  if (!q) items.push(`<a class="rack-item add" href="#/import">${icon('plus')}<span>上新配方</span></a>`);
+  if (!q) items.push(`<a class="rack-item add" href="#/import">${icon('plus')}<span>${L('上新配方', 'New recipe')}</span></a>`);
   const rows = [];
   for (let i = 0; i < items.length; i += 3) rows.push(items.slice(i, i + 3));
   return `
-  <div class="topbar"><h1>配方架</h1>
-    <a class="btn sm" href="#/import" data-act="new-import">${icon('paste')} 导入</a>
-    <a class="btn sm primary" href="#/edit/new" data-act="new-blank">${icon('plus')} 手写</a></div>
-  <input class="search" type="search" placeholder="找配方 / 找材料…" value="${esc(state.filter)}" data-act-input="filter">
+  <div class="topbar"><h1>${L('配方架', 'Recipe shelf')}</h1>
+    <a class="btn sm" href="#/import" data-act="new-import">${icon('paste')} ${L('导入', 'Import')}</a>
+    <a class="btn sm primary" href="#/edit/new" data-act="new-blank">${icon('plus')} ${L('手写', 'Write')}</a></div>
+  <input class="search" type="search" placeholder="${L('找配方 / 找材料…', 'Find a recipe or ingredient…')}" value="${esc(state.filter)}" data-act-input="filter">
   ${list.length || !q ? `<div class="rack">${rows.map((row) => `<div class="rack-row">${row.join('')}</div>`).join('')}</div>`
-    : `<div class="empty">${emptyShelf()}<div>没找到「${esc(state.filter)}」</div></div>`}`;
+    : `<div class="empty">${emptyShelf()}<div>${L(`没找到「${esc(state.filter)}」`, `Nothing matches “${esc(state.filter)}”`)}</div></div>`}`;
 }
 
 async function viewRecipe(id) {
   const r = await getRecipe(id);
   if (!r) return notFound();
-  if (r.price == null) { r.price = randomPrice(r.shape); await setPrice(r.id, r.price); }
+  if (getPrice(r) == null) await setPrice(r.id, randomPrice(r.shape)).then((x) => { r.prices = x.prices; });
   const bakes = (await listBakes()).filter((b) => b.recipeId === id);
   const thumbs = await Promise.all(bakes.slice(0, 6).map((b) => photoUrl(b.photoId)));
-  const total = r.steps.reduce((a, s) => a + (s.minutes || 0), 0);
+  const total = totalMinutes(r);
+  const baking = state.sessions.filter((s) => s.recipeId === id);
   return `
-  <div class="topbar"><a class="btn icon ghost" href="#/recipes" aria-label="返回">${icon('back')}</a><h1></h1>
-    <button class="btn icon ghost" data-act="share-recipe" data-id="${r.id}" aria-label="分享">${icon('share')}</button>
-    <a class="btn icon ghost" href="#/edit/${r.id}" aria-label="编辑">${icon('pencil')}</a></div>
+  <div class="topbar"><a class="btn icon ghost" href="#/recipes" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1></h1>
+    <button class="btn icon ghost" data-act="share-recipe" data-id="${r.id}" aria-label="${L('分享', 'Share')}">${icon('share')}</button>
+    <a class="btn icon ghost" href="#/edit/${r.id}" aria-label="${L('编辑', 'Edit')}">${icon('pencil')}</a></div>
   <div class="hero">${shape(r.shape)}<h1>${esc(r.name)}</h1>
     <div class="chips">
       ${r.yield ? `<span class="chip time">${esc(r.yield)}</span>` : ''}
-      ${total ? `<span class="chip time">${icon('timer')} 约 ${formatMinutes(total)}</span>` : ''}
-      <span class="chip time">做过 ${bakes.length} 次</span>
-      <button class="chip price-chip" data-act="edit-price" data-id="${r.id}" aria-label="改价签">¥${formatAmount(r.price)} ${icon('pencil')}</button>
+      ${total ? `<span class="chip time">${icon('timer')} ${L('约', '~')} ${formatMinutes(total)}</span>` : ''}
+      <span class="chip time">${L(`做过 ${bakes.length} 次`, `Baked ${times(bakes.length)}`)}</span>
+      <button class="chip price-chip" data-act="edit-price" data-id="${r.id}" aria-label="${L('改价签', 'Edit price')}">${formatPrice(getPrice(r))} ${icon('pencil')}</button>
     </div></div>
 
-  <div style="margin:18px 0 4px"><button class="btn primary big block" data-act="start-bake" data-id="${r.id}">${icon('oven')} 开烤！</button></div>
+  ${baking.length ? `<a class="baking-now" href="#/bake/${baking[0].id}">${icon('oven')} ${L('这款正在烤箱里，去看看', 'This one is in the oven: take a look')} ›</a>` : ''}
+  <div style="margin:18px 0 4px"><button class="btn primary big block" data-act="start-bake" data-id="${r.id}">${icon('oven')} ${baking.length ? L('再烤一炉', 'Bake another batch') : L('开烤！', 'Start baking')}</button></div>
 
-  <h2>材料</h2>
+  <h2>${L('材料', 'Ingredients')}</h2>
   ${ingTable(r.ingredients)}
 
-  <h2>步骤</h2>
+  <h2>${L('步骤', 'Steps')}</h2>
   <ol class="steps">${r.steps.map((s) => `<li>${esc(s.text)}${stepMeta(s)}</li>`).join('')}</ol>
 
-  ${r.notes ? `<h2>备注</h2><div class="card fill notes">${esc(r.notes)}</div>` : ''}
+  ${r.notes ? `<h2>${L('备注', 'Notes')}</h2><div class="card fill notes">${esc(r.notes)}</div>` : ''}
 
-  ${bakes.length ? `<h2>这款的作品</h2><div class="wall">${bakes.slice(0, 6).map((b, i) => polaroid(b, thumbs[i])).join('')}</div>` : ''}
+  ${bakes.length ? `<h2>${L('这款的作品', 'Past bakes')}</h2><div class="wall">${bakes.slice(0, 6).map((b, i) => polaroid(b, thumbs[i])).join('')}</div>` : ''}
 
-  <div class="row" style="margin-top:32px"><button class="btn danger sm" data-act="delete-recipe" data-id="${r.id}">${icon('trash')} 删除配方</button>
-    <span class="small muted grow" style="text-align:right">v${r.version} · 更新于 ${fmtDate(r.updatedAt)}</span></div>`;
+  <div class="row" style="margin-top:32px"><button class="btn danger sm" data-act="delete-recipe" data-id="${r.id}">${icon('trash')} ${L('删除配方', 'Delete')}</button>
+    <span class="small muted grow" style="text-align:right">v${r.version} · ${L(`更新于 ${fmtDate(r.updatedAt)}`, `updated ${fmtDate(r.updatedAt)}`)}</span></div>`;
 }
 
 function ingTable(ings, scale = 1) {
-  if (!ings.length) return '<p class="muted">（还没有材料）</p>';
+  if (!ings.length) return `<p class="muted">${L('（还没有材料）', '(No ingredients yet)')}</p>`;
   return `<table class="ing-table">${ings.map((i) => `<tr><td>${esc(i.name)}${i.note ? ` <span class="note">${esc(i.note)}</span>` : ''}</td>
     <td class="amt">${i.amount != null ? formatAmount(i.amount * scale) : ''} ${esc(i.unit)}</td></tr>`).join('')}</table>`;
 }
@@ -377,7 +421,7 @@ function ingTable(ings, scale = 1) {
 function stepMeta(s) {
   const bits = [];
   if (s.minutes) bits.push(`<span class="chip time">${icon('timer')} ${formatMinutes(s.minutes)}</span>`);
-  if (KIND_LABEL[s.kind]) bits.push(`<span class="badge">${KIND_LABEL[s.kind]}</span>`);
+  if (kindLabel(s.kind)) bits.push(`<span class="badge">${kindLabel(s.kind)}</span>`);
   return bits.length ? `<div class="meta">${bits.join('')}</div>` : '';
 }
 
@@ -385,9 +429,9 @@ function stepMeta(s) {
 function recipeToText(r) {
   return [
     r.name, '',
-    '材料：', ...r.ingredients.map((i) => `${i.name} ${i.amount != null ? formatAmount(i.amount) : ''}${i.unit}${i.note ? `（${i.note}）` : ''}`.trim()), '',
-    '步骤：', ...r.steps.map((s, n) => `${n + 1}. ${s.text}${s.minutes && !/\d\s*(分|小时|min|h)/i.test(s.text) ? ` ${formatMinutes(s.minutes)}` : ''}`),
-    ...(r.notes ? ['', '备注：', r.notes] : []),
+    L('材料：', 'Ingredients:'), ...r.ingredients.map((i) => `${i.name} ${i.amount != null ? formatAmount(i.amount) : ''}${i.unit}${i.note ? ` (${i.note})` : ''}`.trim()), '',
+    L('步骤：', 'Steps:'), ...r.steps.map((s, n) => `${n + 1}. ${s.text}${s.minutes && !/\d\s*(分|小时|min|h)/i.test(s.text) ? ` ${formatMinutes(s.minutes)}` : ''}`),
+    ...(r.notes ? ['', L('备注：', 'Notes:'), r.notes] : []),
   ].join('\n');
 }
 
@@ -408,49 +452,52 @@ async function viewEdit(id) {
     state.draftFor = id;
   }
   const d = state.draft;
-  if (d.price == null || d.price === '') d.price = randomPrice(d.shape);
+  const cur = getCurrency();
+  d.prices = { ...(d.prices || {}) };
+  if (d.prices[cur] == null || d.prices[cur] === '') d.prices[cur] = getPrice(d) ?? randomPrice(d.shape);
+  const names = shapeNames();
   return `
-  <div class="topbar"><a class="btn icon ghost" href="${id === 'new' ? '#/recipes' : `#/r/${id}`}" data-act="cancel-edit" aria-label="返回">${icon('back')}</a>
-    <h1>${id === 'new' ? '上新配方' : '改配方'}</h1>
-    <button class="btn primary sm" data-act="save-recipe">${icon('check')} 保存</button></div>
+  <div class="topbar"><a class="btn icon ghost" href="${id === 'new' ? '#/recipes' : `#/r/${id}`}" data-act="cancel-edit" aria-label="${L('返回', 'Back')}">${icon('back')}</a>
+    <h1>${id === 'new' ? L('上新配方', 'New recipe') : L('改配方', 'Edit recipe')}</h1>
+    <button class="btn primary sm" data-act="save-recipe">${icon('check')} ${L('保存', 'Save')}</button></div>
 
-  <label class="f"><span>名字</span><input class="input" data-d="name" value="${esc(d.name)}" placeholder="比如：乡村欧包"></label>
-  <div class="f"><span class="small muted">长什么样</span>
-    <div class="shape-pick">${Object.keys(SHAPE_NAMES).map((k) => `<button type="button" class="${d.shape === k ? 'on' : ''}" data-act="set-shape" data-v="${k}">${shape(k)}${SHAPE_NAMES[k]}</button>`).join('')}</div></div>
-  <label class="f" style="margin-top:14px"><span>份量</span><input class="input" data-d="yield" value="${esc(d.yield)}" placeholder="比如：1 个 · 约 800g"></label>
-  <div class="f price-f"><span>价签</span>
-    <div class="row"><span class="mono">¥</span><input class="input num" data-d="price" value="${esc(String(d.price))}" type="number" inputmode="decimal" step="any" min="0">
-      <button type="button" class="link-btn" data-act="dice-price">${icon('dice')} 随机定个价</button></div></div>
+  <label class="f"><span>${L('名字', 'Name')}</span><input class="input" data-d="name" value="${esc(d.name)}" placeholder="${L('比如：乡村欧包', 'e.g. Country loaf')}"></label>
+  <div class="f"><span class="small muted">${L('长什么样', 'Looks like')}</span>
+    <div class="shape-pick">${Object.keys(names).map((k) => `<button type="button" class="${d.shape === k ? 'on' : ''}" data-act="set-shape" data-v="${k}">${shape(k)}${names[k]}</button>`).join('')}</div></div>
+  <label class="f" style="margin-top:14px"><span>${L('份量', 'Yield')}</span><input class="input" data-d="yield" value="${esc(d.yield)}" placeholder="${L('比如：1 个 · 约 800g', 'e.g. 1 loaf · about 800g')}"></label>
+  <div class="f price-f"><span>${L('价签', 'Price tag')}</span>
+    <div class="row"><span class="mono">${currencySymbol()}</span><input class="input num" data-d="price" value="${esc(String(d.prices[cur]))}" type="number" inputmode="decimal" step="any" min="0">
+      <button type="button" class="link-btn" data-act="dice-price">${icon('dice')} ${L('随机定个价', 'Roll a price')}</button></div></div>
 
-  <h2>${icon('flour')} 材料</h2>
+  <h2>${icon('flour')} ${L('材料', 'Ingredients')}</h2>
   <div class="edit-grid">
     ${d.ingredients.map((i) => `<div class="edit-ing">
-      <input class="input" data-d="ing.${i.id}.name" value="${esc(i.name)}" placeholder="材料">
-      <input class="input num" data-d="ing.${i.id}.amount" value="${i.amount ?? ''}" type="number" inputmode="decimal" step="any" placeholder="用量">
-      <input class="input" data-d="ing.${i.id}.unit" value="${esc(i.unit)}" placeholder="单位">
-      <button class="btn icon sm ghost" data-act="del-ing" data-id="${i.id}" aria-label="删除">${icon('close')}</button>
+      <input class="input" data-d="ing.${i.id}.name" value="${esc(i.name)}" placeholder="${L('材料', 'Item')}">
+      <input class="input num" data-d="ing.${i.id}.amount" value="${i.amount ?? ''}" type="number" inputmode="decimal" step="any" placeholder="${L('用量', 'Qty')}">
+      <input class="input" data-d="ing.${i.id}.unit" value="${esc(i.unit)}" placeholder="${L('单位', 'Unit')}">
+      <button class="btn icon sm ghost" data-act="del-ing" data-id="${i.id}" aria-label="${L('删除', 'Delete')}">${icon('close')}</button>
     </div>`).join('')}
   </div>
-  <button class="btn sm" style="margin-top:8px" data-act="add-ing">${icon('plus')} 加材料</button>
+  <button class="btn sm" style="margin-top:8px" data-act="add-ing">${icon('plus')} ${L('加材料', 'Add ingredient')}</button>
 
-  <h2>${icon('timer')} 步骤</h2>
+  <h2>${icon('timer')} ${L('步骤', 'Steps')}</h2>
   <div>
     ${d.steps.map((s, n) => `<div class="edit-step">
-      <textarea class="input" rows="2" style="min-height:56px" data-d="step.${s.id}.text" placeholder="第 ${n + 1} 步做什么">${esc(s.text)}</textarea>
+      <textarea class="input" rows="2" style="min-height:56px" data-d="step.${s.id}.text" placeholder="${L(`第 ${n + 1} 步做什么`, `Step ${n + 1}`)}">${esc(s.text)}</textarea>
       <div class="tools">
-        <input class="input num" data-d="step.${s.id}.minutes" value="${s.minutes ?? ''}" type="number" inputmode="decimal" step="any" placeholder="分钟">
-        <span class="small muted">分钟</span><span class="grow" style="flex:1"></span>
-        <button class="btn icon sm ghost" data-act="move-step" data-id="${s.id}" data-v="-1" aria-label="上移">${icon('up')}</button>
-        <button class="btn icon sm ghost" data-act="move-step" data-id="${s.id}" data-v="1" aria-label="下移">${icon('down')}</button>
-        <button class="btn icon sm ghost" data-act="del-step" data-id="${s.id}" aria-label="删除">${icon('close')}</button>
+        <input class="input num" data-d="step.${s.id}.minutes" value="${s.minutes ?? ''}" type="number" inputmode="decimal" step="any" placeholder="${L('分钟', 'min')}">
+        <span class="small muted">${L('分钟', 'min')}</span><span class="grow" style="flex:1"></span>
+        <button class="btn icon sm ghost" data-act="move-step" data-id="${s.id}" data-v="-1" aria-label="${L('上移', 'Move up')}">${icon('up')}</button>
+        <button class="btn icon sm ghost" data-act="move-step" data-id="${s.id}" data-v="1" aria-label="${L('下移', 'Move down')}">${icon('down')}</button>
+        <button class="btn icon sm ghost" data-act="del-step" data-id="${s.id}" aria-label="${L('删除', 'Delete')}">${icon('close')}</button>
       </div></div>`).join('')}
   </div>
-  <button class="btn sm" style="margin-top:8px" data-act="add-step">${icon('plus')} 加步骤</button>
+  <button class="btn sm" style="margin-top:8px" data-act="add-step">${icon('plus')} ${L('加步骤', 'Add step')}</button>
 
-  <h2>${icon('pencil')} 备注</h2>
-  <textarea class="input" data-d="notes" placeholder="小心得、注意事项…">${esc(d.notes)}</textarea>
+  <h2>${icon('pencil')} ${L('备注', 'Notes')}</h2>
+  <textarea class="input" data-d="notes" placeholder="${L('小心得、注意事项…', 'Tips and things to remember…')}">${esc(d.notes)}</textarea>
 
-  <button class="btn primary block" style="margin-top:22px" data-act="save-recipe">${icon('check')} 保存配方</button>`;
+  <button class="btn primary block" style="margin-top:22px" data-act="save-recipe">${icon('check')} ${L('保存配方', 'Save recipe')}</button>`;
 }
 
 // 更新 recipe 对象里 "ing.<id>.amount" 这种路径的值
@@ -466,7 +513,7 @@ function applyField(recipe, path, value) {
       item.kind = guessStepKind(value);
     }
   } else if (a === 'price') {
-    recipe.price = value === '' ? '' : Number(value);
+    recipe.prices = { ...(recipe.prices || {}), [getCurrency()]: value === '' ? '' : Number(value) };
   } else {
     recipe[a] = value;
   }
@@ -474,7 +521,7 @@ function applyField(recipe, path, value) {
 
 // ---------- 导入 ----------
 
-const IMPORT_EXAMPLE = `乡村欧包
+const IMPORT_EXAMPLE = () => L(`乡村欧包
 
 材料：
 高筋面粉 400g
@@ -488,35 +535,46 @@ const IMPORT_EXAMPLE = `乡村欧包
 2. 加盐和酵母揉面10分钟
 3. 一次发酵 2小时
 4. 整形后二次发酵 1小时
-5. 250°C 烤 40分钟`;
+5. 250°C 烤 40分钟`, `Country Loaf
+
+Ingredients:
+400g bread flour
+100g whole wheat flour
+360g water
+10g salt
+3g yeast
+
+Steps:
+1. Mix flour and water, rest 30 min
+2. Add salt and yeast, knead 10 min
+3. Bulk ferment 2 h
+4. Shape and proof 1 h
+5. Bake at 250°C for 40 min`);
 
 function viewImport() {
   return `
-  <div class="topbar"><a class="btn icon ghost" href="#/recipes" aria-label="返回">${icon('back')}</a><h1>导入配方</h1></div>
-  <p class="muted small">把食谱整段粘贴进来就好——小红书、公众号、笔记里抄的都行。我会认出<span class="scribble">材料和用量</span>、<span class="scribble">每一步和它的时间</span>，导入后还能再改。</p>
-  <textarea class="input tall" id="import-text" placeholder="${esc(IMPORT_EXAMPLE)}"></textarea>
+  <div class="topbar"><a class="btn icon ghost" href="#/recipes" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1>${L('导入配方', 'Import a recipe')}</h1></div>
+  <p class="muted small">${L('把食谱整段粘贴进来就好——小红书、公众号、笔记里抄的都行。我会认出<span class="scribble">材料和用量</span>、<span class="scribble">每一步和它的时间</span>，导入后还能再改。',
+    'Paste a whole recipe from anywhere. I’ll pick out the <span class="scribble">ingredients and amounts</span> and <span class="scribble">each step with its time</span>; you can tweak it after.')}</p>
+  <textarea class="input tall" id="import-text" placeholder="${esc(IMPORT_EXAMPLE())}"></textarea>
   <div class="row" style="margin-top:12px">
-    <button class="btn primary grow" data-act="parse-import">${icon('check')} 认一下</button>
-    <label class="btn">${icon('upload')} 文件<input type="file" accept=".txt,.md,.json,text/plain,application/json" hidden data-act-change="import-file"></label>
+    <button class="btn primary grow" data-act="parse-import">${icon('check')} ${L('认一下', 'Read it')}</button>
+    <label class="btn">${icon('upload')} ${L('文件', 'File')}<input type="file" accept=".txt,.md,.json,text/plain,application/json" hidden data-act-change="import-file"></label>
   </div>
-  <p class="small muted" style="margin-top:18px">小提示：写上「材料」「步骤」这样的小标题会认得更准；时间写成「30分钟」「1.5小时」「45 min」都可以。</p>`;
+  <p class="small muted" style="margin-top:18px">${L('小提示：写上「材料」「步骤」这样的小标题会认得更准；时间写成「30分钟」「1.5小时」「45 min」都可以。',
+    'Tip: headings like “Ingredients” and “Steps” help; times like “30 min”, “1.5 h” or “1h30m” all work.')}</p>`;
 }
 
 // =====================================================================
-// 烘焙中
+// 烘焙中（可以同时好几炉，每炉一个 session）
 // =====================================================================
 
 async function startBake(id) {
   const r = await getRecipe(id);
   if (!r) return;
-  if (state.session) {
-    const ok = await confirmDlg('烤箱里还有东西', `「${state.session.recipe.name}」还没出炉，要放弃它开始新的吗？`, '换这个', true);
-    if (!ok) return;
-    stopRinging();
-  }
   unlockAudio();
   askNotifyPermission();
-  state.session = {
+  const s = {
     id: uid(),
     recipeId: r.id,
     original: clone(r),
@@ -529,24 +587,22 @@ async function startBake(id) {
     timers: [],
     editing: false,
   };
-  await persistSession();
-  go('#/bake');
+  state.sessions.push(s);
+  await persistSessions();
+  go(`#/bake/${s.id}`);
 }
 
-let saveTimer = null;
-function persistSession(debounce = 0) {
-  clearTimeout(saveTimer);
-  const run = () => (state.session ? saveSession(state.session) : clearSession());
-  if (!debounce) return run();
-  saveTimer = setTimeout(run, debounce);
-  return Promise.resolve();
-}
-
-function viewBake() {
-  const s = state.session;
+function viewBake(id) {
+  // 旧地址 #/bake：只有一炉就直接进去，没有就回首页
+  if (!id) {
+    const last = state.sessions[state.sessions.length - 1];
+    setTimeout(() => location.replace(last ? `#/bake/${last.id}` : '#/'), 0);
+    return null;
+  }
+  const s = sessionById(id);
   if (!s) {
-    return `<div class="topbar"><a class="btn icon ghost" href="#/" aria-label="返回">${icon('back')}</a><h1>烤箱</h1></div>
-      <div class="empty">${ovenScene()}<p>烤箱空着呢</p><a class="btn primary" href="#/recipes">去挑个配方</a></div>`;
+    return `<div class="topbar"><a class="btn icon ghost" href="#/" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1>${L('烤箱', 'Oven')}</h1></div>
+      <div class="empty">${ovenScene()}<p>${L('这一炉已经出炉或者放弃了', 'This batch is already done')}</p><a class="btn primary" href="#/recipes">${L('去挑个配方', 'Pick a recipe')}</a></div>`;
   }
   const r = s.recipe;
   const ed = s.editing;
@@ -557,19 +613,19 @@ function viewBake() {
 
   const ingHtml = ed
     ? `<div class="edit-grid">${r.ingredients.map((i) => `<div class="edit-ing">
-        <input class="input" data-s="ing.${i.id}.name" value="${esc(i.name)}" placeholder="材料">
+        <input class="input" data-s="ing.${i.id}.name" value="${esc(i.name)}" placeholder="${L('材料', 'Item')}">
         <input class="input num" data-s="ing.${i.id}.amount" value="${i.amount != null ? formatAmount(i.amount * s.scale) : ''}" type="number" inputmode="decimal" step="any">
         <input class="input" data-s="ing.${i.id}.unit" value="${esc(i.unit)}">
-        <button class="btn icon sm ghost" data-act="bake-del-ing" data-id="${i.id}" aria-label="删除">${icon('close')}</button></div>`).join('')}</div>
-        <button class="btn sm" style="margin-top:8px" data-act="bake-add-ing">${icon('plus')} 加材料</button>`
+        <button class="btn icon sm ghost" data-act="bake-del-ing" data-id="${i.id}" aria-label="${L('删除', 'Delete')}">${icon('close')}</button></div>`).join('')}</div>
+        <button class="btn sm" style="margin-top:8px" data-act="bake-add-ing">${icon('plus')} ${L('加材料', 'Add ingredient')}</button>`
     : allWeighed && !s.ingOpen
-    ? `<button class="ing-folded" data-act="ing-fold" data-v="1">${icon('check')}<span>料都称好了 · ${r.ingredients.length} 样</span><span class="small muted">展开</span></button>`
+    ? `<button class="ing-folded" data-act="ing-fold" data-v="1">${icon('check')}<span>${L(`料都称好了 · ${r.ingredients.length} 样`, `All ${r.ingredients.length} weighed out`)}</span><span class="small muted">${L('展开', 'Show')}</span></button>`
     : `<ul class="checklist">${r.ingredients.map((i) => {
         const done = s.checked.includes(i.id);
         return `<li class="${done ? 'done' : ''}" data-act="toggle-ing" data-id="${i.id}">
           <span class="box">${done ? icon('check') : ''}</span><span class="name">${esc(i.name)}${i.note ? ` <span class="small muted">${esc(i.note)}</span>` : ''}</span>
           <span class="amt">${i.amount != null ? formatAmount(i.amount * s.scale) : ''} ${esc(i.unit)}</span></li>`;
-      }).join('')}</ul>${allWeighed ? `<button class="link-btn fold-again" data-act="ing-fold" data-v="0">收起</button>` : ''}`;
+      }).join('')}</ul>${allWeighed ? `<button class="link-btn fold-again" data-act="ing-fold" data-v="0">${L('收起', 'Hide')}</button>` : ''}`;
 
   const stepsHtml = r.steps.map((st, n) => {
     const done = s.doneSteps.includes(st.id);
@@ -578,55 +634,59 @@ function viewBake() {
     if (ed) {
       return `<li><div class="edit-step" style="padding-top:0">
         <textarea class="input" rows="2" style="min-height:56px" data-s="step.${st.id}.text">${esc(st.text)}</textarea>
-        <div class="tools"><input class="input num" data-s="step.${st.id}.minutes" value="${st.minutes ?? ''}" type="number" inputmode="decimal" step="any" placeholder="分钟">
-        <span class="small muted">分钟</span><span style="flex:1"></span>
-        <button class="btn icon sm ghost" data-act="bake-del-step" data-id="${st.id}" aria-label="删除">${icon('close')}</button></div></div></li>`;
+        <div class="tools"><input class="input num" data-s="step.${st.id}.minutes" value="${st.minutes ?? ''}" type="number" inputmode="decimal" step="any" placeholder="${L('分钟', 'min')}">
+        <span class="small muted">${L('分钟', 'min')}</span><span style="flex:1"></span>
+        <button class="btn icon sm ghost" data-act="bake-del-step" data-id="${st.id}" aria-label="${L('删除', 'Delete')}">${icon('close')}</button></div></div></li>`;
     }
     return `<li class="${done ? 'done' : ''} ${cur ? 'current' : ''}">
-      <div class="stext" data-act="focus-step" data-i="${n}">${esc(st.text)}${timers.map((t) => ` <span class="tick mono" data-clock="${t.id}">${t.done ? '时间到！' : formatClock(remainingMs(t))}</span>`).join('')}</div>
+      <div class="stext" data-act="focus-step" data-i="${n}">${esc(st.text)}${timers.map((t) => ` <span class="tick mono" data-clock="${t.id}">${clockText(t)}</span>`).join('')}</div>
       ${!done && isTimed(st) && !timers.length ? `<div class="meta"><span class="chip time">${icon('timer')} ${formatMinutes(st.minutes)}</span></div>` : ''}
     </li>`;
   }).join('');
 
+  const others = state.sessions.filter((x) => x.id !== s.id);
   return `
   <div class="bake-head">
-    <a class="btn icon ghost" href="#/" aria-label="返回">${icon('back')}</a>
-    <div class="t"><b>${esc(r.name)}</b><span><span class="mono">${fmtDateFull(s.startedAt).slice(-5)}</span> 开烤 · 已 <span data-elapsed>${fmtDur(Date.now() - s.startedAt)}</span></span></div>
-    <button class="btn sm ${ed ? 'primary' : ''}" data-act="bake-edit-toggle">${icon(ed ? 'check' : 'pencil')} ${ed ? '改好了' : '改配方'}</button>
+    <a class="btn icon ghost" href="#/" aria-label="${L('返回', 'Back')}">${icon('back')}</a>
+    <div class="t"><b>${esc(r.name)}</b><span>${L(`<span class="mono">${fmtTime(s.startedAt)}</span> 开烤 · 已 <span data-elapsed>${fmtDur(Date.now() - s.startedAt)}</span>`,
+      `Started <span class="mono">${fmtTime(s.startedAt)}</span> · <span data-elapsed>${fmtDur(Date.now() - s.startedAt)}</span> in`)}</span></div>
+    <button class="btn sm ${ed ? 'primary' : ''}" data-act="bake-edit-toggle">${icon(ed ? 'check' : 'pencil')} ${ed ? L('改好了', 'Done') : L('改配方', 'Edit')}</button>
   </div>
-  ${changes.length ? `<p class="small" style="margin:8px 0 0"><span class="badge">这次改了 ${changes.length} 处</span> <span class="muted">出炉时再决定要不要存回配方</span></p>` : ''}
+  ${others.length ? `<div class="oven-tabs">${state.sessions.map((x) => `<a class="${x.id === s.id ? 'on' : ''}" href="#/bake/${x.id}">${shape(x.recipe.shape)}<span>${esc(x.recipe.name)}</span>${x.timers.some((t) => !t.done) ? `<span class="mono small" data-clock="${x.timers.find((t) => !t.done).id}"></span>` : ''}</a>`).join('')}</div>` : ''}
+  ${changes.length ? `<p class="small" style="margin:8px 0 0"><span class="badge">${L(`这次改了 ${changes.length} 处`, `${changes.length} change${changes.length > 1 ? 's' : ''}`)}</span> <span class="muted">${L('出炉时再决定要不要存回配方', 'Decide whether to keep them when it’s done')}</span></p>` : ''}
 
   ${ed ? '' : bakeHero(s)}
 
-  <h2>称料 <span class="row" style="margin-left:auto;gap:6px">${scaleBtns}</span></h2>
+  <h2>${L('称料', 'Weigh out')} <span class="row" style="margin-left:auto;gap:6px">${scaleBtns}</span></h2>
   ${ingHtml}
 
-  <h2>步骤</h2>
+  <h2>${L('步骤', 'Steps')}</h2>
   <ol class="steps bake-steps">${stepsHtml}</ol>
   ${ed ? `<div class="row" style="justify-content:space-between;margin-top:8px">
-    <button class="btn sm" data-act="bake-add-step">${icon('plus')} 加步骤</button>
-    <button class="btn sm primary" data-act="bake-edit-toggle">${icon('check')} 改好了</button></div>
-    <p class="small muted center" style="margin-top:10px">改动会自动保存，离开这一页也会自动退出修改</p>` : ''}
+    <button class="btn sm" data-act="bake-add-step">${icon('plus')} ${L('加步骤', 'Add step')}</button>
+    <button class="btn sm primary" data-act="bake-edit-toggle">${icon('check')} ${L('改好了', 'Done')}</button></div>
+    <p class="small muted center" style="margin-top:10px">${L('改动会自动保存，离开这一页也会自动退出修改', 'Changes save automatically; leaving this page ends editing')}</p>` : ''}
 
   <div class="stack" style="margin-top:26px">
-    <button class="btn crust block" data-act="go-finish">${icon('camera')} 出炉啦！拍照记录</button>
-    <button class="btn ghost block small danger" data-act="abandon">放弃这一炉</button>
+    <button class="btn crust block" data-act="go-finish">${icon('camera')} ${L('出炉啦！拍照记录', 'It’s out! Take a photo')}</button>
+    <button class="btn ghost block small danger" data-act="abandon">${L('放弃这一炉', 'Give up this batch')}</button>
   </div>`;
 }
 
-// 顶部的大烤箱：显示屏上就是当前计时，旁边站着吐司店长
-const START_WORD = { bake: '放进烤箱', ferment: '开始发酵' };
+const clockText = (t) => (t.done ? L('时间到！', 'Time’s up!') : formatClock(remainingMs(t)));
+const startWord = (k) => ({ bake: L('放进烤箱', 'Into the oven'), ferment: L('开始发酵', 'Start proofing') }[k]);
 
 // 正在计时时的一排小按钮：暂停 / 继续、加 5 分钟、取消
 function timerControls(t) {
   const paused = t.pausedRemaining != null;
   return `<div class="timer-ctl">
-    <button class="link-btn" data-act="${paused ? 'timer-resume' : 'timer-pause'}" data-id="${t.id}">${icon(paused ? 'play' : 'pause')} ${paused ? '继续' : '暂停'}</button>
-    <button class="link-btn" data-act="timer-add" data-id="${t.id}">${icon('plus')} 5 分钟</button>
-    <button class="link-btn" data-act="timer-stop" data-id="${t.id}">${icon('close')} 取消计时</button>
+    <button class="link-btn" data-act="${paused ? 'timer-resume' : 'timer-pause'}" data-id="${t.id}">${icon(paused ? 'play' : 'pause')} ${paused ? L('继续', 'Resume') : L('暂停', 'Pause')}</button>
+    <button class="link-btn" data-act="timer-add" data-id="${t.id}">${icon('plus')} ${L('5 分钟', '5 min')}</button>
+    <button class="link-btn" data-act="timer-stop" data-id="${t.id}">${icon('close')} ${L('取消计时', 'Cancel')}</button>
   </div>`;
 }
 
+// 顶部的大场景：烤 → 烤箱面板上倒计时；发酵 → 烤盘上的面包慢慢长大；其他 → 揉面动画
 function bakeHero(s) {
   const r = s.recipe;
   const cur = r.steps[s.current];
@@ -637,12 +697,10 @@ function bakeHero(s) {
   const timed = isTimed(cur);
   const running = !!(curTimer && !curTimer.done);
   const mood = !cur ? 'yay' : running ? 'wait' : 'wave';
-  const clockText = (t) => (t.done ? '时间到！' : formatClock(remainingMs(t)));
 
-  // 烤箱：倒计时显示在烤箱面板上；发酵：大号倒计时在碗下面；其他步骤：不计时，只放揉面动画
   let scene;
   if (!cur) {
-    scene = `<div class="oven-wrap">${ovenScene('', false, true)}<span class="display">出炉啦</span>${mascot('yay')}</div>`;
+    scene = `<div class="oven-wrap">${ovenScene('', false, true)}<span class="display">${L('出炉啦', 'Done!')}</span>${mascot('yay')}</div>`;
   } else if (kind === 'bake') {
     const t = curTimer;
     const display = t ? `<span class="display ${t.done ? 'ring' : ''}" data-clock="${t.id}">${clockText(t)}</span>`
@@ -657,27 +715,28 @@ function bakeHero(s) {
     // 别的步骤在做的时候，如果之前的发酵/烘烤计时还在跑，用一行小字提醒
     const other = ringing || live[0];
     scene = `<div class="oven-wrap">${stageScene(kind, true)}${mascot('wave')}</div>
-      ${other ? `<div class="hero-clock small">${icon(other.done ? 'bell' : 'timer')} <span data-clock="${other.id}">${clockText(other)}</span> · ${esc(other.label.slice(0, 10))}</div>` : ''}`;
+      ${other ? `<div class="hero-clock small">${icon(other.done ? 'bell' : 'timer')} <span data-clock="${other.id}">${clockText(other)}</span> · ${esc(other.label.slice(0, 14))}</div>` : ''}`;
   }
 
   let action;
   let hint;
   if (!cur) {
-    action = `<button class="btn primary big block" data-act="go-finish">${icon('camera')} 出炉啦！拍照记录</button>`;
-    hint = '每一步都完成了，辛苦啦';
+    action = `<button class="btn primary big block" data-act="go-finish">${icon('camera')} ${L('出炉啦！拍照记录', 'It’s out! Take a photo')}</button>`;
+    hint = L('每一步都完成了，辛苦啦', 'Every step done. Nice work');
   } else if (timed && !curTimer) {
-    action = `<button class="btn primary big block" data-act="timer-start" data-id="${cur.id}">${START_WORD[kind]} · ${formatMinutes(cur.minutes)}</button>`;
-    hint = '按下就开始计时，时间到会叫你';
+    action = `<button class="btn primary big block" data-act="timer-start" data-id="${cur.id}">${startWord(kind)} · ${formatMinutes(cur.minutes)}</button>`;
+    hint = L('按下就开始计时，时间到会叫你', 'Tap to start the timer. I’ll call you when it’s time');
   } else {
-    action = `<button class="btn primary big block" data-act="step-done" data-id="${cur.id}">${icon('check')} 这步好了，下一步</button>`;
-    hint = running ? (kind === 'ferment' ? '面团在睡觉长大，安心去做别的吧' : '烤箱在努力，时间到我会叫你')
-      : curTimer?.done ? '时间到啦，看看状态再进行下一步' : '慢慢来，做完这步就点一下';
+    action = `<button class="btn primary big block" data-act="step-done" data-id="${cur.id}">${icon('check')} ${L('这步好了，下一步', 'Done, next step')}</button>`;
+    hint = running ? (kind === 'ferment' ? L('面团在睡觉长大，安心去做别的吧', 'The dough is napping and growing. Go do something else')
+      : L('烤箱在努力，时间到我会叫你', 'The oven’s on it. I’ll call you'))
+      : curTimer?.done ? L('时间到啦，看看状态再进行下一步', 'Time’s up. Check it, then move on') : L('慢慢来，做完这步就点一下', 'Take your time. Tap when this step is done');
   }
   return `<div class="bake-hero">
     ${scene}
     ${curTimer && !curTimer.done ? timerControls(curTimer) : ''}
-    ${cur ? `<div class="step-now"><span class="n">第 ${s.current + 1} 步 · 共 ${r.steps.length} 步</span>
-      <b>${esc(cur.text)}</b>${cur.minutes || KIND_LABEL[cur.kind] ? `<span class="small muted">${[KIND_LABEL[cur.kind], cur.minutes ? formatMinutes(cur.minutes) : ''].filter(Boolean).join(' · ')}</span>` : ''}</div>` : ''}
+    ${cur ? `<div class="step-now"><span class="n">${L(`第 ${s.current + 1} 步 · 共 ${r.steps.length} 步`, `Step ${s.current + 1} of ${r.steps.length}`)}</span>
+      <b>${esc(cur.text)}</b>${cur.minutes || kindLabel(cur.kind) ? `<span class="small muted">${[kindLabel(cur.kind), cur.minutes ? formatMinutes(cur.minutes) : ''].filter(Boolean).join(' · ')}</span>` : ''}</div>` : ''}
     ${action}
     <p class="hero-hint">${hint}</p>
   </div>`;
@@ -688,137 +747,152 @@ function diffRecipe(a, b) {
   if (!a || !b) return [];
   const out = [];
   const amt = (i) => `${i.amount != null ? formatAmount(i.amount) : ''}${i.unit}`;
+  const noTimer = L('不计时', 'no timer');
+  const stepN = (n) => L(`第${n}步`, `Step ${n}`);
   const aIng = new Map(a.ingredients.map((i) => [i.id, i]));
   const bIng = new Map(b.ingredients.map((i) => [i.id, i]));
   for (const i of b.ingredients) {
     const o = aIng.get(i.id);
-    if (!o) { if (i.name) out.push({ t: `加了 ${i.name} ${amt(i)}` }); continue; }
+    if (!o) { if (i.name) out.push({ t: L(`加了 ${i.name} ${amt(i)}`, `Added ${i.name} ${amt(i)}`) }); continue; }
     if (o.name !== i.name) out.push({ t: `${i.name}`, old: o.name });
     if (o.amount !== i.amount || o.unit !== i.unit) out.push({ t: `${i.name} ${amt(i)}`, old: amt(o) });
   }
-  for (const o of a.ingredients) if (!bIng.has(o.id)) out.push({ t: `去掉了 ${o.name}` });
+  for (const o of a.ingredients) if (!bIng.has(o.id)) out.push({ t: L(`去掉了 ${o.name}`, `Removed ${o.name}`) });
   const aSt = new Map(a.steps.map((s) => [s.id, s]));
   const bSt = new Map(b.steps.map((s) => [s.id, s]));
   b.steps.forEach((s, n) => {
     const o = aSt.get(s.id);
-    if (!o) { if (s.text) out.push({ t: `新增步骤：${s.text}` }); return; }
-    if (o.text !== s.text) out.push({ t: `第${n + 1}步：${s.text}`, old: o.text });
-    if ((o.minutes || null) !== (s.minutes || null)) out.push({ t: `第${n + 1}步 ${s.minutes ? formatMinutes(s.minutes) : '不计时'}`, old: o.minutes ? formatMinutes(o.minutes) : '不计时' });
+    if (!o) { if (s.text) out.push({ t: L(`新增步骤：${s.text}`, `New step: ${s.text}`) }); return; }
+    if (o.text !== s.text) out.push({ t: `${stepN(n + 1)}${L('：', ': ')}${s.text}`, old: o.text });
+    if ((o.minutes || null) !== (s.minutes || null)) out.push({ t: `${stepN(n + 1)} ${s.minutes ? formatMinutes(s.minutes) : noTimer}`, old: o.minutes ? formatMinutes(o.minutes) : noTimer });
   });
-  for (const o of a.steps) if (!bSt.has(o.id)) out.push({ t: `删掉步骤：${o.text}` });
+  for (const o of a.steps) if (!bSt.has(o.id)) out.push({ t: L(`删掉步骤：${o.text}`, `Removed step: ${o.text}`) });
   return out;
 }
 
 // ---------- 计时循环 ----------
 
 function tick() {
-  const s = state.session;
-  if (!s) return;
   const now = Date.now();
   let changed = false;
-  for (const t of s.timers) {
-    if (!t.done && t.pausedRemaining == null && t.endsAt <= now) {
-      t.done = true;
-      changed = true;
-      fireAlarm(t);
+  for (const s of state.sessions) {
+    for (const t of s.timers) {
+      if (!t.done && t.pausedRemaining == null && t.endsAt <= now) {
+        t.done = true;
+        changed = true;
+        fireAlarm(s, t);
+      }
     }
   }
+  const timers = allTimers();
   document.querySelectorAll('[data-clock]').forEach((el) => {
-    const t = s.timers.find((x) => x.id === el.dataset.clock);
-    if (t) el.textContent = t.done ? '时间到！' : formatClock(remainingMs(t, now));
+    const t = timers.find((x) => x.id === el.dataset.clock);
+    if (t) el.textContent = t.done ? L('时间到！', 'Time’s up!') : formatClock(remainingMs(t, now));
   });
   document.querySelectorAll('[data-grow]').forEach((el) => {
-    const t = s.timers.find((x) => x.id === el.dataset.grow);
+    const t = timers.find((x) => x.id === el.dataset.grow);
     el.querySelector('[data-grow-scale]')?.style.setProperty('--g', growScale(progressOf(t)));
   });
   const el = document.querySelector('[data-elapsed]');
-  if (el) el.textContent = fmtDur(now - s.startedAt);
+  const rs = routeSession();
+  if (el && rs) el.textContent = fmtDur(now - rs.startedAt);
   if (changed) {
-    persistSession();
-    if (location.hash === '#/bake') rerender();
+    persistSessions();
+    if (location.hash.startsWith('#/bake/') || location.hash === '#/' || location.hash === '') rerender();
   }
   renderTabClock();
 }
 
-// 别的页面上不再浮一排计时小条：最近的那个倒计时直接显示在菜单栏「店铺」下面
+// 别的页面上不再浮一排计时小条：所有炉里最近的那个倒计时直接显示在菜单栏「店铺」下面
 function renderTabClock() {
   const label = $tabs.querySelector('[data-tab="shop"] span');
   if (!label) return;
-  const s = state.session;
-  const ts = s ? s.timers.slice().sort((a, b) => remainingMs(a) - remainingMs(b)) : [];
+  const ts = allTimers().slice().sort((a, b) => remainingMs(a) - remainingMs(b));
   const t = ts.find((x) => x.done) || ts[0];
-  label.textContent = t ? (t.done ? '时间到' : formatClock(remainingMs(t))) : '店铺';
+  label.textContent = t ? (t.done ? L('时间到', 'Time!') : formatClock(remainingMs(t))) : L('店铺', 'Shop');
   label.classList.toggle('mono', !!t);
   label.parentElement.classList.toggle('ticking', !!t);
 }
 
-async function fireAlarm(t) {
+const alarmQueue = [];
+async function fireAlarm(s, t) {
   startRinging();
   const autoStop = setTimeout(stopRinging, 60000); // 没人理也只响一分钟
-  notify(`⏰ ${t.label}`, `「${state.session?.recipe.name || ''}」这一步的时间到啦`);
-  if (state.alarmOpen) return;
+  notify(`⏰ ${t.label}`, L(`「${s.recipe.name}」这一步的时间到啦`, `${s.recipe.name}: time’s up for this step`));
+  // 几炉同时响时一个一个弹
+  if (state.alarmOpen) { alarmQueue.push([s, t]); clearTimeout(autoStop); return; }
   state.alarmOpen = t.id;
-  const v = await dialog(`<div class="alarm">${mascot('yay')}<h3>时间到！</h3>
-    <p>${esc(t.label)}</p>
+  const multi = state.sessions.length > 1;
+  const v = await dialog(`<div class="alarm">${mascot('yay')}<h3>${L('时间到！', 'Time’s up!')}</h3>
+    <p>${multi ? `<b>${esc(s.recipe.name)}</b> · ` : ''}${esc(t.label)}</p>
     <div class="row" style="justify-content:center">
-      <button class="btn" data-dlg="more">再等 5 分钟</button>
-      <button class="btn primary" data-dlg="ok">好了，下一步</button></div></div>`);
+      <button class="btn" data-dlg="more">${L('再等 5 分钟', '5 more min')}</button>
+      <button class="btn primary" data-dlg="ok">${L('好了，下一步', 'Done, next step')}</button></div></div>`);
   clearTimeout(autoStop);
   state.alarmOpen = null;
   stopRinging();
-  const s = state.session;
-  const live = s?.timers.find((x) => x.id === t.id);
-  if (!live) return;
-  if (v === 'more') {
-    addMinutes(live, 5);
-  } else {
-    // 计时到这里就结束了；点了「好了，下一步」再顺手进入下一步
-    s.timers = s.timers.filter((x) => x.id !== live.id);
-    if (v === 'ok' && live.stepId) completeStep(s, live.stepId);
+  const live = s.timers.find((x) => x.id === t.id);
+  if (live && sessionById(s.id)) {
+    if (v === 'more') {
+      addMinutes(live, 5);
+    } else {
+      // 计时到这里就结束了；点了「好了，下一步」再顺手进入下一步
+      s.timers = s.timers.filter((x) => x.id !== live.id);
+      if (v === 'ok' && live.stepId) completeStep(s, live.stepId);
+    }
+    await persistSessions();
+    if (v === 'ok' && multi && location.hash !== `#/bake/${s.id}`) go(`#/bake/${s.id}`);
+    else rerender();
   }
-  await persistSession();
-  if (location.hash === '#/bake') rerender();
+  const nextAlarm = alarmQueue.shift();
+  if (nextAlarm) fireAlarm(...nextAlarm);
 }
 
 // =====================================================================
 // 出炉记录
 // =====================================================================
 
-function viewFinish() {
-  const s = state.session;
-  if (!s) { setTimeout(() => go('#/'), 0); return ''; }
-  const f = state.finish;
+function finishDraft(sid) {
+  if (state.finish?.sid !== sid) state.finish = { sid, photo: null, photoUrl: '', rating: 0, notes: '', mode: 'update' };
+  return state.finish;
+}
+
+function viewFinish(sid) {
+  const s = sessionById(sid);
+  if (!s) { setTimeout(() => go('#/'), 0); return null; }
+  const f = finishDraft(sid);
   const changes = diffRecipe(s.original, s.recipe);
   return `
-  <div class="topbar"><a class="btn icon ghost" href="#/bake" aria-label="返回">${icon('back')}</a><h1>出炉啦</h1></div>
+  <div class="topbar"><a class="btn icon ghost" href="#/bake/${s.id}" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1>${L('出炉啦', 'Fresh out')}</h1></div>
   <label class="photo-drop">
-    ${f.photoUrl ? `<img src="${f.photoUrl}" alt="">` : `${icon('camera')}<span>拍一张 / 选一张照片</span>`}
+    ${f.photoUrl ? `<img src="${f.photoUrl}" alt="">` : `${icon('camera')}<span>${L('拍一张 / 选一张照片', 'Take or pick a photo')}</span>`}
     <input type="file" accept="image/*" capture="environment" hidden data-act-change="pick-photo">
   </label>
 
-  <h2>${esc(s.recipe.name)} <span class="small muted mono" style="font-weight:400">用时 ${fmtDur(Date.now() - s.startedAt)}</span></h2>
-  <div class="rating" role="radiogroup" aria-label="打分">
-    ${[1, 2, 3, 4, 5].map((n) => `<button class="${f.rating >= n ? 'on' : ''}" data-act="rate" data-v="${n}" aria-label="${n} 分">${icon('star')}</button>`).join('')}
+  <h2>${esc(s.recipe.name)} <span class="small muted mono" style="font-weight:400">${L('用时', 'took')} ${fmtDur(Date.now() - s.startedAt)}</span></h2>
+  <div class="rating" role="radiogroup" aria-label="${L('打分', 'Rating')}">
+    ${[1, 2, 3, 4, 5].map((n) => `<button class="${f.rating >= n ? 'on' : ''}" data-act="rate" data-v="${n}" aria-label="${n}">${icon('star')}</button>`).join('')}
   </div>
 
-  <label class="f" style="margin-top:16px"><span>这一炉的笔记</span>
-    <textarea class="input" data-f="notes" placeholder="组织怎么样？下次想调整什么？">${esc(f.notes)}</textarea></label>
+  <label class="f" style="margin-top:16px"><span>${L('这一炉的笔记', 'Notes on this batch')}</span>
+    <textarea class="input" data-f="notes" placeholder="${L('组织怎么样？下次想调整什么？', 'How was the crumb? Anything to change next time?')}">${esc(f.notes)}</textarea></label>
 
   ${changes.length ? `
-  <h2>这次改了配方</h2>
+  <h2>${L('这次改了配方', 'You changed the recipe')}</h2>
   <ul class="diff">${changes.map((c) => `<li>${esc(c.t)}${c.old != null ? ` <span class="old">${esc(c.old)}</span>` : ''}</li>`).join('')}</ul>
   <div class="choice" style="margin-top:12px">
-    <label><input type="radio" name="mode" value="update" ${f.mode === 'update' ? 'checked' : ''} data-act-change="mode"><span>更新原配方<small>以后就按这次的来</small></span></label>
-    <label><input type="radio" name="mode" value="new" ${f.mode === 'new' ? 'checked' : ''} data-act-change="mode"><span>另存为新配方<small>原配方不动，多一个「${esc(s.recipe.name)} · 改」</small></span></label>
-    <label><input type="radio" name="mode" value="none" ${f.mode === 'none' ? 'checked' : ''} data-act-change="mode"><span>只记在这一次<small>改动保存在这条记录里，配方不变</small></span></label>
+    <label><input type="radio" name="mode" value="update" ${f.mode === 'update' ? 'checked' : ''} data-act-change="mode"><span>${L('更新原配方', 'Update the recipe')}<small>${L('以后就按这次的来', 'Use this version from now on')}</small></span></label>
+    <label><input type="radio" name="mode" value="new" ${f.mode === 'new' ? 'checked' : ''} data-act-change="mode"><span>${L('另存为新配方', 'Save as a new recipe')}<small>${L(`原配方不动，多一个「${esc(s.recipe.name)} · 改」`, `Keep the original, add “${esc(s.recipe.name)} · v2”`)}</small></span></label>
+    <label><input type="radio" name="mode" value="none" ${f.mode === 'none' ? 'checked' : ''} data-act-change="mode"><span>${L('只记在这一次', 'Just this once')}<small>${L('改动保存在这条记录里，配方不变', 'Changes stay with this bake only')}</small></span></label>
   </div>` : ''}
 
-  <button class="btn primary block" style="margin-top:24px" data-act="save-bake">${icon('check')} 放上作品墙</button>`;
+  <button class="btn primary block" style="margin-top:24px" data-act="save-bake">${icon('check')} ${L('放上作品墙', 'Pin it to the wall')}</button>`;
 }
 
 async function saveFinish() {
-  const s = state.session;
-  const f = state.finish;
+  const s = routeSession();
+  if (!s) return;
+  const f = finishDraft(s.id);
   const before = (await listBakes()).length;
   const changes = diffRecipe(s.original, s.recipe);
   let recipeId = s.recipeId;
@@ -826,11 +900,11 @@ async function saveFinish() {
   const orig = await getRecipe(s.recipeId);
   if (mode === 'update' && !orig) mode = 'new'; // 原配方已被删
   if (mode === 'update') {
-    await saveRecipe({ ...s.recipe, id: orig.id, createdAt: orig.createdAt, version: orig.version });
+    await saveRecipe({ ...s.recipe, id: orig.id, createdAt: orig.createdAt, version: orig.version, prices: orig.prices });
   } else if (mode === 'new') {
     const copy = clone(s.recipe);
     delete copy.id; delete copy.createdAt; copy.version = 0;
-    copy.name = `${s.recipe.name} · 改`;
+    copy.name = `${s.recipe.name} · ${L('改', 'v2')}`;
     recipeId = (await saveRecipe(copy)).id;
   }
   const photoId = f.photo ? await savePhoto(f.photo) : null;
@@ -850,11 +924,10 @@ async function saveFinish() {
     notes: f.notes,
   };
   await saveBake(bake);
-  for (const t of s.timers) t.done = true;
-  stopRinging();
-  state.session = null;
-  state.finish = { photo: null, photoUrl: '', rating: 0, notes: '', mode: 'update' };
-  await persistSession();
+  if (!state.sessions.some((x) => x.id !== s.id && x.timers.some((t) => t.done))) stopRinging();
+  state.sessions = state.sessions.filter((x) => x.id !== s.id);
+  state.finish = null;
+  await persistSessions();
   go(`#/log/${bake.id}`);
   setTimeout(() => celebrate(before + 1, bake.shape), 250);
 }
@@ -864,19 +937,21 @@ async function celebrate(count, shapeName) {
   const b = levelOf(count);
   playChime();
   const up = b.lv > a.lv;
+  const left = b.next ? b.next.at - count : 0;
   await dialog(`<div class="celebrate">${up ? shopFront(b.lv, state.shop.name, true) : `<div class="duo">${shape(shapeName)}${mascot('yay')}</div>`}
-    <h3>${up ? `小店升级啦！Lv.${b.lv} ${b.name}` : `第 ${count} 炉出炉！`}</h3>
-    ${up ? `<p class="small muted" style="margin-top:-4px">${LEVELS[b.lv - 1].desc}</p>` : ''}
-    <p class="muted">${b.next ? `再出炉 ${b.next.at - count} 次，就能升级成「${b.next.name}」` : '已经是最高等级的小店了'}</p>
-    <button class="btn primary" data-dlg="ok">好耶</button></div>`);
+    <h3>${up ? L(`小店升级啦！Lv.${b.lv} ${b.name}`, `Level up! Lv.${b.lv} ${b.name}`) : L(`第 ${count} 炉出炉！`, `Batch #${count} is out!`)}</h3>
+    ${up ? `<p class="small muted" style="margin-top:-4px">${lvDesc(b.lv - 1)}</p>` : ''}
+    <p class="muted">${b.next ? L(`再出炉 ${left} 次，就能升级成「${b.next.name}」`, `${left} more to become “${b.next.name}”`) : L('已经是最高等级的小店了', 'Your shop is at the top level')}</p>
+    <button class="btn primary" data-dlg="ok">${L('好耶', 'Yay')}</button></div>`);
 }
 
 // ---------- 作品 ----------
 
 const WEEK = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-const WEEK_ZH = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const ymd = (t) => { const d = new Date(t); return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`; };
+const weekday = (d) => L(['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'], ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'])[d];
+const ymd = (t) => { const d = new Date(t); return `${d.getFullYear()}.${pad2(d.getMonth() + 1)}.${pad2(d.getDate())}`; };
+// 日记页脚：一张小票的抬头和流水号
+const receiptFoot = (no) => `<div class="diary-foot">${esc(APP_NAME())}${no ? ` · No.${String(no).padStart(4, '0')}` : ''}</div>`;
 
 // 烘焙日历：做过面包的日子画上那款面包
 async function viewLogs(ym) {
@@ -888,6 +963,37 @@ async function viewLogs(ym) {
   const all = await listBakes();
   const bakes = all.filter((b) => b.finishedAt >= from && b.finishedAt < to);
 
+  const prev = m === 1 ? `${y - 1}-12` : `${y}-${m - 1}`;
+  const next = m === 12 ? `${y + 1}-1` : `${y}-${m + 1}`;
+  const kinds = new Set(bakes.map((b) => b.recipeName)).size;
+  const hours = bakes.reduce((a, b) => a + (b.finishedAt - b.startedAt), 0) / 3600000;
+  const urls = await Promise.all(bakes.map((b) => photoUrl(b.photoId)));
+
+  return `
+  <div class="cal-head">
+    <div class="y">${y}</div>
+    <div class="m"><button data-go="#/logs/${prev}" aria-label="${L('上个月', 'Previous month')}">${icon('back')}</button>${MONTHS[m - 1]}<button data-go="#/logs/${next}" aria-label="${L('下个月', 'Next month')}">${icon('next')}</button></div>
+  </div>
+  ${monthGrid(y, m, bakes, true)}
+
+  <div class="stats cal-stats">
+    <div class="stat"><b>${bakes.length}</b><span>loaves baked</span></div>
+    <div class="stat"><b>${kinds}</b><span>recipes</span></div>
+    <div class="stat"><b>${hours >= 10 ? Math.round(hours) : Math.round(hours * 10) / 10}</b><span>hours</span></div>
+  </div>
+
+  ${bakes.length ? `<div class="diary-list" style="margin-top:30px">${bakes.map((b, i) => `<a class="card ${i % 2 ? 'alt' : ''} diary-row" href="#/log/${b.id}">
+      <span class="ph">${urls[i] ? `<img src="${urls[i]}" alt="" loading="lazy">` : shape(b.shape)}</span>
+      <span class="t"><span class="date">${ymd(b.finishedAt)} · ${weekday(new Date(b.finishedAt).getDay())}</span><b>${esc(b.recipeName)}</b>
+      <span class="small muted">${'★'.repeat(b.rating || 0)}${b.notes ? ` ${esc(b.notes.slice(0, 22))}${b.notes.length > 22 ? '…' : ''}` : ''}</span></span></a>`).join('')}</div>`
+    : `<div class="empty" style="margin-top:20px">${mascot('wait')}<p>${L('这个月还没有开炉', 'No bakes this month yet')}</p></div>`}
+
+  ${receiptFoot()}`;
+}
+
+// 一个月的格子：做过面包的日子画上那款面包（日历页和日历小组件共用）
+function monthGrid(y, m, bakes, links) {
+  const now = new Date();
   const byDay = new Map();
   for (const b of bakes) {
     const d = new Date(b.finishedAt).getDate();
@@ -902,36 +1008,10 @@ async function viewLogs(ym) {
     const list = byDay.get(d);
     const today = y === now.getFullYear() && m === now.getMonth() + 1 && d === now.getDate();
     cells.push(list
-      ? `<a class="d" href="#/log/${list[0].id}" title="${esc(list.map((b) => b.recipeName).join('、'))}">${shape(list[0].shape)}${list.length > 1 ? `<span class="cnt">${list.length}</span>` : ''}</a>`
+      ? `<${links ? `a href="#/log/${list[0].id}"` : 'span'} class="d" title="${esc(list.map((b) => b.recipeName).join(', '))}">${shape(list[0].shape)}${list.length > 1 ? `<span class="cnt">${list.length}</span>` : ''}</${links ? 'a' : 'span'}>`
       : `<span class="d ${today ? 'today' : ''}">${d}</span>`);
   }
-
-  const prev = m === 1 ? `${y - 1}-12` : `${y}-${m - 1}`;
-  const next = m === 12 ? `${y + 1}-1` : `${y}-${m + 1}`;
-  const kinds = new Set(bakes.map((b) => b.recipeName)).size;
-  const hours = bakes.reduce((a, b) => a + (b.finishedAt - b.startedAt), 0) / 3600000;
-  const urls = await Promise.all(bakes.map((b) => photoUrl(b.photoId)));
-
-  return `
-  <div class="cal-head">
-    <div class="y">${y}</div>
-    <div class="m"><button data-go="#/logs/${prev}" aria-label="上个月">${icon('back')}</button>${MONTHS[m - 1]}<button data-go="#/logs/${next}" aria-label="下个月">${icon('next')}</button></div>
-  </div>
-  <div class="cal">${WEEK.map((w) => `<span class="wd">${w}</span>`).join('')}${cells.join('')}</div>
-
-  <div class="stats cal-stats">
-    <div class="stat"><b>${bakes.length}</b><span>loaves baked</span></div>
-    <div class="stat"><b>${kinds}</b><span>recipes</span></div>
-    <div class="stat"><b>${hours >= 10 ? Math.round(hours) : Math.round(hours * 10) / 10}</b><span>hours</span></div>
-  </div>
-
-  ${bakes.length ? `<div class="diary-list" style="margin-top:30px">${bakes.map((b, i) => `<a class="card ${i % 2 ? 'alt' : ''} diary-row" href="#/log/${b.id}">
-      <span class="ph">${urls[i] ? `<img src="${urls[i]}" alt="" loading="lazy">` : shape(b.shape)}</span>
-      <span class="t"><span class="date">${ymd(b.finishedAt)} · ${WEEK_ZH[new Date(b.finishedAt).getDay()]}</span><b>${esc(b.recipeName)}</b>
-      <span class="small muted">${'★'.repeat(b.rating || 0)}${b.notes ? ` ${esc(b.notes.slice(0, 22))}${b.notes.length > 22 ? '…' : ''}` : ''}</span></span></a>`).join('')}</div>`
-    : `<div class="empty" style="margin-top:20px">${mascot('wait')}<p>这个月还没有开炉</p></div>`}
-
-  <div class="diary-foot">Baking Mood</div>`;
+  return `<div class="cal">${WEEK.map((w) => `<span class="wd">${w}</span>`).join('')}${cells.join('')}</div>`;
 }
 
 // 一炉一页的烘焙日记
@@ -940,39 +1020,107 @@ async function viewLog(id) {
   if (!b) return notFound();
   const url = await photoUrl(b.photoId);
   const recipe = await getRecipe(b.recipeId);
+  const all = await listBakes();
+  const no = all.length - all.findIndex((x) => x.id === b.id);
   const d = new Date(b.finishedAt);
-  const modeText = { update: '已更新到原配方', new: '已另存为新配方', none: '只记在这一次' }[b.changeMode] || '';
+  const modeText = { update: L('已更新到原配方', 'Saved to recipe'), new: L('已另存为新配方', 'Saved as new recipe'), none: L('只记在这一次', 'This bake only') }[b.changeMode] || '';
   return `
-  <div class="topbar"><a class="btn icon ghost" href="#/logs/${d.getFullYear()}-${d.getMonth() + 1}" aria-label="返回">${icon('back')}</a><h1></h1>
-    <label class="btn icon ghost" aria-label="换照片">${icon('camera')}<input type="file" accept="image/*" hidden data-act-change="replace-photo" data-id="${b.id}"></label></div>
+  <div class="topbar"><a class="btn icon ghost" href="#/logs/${d.getFullYear()}-${d.getMonth() + 1}" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1></h1>
+    <label class="btn icon ghost" aria-label="${L('换照片', 'Change photo')}">${icon('camera')}<input type="file" accept="image/*" hidden data-act-change="replace-photo" data-id="${b.id}"></label></div>
   <div class="diary">
     <div class="date">${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}</div>
-    <div class="wday">${WEEK_ZH[d.getDay()]}</div>
+    <div class="wday">${weekday(d.getDay())}</div>
     ${shape(b.shape)}
     <div class="name">${esc(b.recipeName)}</div>
-    <div class="photo">${url ? `<img src="${url}" alt="">` : `<div class="ph-empty">${shape(b.shape)}</div>`}<span class="hanko">出炉</span></div>
-    <div class="meta">${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} 出炉 · 用时 ${fmtDur(b.finishedAt - b.startedAt)}${b.scale !== 1 ? ` · ×${b.scale}` : ''}</div>
-    <div class="rating" style="justify-content:center;margin-top:8px">${[1, 2, 3, 4, 5].map((n) => `<button class="${b.rating >= n ? 'on' : ''}" data-act="log-rate" data-id="${b.id}" data-v="${n}" aria-label="${n} 分">${icon('star')}</button>`).join('')}</div>
+    <div class="photo">${url ? `<img src="${url}" alt="">` : `<div class="ph-empty">${shape(b.shape)}</div>`}<span class="hanko">${L('出炉', 'Baked')}</span></div>
+    <div class="meta">${L(`${fmtTime(b.finishedAt)} 出炉 · 用时 ${fmtDur(b.finishedAt - b.startedAt)}`, `Out at ${fmtTime(b.finishedAt)} · took ${fmtDur(b.finishedAt - b.startedAt)}`)}${b.scale !== 1 ? ` · ×${b.scale}` : ''}</div>
+    <div class="rating" style="justify-content:center;margin-top:8px">${[1, 2, 3, 4, 5].map((n) => `<button class="${b.rating >= n ? 'on' : ''}" data-act="log-rate" data-id="${b.id}" data-v="${n}" aria-label="${n}">${icon('star')}</button>`).join('')}</div>
   </div>
 
-  <h2>笔记</h2>
-  <textarea class="input" data-l="${b.id}" placeholder="组织怎么样？下次想调整什么？">${esc(b.notes)}</textarea>
+  <h2>${L('笔记', 'Notes')}</h2>
+  <textarea class="input" data-l="${b.id}" placeholder="${L('组织怎么样？下次想调整什么？', 'How was the crumb? Anything to change next time?')}">${esc(b.notes)}</textarea>
 
-  ${b.changes?.length ? `<h2>这次的改动 <span class="badge">${modeText}</span></h2>
+  ${b.changes?.length ? `<h2>${L('这次的改动', 'Changes this time')} <span class="badge">${modeText}</span></h2>
     <ul class="diff">${b.changes.map((c) => `<li>${esc(c.t)}${c.old != null ? ` <span class="old">${esc(c.old)}</span>` : ''}</li>`).join('')}</ul>` : ''}
 
-  <details style="margin-top:22px"><summary class="muted">这一炉用的配方</summary>
+  <details style="margin-top:22px"><summary class="muted">${L('这一炉用的配方', 'Recipe used for this batch')}</summary>
     <div style="margin-top:8px">${ingTable(b.snapshot.ingredients, b.scale)}
     <ol class="steps" style="margin-top:12px">${b.snapshot.steps.map((st) => `<li>${esc(st.text)}${stepMeta(st)}</li>`).join('')}</ol></div>
   </details>
 
   <div class="row" style="margin-top:28px">
-    ${recipe ? `<a class="btn sm" href="#/r/${recipe.id}">${icon('book')} 去看配方</a>
-    <button class="btn sm primary" data-act="start-bake" data-id="${recipe.id}">${icon('oven')} 再做一次</button>` : ''}
+    ${recipe ? `<a class="btn sm" href="#/r/${recipe.id}">${icon('book')} ${L('去看配方', 'View recipe')}</a>
+    <button class="btn sm primary" data-act="start-bake" data-id="${recipe.id}">${icon('oven')} ${L('再做一次', 'Bake again')}</button>` : ''}
     <span style="flex:1"></span>
-    <button class="btn icon sm danger" data-act="delete-bake" data-id="${b.id}" aria-label="删除">${icon('trash')}</button>
+    <button class="btn icon sm danger" data-act="delete-bake" data-id="${b.id}" aria-label="${L('删除', 'Delete')}">${icon('trash')}</button>
   </div>
-  <div class="diary-foot">Baking Mood</div>`;
+  ${receiptFoot(no)}`;
+}
+
+// =====================================================================
+// 小组件：我的店面（小）、配方架（中 / 大）、烘焙日历（中 / 大）
+// 按 iOS 小组件的尺寸画出来，点哪里就跳到对应的页面
+// =====================================================================
+
+async function widgetData() {
+  const [recipes, bakes] = await Promise.all([listRecipes(), listBakes()]);
+  return { recipes, bakes, lv: levelOf(bakes.length) };
+}
+
+function widgetShop({ bakes, lv }) {
+  return `<a class="widget w-small w-shop" href="#/">
+    ${shopFront(lv.lv, '', true)}
+    <div class="w-shop-foot"><b class="mono">${bakes.length}</b><span>${L('次出炉', 'baked')}</span></div>
+    <span class="w-lv">Lv.${lv.lv}</span></a>`;
+}
+
+function widgetRack({ recipes }, size) {
+  const n = size === 'large' ? 9 : 3;
+  const list = recipes.slice(0, n);
+  const rows = [];
+  for (let i = 0; i < list.length; i += 3) rows.push(list.slice(i, i + 3));
+  // 大号永远画满三层架子，空着的层也留着木板
+  while (rows.length < (size === 'large' ? 3 : 1)) rows.push([]);
+  return `<div class="widget w-${size} w-rack" data-go="#/recipes">
+    <div class="w-head"><b>${L('配方架', 'Recipe shelf')}</b><span class="small muted">${L(`${recipes.length} 款`, `${recipes.length}`)}</span></div>
+    ${rows.map((row) => `<div class="w-rack-row">${row.map((r) => `<a href="#/r/${r.id}"><span class="pic">${shape(r.shape)}${size === 'large' ? priceTag(r) : ''}</span><span class="nm">${esc(r.name)}</span></a>`).join('')}</div>`).join('')}
+  </div>`;
+}
+
+function widgetCalendar({ bakes }, size) {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  const monthBakes = bakes.filter((b) => { const d = new Date(b.finishedAt); return d.getFullYear() === y && d.getMonth() + 1 === m; });
+  let body;
+  if (size === 'large') {
+    body = monthGrid(y, m, monthBakes, false);
+  } else {
+    // 中号：这一周七天，每天一格
+    const start = new Date(now); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - start.getDay());
+    body = `<div class="w-week">${WEEK.map((w, i) => {
+      const day = new Date(start.getTime() + i * DAY);
+      const hit = bakes.find((b) => new Date(b.finishedAt).toDateString() === day.toDateString());
+      return `<span class="${day.toDateString() === now.toDateString() ? 'today' : ''}"><i>${w}</i>${hit ? shape(hit.shape) : `<em>${day.getDate()}</em>`}</span>`;
+    }).join('')}</div>`;
+  }
+  return `<a class="widget w-${size} w-cal" href="#/logs">
+    <div class="w-head"><b>${MONTHS[m - 1]}</b><span class="small muted">${L(`本月 ${monthBakes.length} 炉`, `${monthBakes.length} this month`)}</span></div>
+    ${body}</a>`;
+}
+
+async function viewWidgets() {
+  const data = await widgetData();
+  const block = (title, sizes, html) => `<h2>${title} <span class="small muted" style="font-weight:400">${sizes}</span></h2><div class="widget-row">${html}</div>`;
+  return `
+  <div class="topbar"><a class="btn icon ghost" href="#/settings" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1>${L('小组件', 'Widgets')}</h1></div>
+  <div class="widget-wall">
+    ${block(L('我的店面', 'My shop'), L('小号', 'small'), widgetShop(data))}
+    ${block(L('配方架', 'Recipe shelf'), L('中号 · 大号', 'medium · large'), widgetRack(data, 'medium') + widgetRack(data, 'large'))}
+    ${block(L('烘焙日历', 'Bake calendar'), L('中号 · 大号', 'medium · large'), widgetCalendar(data, 'medium') + widgetCalendar(data, 'large'))}
+  </div>
+  <p class="small muted" style="margin-top:22px">${L('点小组件会直接跳到对应的页面。网页版 app 还不能放到手机桌面上，要放上桌面需要一个原生的 iOS 外壳。',
+    'Tap a widget to jump to its page. A web app can’t put widgets on the Home Screen yet; that needs a native iOS shell.')}</p>`;
 }
 
 // =====================================================================
@@ -981,38 +1129,53 @@ async function viewLog(id) {
 
 function viewSettings() {
   const perm = 'Notification' in window ? Notification.permission : 'unsupported';
-  const permText = { granted: '已开启', denied: '被拒绝了（去系统设置里打开）', default: '还没开', unsupported: '这个浏览器不支持' }[perm];
+  const permText = { granted: L('已开启', 'On'), denied: L('已关闭', 'Off'), default: L('未开启', 'Not set'), unsupported: L('不支持', 'Not supported') }[perm];
   const theme = document.documentElement.dataset.theme || 'auto';
+  const chips = (act, cur, list) => list.map(([k, l]) => `<button class="chip ${cur === k ? 'on' : ''}" data-act="${act}" data-v="${k}">${l}</button>`).join('');
   return `
-  <div class="topbar"><a class="btn icon ghost" href="#/" aria-label="返回">${icon('back')}</a><h1>店务</h1></div>
+  <div class="topbar"><a class="btn icon ghost" href="#/" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1>${L('店务', 'Settings')}</h1></div>
   <div class="stack">
-    <div class="card"><div class="row"><div class="grow"><b>店名</b><div class="small muted">${esc(state.shop.name)}</div></div>
-      <button class="btn sm" data-act="rename-shop">改名</button></div></div>
-    <div class="card alt"><div class="row"><div class="grow"><b>计时提醒通知</b><div class="small muted">${permText}</div></div>
-      <button class="btn sm" data-act="notify-perm">开启</button><button class="btn sm" data-act="test-sound">${icon('bell')} 试听</button></div>
-      <p class="small muted" style="margin:8px 0 0">计时时屏幕会保持常亮。把 app 添加到主屏幕后，切到后台也能收到提醒（iOS 需 16.4 以上）。</p></div>
-    <div class="card"><div class="row"><div class="grow"><b>外观</b></div>
-      ${[['auto', '跟随系统'], ['light', '白纸'], ['dark', '黑板']].map(([k, l]) => `<button class="chip ${theme === k ? 'on' : ''}" data-act="theme" data-v="${k}">${l}</button>`).join('')}</div></div>
-    <div class="card alt"><b>备份</b><p class="small muted" style="margin:2px 0 10px">所有数据只存在这台设备的浏览器里。换手机前记得导出。</p>
-      <div class="row"><button class="btn sm" data-act="export-all">${icon('download')} 导出备份</button>
-      <label class="btn sm">${icon('upload')} 从备份恢复<input type="file" accept=".json,application/json" hidden data-act-change="import-all"></label></div></div>
+    <div class="card"><div class="row"><div class="grow"><b>${L('店名', 'Shop name')}</b><div class="small muted">${esc(state.shop.name)}</div></div>
+      <button class="btn sm" data-act="rename-shop">${L('改名', 'Rename')}</button></div></div>
+    <div class="card alt"><div class="row"><div class="grow"><b>${L('计时提醒', 'Timer alerts')}</b><div class="small muted">${permText}</div></div>
+      ${perm === 'default' ? `<button class="btn sm" data-act="notify-perm">${L('开启', 'Turn on')}</button>` : ''}<button class="btn sm" data-act="test-sound">${icon('bell')} ${L('试听', 'Test')}</button></div>
+      <p class="small muted" style="margin:6px 0 0">${L('加到主屏幕后，后台也会响', 'Add to Home Screen to hear it in the background')}</p></div>
+    <div class="card"><div class="row"><div class="grow"><b>${L('语言', 'Language')}</b></div>${chips('lang', getLang(), [['zh', '中文'], ['en', 'English']])}</div></div>
+    <div class="card alt"><div class="row"><div class="grow"><b>${L('价签货币', 'Currency')}</b></div>${chips('currency', getCurrency(), [['CNY', L('¥ 人民币', '¥ CNY')], ['USD', L('$ 美元', '$ USD')]])}</div></div>
+    <div class="card"><div class="row"><div class="grow"><b>${L('外观', 'Look')}</b></div>
+      ${chips('theme', theme, [['auto', L('跟随系统', 'Auto')], ['light', L('白纸', 'Paper')], ['dark', L('黑板', 'Chalkboard')]])}</div></div>
+    <a class="card alt settings-link" href="#/widgets"><div class="grow"><b>${L('小组件', 'Widgets')}</b><div class="small muted">${L('店面 · 配方架 · 烘焙日历', 'Shop · Recipe shelf · Calendar')}</div></div>${icon('next')}</a>
+    <div class="card"><b>${L('备份', 'Backup')}</b><p class="small muted" style="margin:2px 0 10px">${L('数据只存在这台设备上，换手机前记得导出。', 'Data lives only on this device. Export before switching phones.')}</p>
+      <div class="row"><button class="btn sm" data-act="export-all">${icon('download')} ${L('导出备份', 'Export')}</button>
+      <label class="btn sm">${icon('upload')} ${L('从备份恢复', 'Restore')}<input type="file" accept=".json,application/json" hidden data-act-change="import-all"></label></div></div>
   </div>
-  <p class="center small muted" style="margin-top:28px">小烘焙铺 · 用简笔画经营你的厨房</p>`;
+  <p class="center small muted" style="margin-top:28px">${esc(APP_NAME())} · ${L('经营你的小面包店', 'run your own little bakery')}</p>`;
 }
 
 function notFound() {
-  return `<div class="topbar"><a class="btn icon ghost" href="#/" aria-label="返回">${icon('back')}</a><h1></h1></div>
-    <div class="empty">${emptyShelf()}<p>找不到了，可能已经被删掉</p></div>`;
+  return `<div class="topbar"><a class="btn icon ghost" href="#/" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1></h1></div>
+    <div class="empty">${emptyShelf()}<p>${L('找不到了，可能已经被删掉', 'Can’t find it. It may have been deleted')}</p></div>`;
 }
 
 // =====================================================================
 // 事件
 // =====================================================================
 
+// 烘焙页上的操作都作用在地址里的那一炉
+function withSession(fn) {
+  return (el, e) => {
+    const s = routeSession();
+    if (!s) return;
+    fn(s, el, e);
+    persistSessions();
+    rerender();
+  };
+}
+
 const actions = {
   'roadmap'() { showRoadmap(); },
   async 'rename-shop'() {
-    const name = await promptDlg('给小店起个名字', state.shop.name);
+    const name = await promptDlg(L('给小店起个名字', 'Name your shop'), state.shop.name);
     if (name && name.trim()) {
       state.shop.name = name.trim().slice(0, 16);
       await saveShop(state.shop);
@@ -1023,9 +1186,9 @@ const actions = {
   'new-import'() {},
   'start-bake'(el) { startBake(el.dataset.id); },
   async 'delete-recipe'(el) {
-    if (await confirmDlg('删除这个配方？', '已经出炉的作品记录会保留。', '删除', true)) {
+    if (await confirmDlg(L('删除这个配方？', 'Delete this recipe?'), L('已经出炉的作品记录会保留。', 'Your past bakes will be kept.'), L('删除', 'Delete'), true)) {
       await deleteRecipe(el.dataset.id);
-      toast('配方已下架');
+      toast(L('配方已下架', 'Recipe removed'));
       go('#/recipes');
     }
   },
@@ -1034,21 +1197,21 @@ const actions = {
     const text = recipeToText(r);
     try {
       if (navigator.share) await navigator.share({ title: r.name, text });
-      else { await navigator.clipboard.writeText(text); toast('配方文字已复制'); }
+      else { await navigator.clipboard.writeText(text); toast(L('配方文字已复制', 'Recipe copied')); }
     } catch { /* 用户取消分享 */ }
   },
 
   // 编辑配方
   'cancel-edit'() { state.draft = null; state.draftFor = null; },
   'set-shape'(el) { state.draft.shape = el.dataset.v; rerender(); },
-  'dice-price'() { state.draft.price = randomPrice(state.draft.shape); rerender(); },
+  'dice-price'() { state.draft.prices = { ...(state.draft.prices || {}), [getCurrency()]: randomPrice(state.draft.shape) }; rerender(); },
   async 'edit-price'(el) {
     const r = await getRecipe(el.dataset.id);
     if (!r) return;
-    const v = await dialog(`<h3>改价签</h3>
-      <div class="row price-f"><span class="mono">¥</span><input class="input num" data-dlg-input type="number" inputmode="decimal" step="any" min="0" value="${esc(String(r.price ?? ''))}">
-        <button type="button" class="link-btn" data-dice>${icon('dice')} 随机</button></div>
-      <div class="row end" style="margin-top:16px"><button class="btn ghost" data-dlg="cancel">算了</button><button class="btn primary" data-dlg="ok">好</button></div>`, {
+    const v = await dialog(`<h3>${L('改价签', 'Edit price tag')}</h3>
+      <div class="row price-f"><span class="mono">${currencySymbol()}</span><input class="input num" data-dlg-input type="number" inputmode="decimal" step="any" min="0" value="${esc(String(getPrice(r) ?? ''))}">
+        <button type="button" class="link-btn" data-dice>${icon('dice')} ${L('随机', 'Roll')}</button></div>
+      <div class="row end" style="margin-top:16px"><button class="btn ghost" data-dlg="cancel">${L('算了', 'Cancel')}</button><button class="btn primary" data-dlg="ok">${L('好', 'OK')}</button></div>`, {
       onOpen: (d) => { d.querySelector('[data-dice]').onclick = () => { d.querySelector('[data-dlg-input]').value = randomPrice(r.shape); }; },
     });
     if (v == null || v === 'cancel' || v.trim() === '' || Number.isNaN(Number(v))) return;
@@ -1069,17 +1232,17 @@ const actions = {
   },
   async 'save-recipe'() {
     const d = state.draft;
-    if (!d.name.trim()) { toast('先给配方起个名字'); return; }
+    if (!d.name.trim()) { toast(L('先给配方起个名字', 'Give the recipe a name first')); return; }
     d.ingredients = d.ingredients.filter((i) => i.name.trim());
     d.steps = d.steps.filter((s) => s.text.trim());
     const saved = await saveRecipe(d);
     state.draft = null; state.draftFor = null;
-    toast('配方已上架');
+    toast(L('配方已上架', 'Recipe is on the shelf'));
     go(`#/r/${saved.id}`);
   },
   'parse-import'() {
     const text = document.getElementById('import-text').value;
-    if (!text.trim()) { toast('先粘贴一段食谱'); return; }
+    if (!text.trim()) { toast(L('先粘贴一段食谱', 'Paste a recipe first')); return; }
     const p = parseRecipeText(text);
     state.draft = {
       ...p,
@@ -1089,86 +1252,73 @@ const actions = {
       steps: p.steps.map((s) => ({ ...s, id: uid() })),
     };
     state.draftFor = 'new';
-    toast(`认出 ${p.ingredients.length} 种材料、${p.steps.length} 个步骤`);
+    toast(L(`认出 ${p.ingredients.length} 种材料、${p.steps.length} 个步骤`, `Found ${p.ingredients.length} ingredients and ${p.steps.length} steps`));
     go('#/edit/new');
   },
 
   // 烘焙中
-  'toggle-ing'(el) {
-    const c = state.session.checked;
+  'toggle-ing': withSession((s, el) => {
+    const c = s.checked;
     const i = c.indexOf(el.dataset.id);
     if (i >= 0) c.splice(i, 1); else c.push(el.dataset.id);
     // 勾完最后一样就自动收起来
-    if (state.session.recipe.ingredients.every((x) => c.includes(x.id))) state.session.ingOpen = false;
-    persistSession(); rerender();
-  },
-  'ing-fold'(el) {
-    state.session.ingOpen = el.dataset.v === '1';
-    persistSession(); rerender();
-  },
-  'focus-step'(el) {
-    const s = state.session;
+    if (s.recipe.ingredients.every((x) => c.includes(x.id))) s.ingOpen = false;
+  }),
+  'ing-fold': withSession((s, el) => { s.ingOpen = el.dataset.v === '1'; }),
+  'focus-step': withSession((s, el) => {
     const i = Number(el.dataset.i);
     const st = s.recipe.steps[i];
     s.doneSteps = s.doneSteps.filter((id) => id !== st.id);
     s.current = i;
-    persistSession(); rerender();
-  },
-  'step-done'(el) {
-    const s = state.session;
+  }),
+  'step-done': withSession((s, el) => {
     s.timers = s.timers.filter((t) => t.stepId !== el.dataset.id); // 这一步完成了，它的计时也一起结束
     completeStep(s, el.dataset.id);
-    persistSession(); rerender();
-  },
-  'timer-start'(el) {
+  }),
+  'timer-start': withSession((s, el) => {
     unlockAudio();
-    const s = state.session;
     const st = s.recipe.steps.find((x) => x.id === el.dataset.id);
     if (!isTimed(st)) return;
     s.timers = s.timers.filter((t) => t.stepId !== st.id);
-    s.timers.push(createTimer({ label: st.text.slice(0, 20) || '计时', minutes: st.minutes, stepId: st.id }));
+    s.timers.push(createTimer({ label: st.text.slice(0, 20) || L('计时', 'Timer'), minutes: st.minutes, stepId: st.id }));
     s.current = s.recipe.steps.indexOf(st);
     askNotifyPermission();
-    persistSession(); rerender();
-  },
-
-  'timer-pause'(el) { pauseTimer(findTimer(el)); persistSession(); rerender(); },
-  'timer-resume'(el) { resumeTimer(findTimer(el)); persistSession(); rerender(); },
-  'timer-add'(el) { addMinutes(findTimer(el), 5); stopRinging(); persistSession(); rerender(); },
-  'timer-stop'(el) {
-    state.session.timers = state.session.timers.filter((t) => t.id !== el.dataset.id);
-    stopRinging(); persistSession(); rerender();
-  },
-  'scale'(el) { state.session.scale = Number(el.dataset.v); persistSession(); rerender(); },
-  'bake-edit-toggle'() { state.session.editing = !state.session.editing; persistSession(); rerender(); },
-  'bake-add-ing'() { state.session.recipe.ingredients.push({ id: uid(), name: '', amount: null, unit: 'g', note: '' }); persistSession(); rerender(); },
-  'bake-del-ing'(el) { const r = state.session.recipe; r.ingredients = r.ingredients.filter((i) => i.id !== el.dataset.id); persistSession(); rerender(); },
-  'bake-add-step'() { state.session.recipe.steps.push({ id: uid(), text: '', minutes: null, kind: 'other' }); persistSession(); rerender(); },
-  'bake-del-step'(el) {
-    const s = state.session;
+  }),
+  'timer-pause': withSession((s, el) => pauseTimer(findTimer(s, el))),
+  'timer-resume': withSession((s, el) => resumeTimer(findTimer(s, el))),
+  'timer-add': withSession((s, el) => { addMinutes(findTimer(s, el), 5); stopRinging(); }),
+  'timer-stop': withSession((s, el) => { s.timers = s.timers.filter((t) => t.id !== el.dataset.id); stopRinging(); }),
+  'scale': withSession((s, el) => { s.scale = Number(el.dataset.v); }),
+  'bake-edit-toggle': withSession((s) => { s.editing = !s.editing; }),
+  'bake-add-ing': withSession((s) => { s.recipe.ingredients.push({ id: uid(), name: '', amount: null, unit: 'g', note: '' }); }),
+  'bake-del-ing': withSession((s, el) => { s.recipe.ingredients = s.recipe.ingredients.filter((i) => i.id !== el.dataset.id); }),
+  'bake-add-step': withSession((s) => { s.recipe.steps.push({ id: uid(), text: '', minutes: null, kind: 'other' }); }),
+  'bake-del-step': withSession((s, el) => {
     s.recipe.steps = s.recipe.steps.filter((x) => x.id !== el.dataset.id);
     s.timers = s.timers.filter((t) => t.stepId !== el.dataset.id);
     s.current = Math.min(s.current, s.recipe.steps.length);
-    persistSession(); rerender();
-  },
+  }),
   'go-finish'() {
-    const s = state.session;
+    const s = routeSession();
+    if (!s) return;
     s.editing = false;
     s.recipe.ingredients = s.recipe.ingredients.filter((i) => i.name.trim());
     s.recipe.steps = s.recipe.steps.filter((x) => x.text.trim());
-    persistSession();
-    go('#/finish');
+    persistSessions();
+    go(`#/finish/${s.id}`);
   },
   async 'abandon'() {
-    if (!(await confirmDlg('放弃这一炉？', '计时和这次的改动都会丢掉。', '放弃', true))) return;
-    stopRinging();
-    state.session = null;
-    await persistSession();
+    const s = routeSession();
+    if (!s) return;
+    if (!(await confirmDlg(L('放弃这一炉？', 'Give up this batch?'), L('计时和这次的改动都会丢掉。', 'Its timers and changes will be lost.'), L('放弃', 'Give up'), true))) return;
+    state.sessions = state.sessions.filter((x) => x.id !== s.id);
+    if (!allTimers().some((t) => t.done)) stopRinging();
+    await persistSessions();
     go('#/');
   },
 
   // 出炉
-  'rate'(el) { state.finish.rating = Number(el.dataset.v); rerender(); },
+  'rate'(el) { const s = routeSession(); if (s) { finishDraft(s.id).rating = Number(el.dataset.v); rerender(); } },
   'save-bake'(el) { el.disabled = true; saveFinish(); },
 
   // 作品
@@ -1178,7 +1328,7 @@ const actions = {
     await saveBake(b); rerender();
   },
   async 'delete-bake'(el) {
-    if (await confirmDlg('撕掉这张照片？', '这条出炉记录会被删除。', '删除', true)) {
+    if (await confirmDlg(L('撕掉这张照片？', 'Tear off this photo?'), L('这条出炉记录会被删除。', 'This bake record will be deleted.'), L('删除', 'Delete'), true)) {
       await deleteBake(el.dataset.id);
       go('#/logs');
     }
@@ -1187,10 +1337,10 @@ const actions = {
   // 设置
   async 'notify-perm'() {
     const p = await askNotifyPermission();
-    toast(p === 'granted' ? '通知已开启' : '没有拿到通知权限');
+    toast(p === 'granted' ? L('通知已开启', 'Alerts on') : L('没有拿到通知权限', 'Permission not granted'));
     rerender();
   },
-  'test-sound'() { playChime(); notify('⏰ 试一下', '时间到的时候会这样提醒你'); },
+  'test-sound'() { playChime(); notify(L('⏰ 试一下', '⏰ Test'), L('时间到的时候会这样提醒你', 'This is how timers will alert you')); },
   'theme'(el) {
     const v = el.dataset.v;
     if (v === 'auto') delete document.documentElement.dataset.theme;
@@ -1198,12 +1348,20 @@ const actions = {
     try { localStorage.setItem('baker-theme', v); } catch { /* 无痕模式 */ }
     rerender();
   },
+  'lang'(el) {
+    setLang(el.dataset.v);
+    document.title = APP_NAME();
+    renderTabs('shop');
+    renderTabClock();
+    rerender();
+  },
+  'currency'(el) { setCurrency(el.dataset.v); rerender(); },
   async 'export-all'() {
     const data = await exportAll();
     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `烘焙铺备份-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `${L('面包小票备份', 'bread-receipt-backup')}-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   },
@@ -1212,11 +1370,13 @@ const actions = {
 const changeActions = {
   async 'pick-photo'(el) {
     const file = el.files?.[0];
-    if (!file) return;
+    const s = routeSession();
+    if (!file || !s) return;
+    const f = finishDraft(s.id);
     const blob = await compressImage(file);
-    if (state.finish.photoUrl) URL.revokeObjectURL(state.finish.photoUrl);
-    state.finish.photo = blob;
-    state.finish.photoUrl = URL.createObjectURL(blob);
+    if (f.photoUrl) URL.revokeObjectURL(f.photoUrl);
+    f.photo = blob;
+    f.photoUrl = URL.createObjectURL(blob);
     rerender();
   },
   async 'replace-photo'(el) {
@@ -1227,7 +1387,7 @@ const changeActions = {
     b.photoId = await savePhoto(await compressImage(file));
     await saveBake(b); rerender();
   },
-  'mode'(el) { state.finish.mode = el.value; },
+  'mode'(el) { const s = routeSession(); if (s) finishDraft(s.id).mode = el.value; },
   async 'import-file'(el) {
     const file = el.files?.[0];
     if (!file) return;
@@ -1235,7 +1395,7 @@ const changeActions = {
     if (/\.json$/i.test(file.name)) {
       try {
         const data = JSON.parse(text);
-        if (data.app === 'baker') { await importAll(data); toast('备份已恢复'); go('#/recipes'); return; }
+        if (data.app === 'baker') { await importAll(data); toast(L('备份已恢复', 'Backup restored')); go('#/recipes'); return; }
         if (data.name) { state.draft = { ...blankRecipe(), ...data, id: undefined }; state.draftFor = 'new'; go('#/edit/new'); return; }
       } catch { /* 不是 JSON，当文字处理 */ }
     }
@@ -1247,9 +1407,9 @@ const changeActions = {
     try {
       await importAll(JSON.parse(await file.text()));
       state.shop = await getShop();
-      toast('备份已恢复');
+      toast(L('备份已恢复', 'Backup restored'));
       go('#/');
-    } catch (e) { toast(e.message || '文件读不了'); }
+    } catch (e) { toast(e.message || L('文件读不了', 'Can’t read that file')); }
   },
 };
 
@@ -1258,20 +1418,27 @@ function completeStep(s, stepId) {
   if (!s.doneSteps.includes(stepId)) s.doneSteps.push(stepId);
   const next = s.recipe.steps.findIndex((st) => !s.doneSteps.includes(st.id));
   s.current = next < 0 ? s.recipe.steps.length : next;
-  if (next < 0) toast('全部步骤完成，可以出炉了！');
+  if (next < 0) toast(L('全部步骤完成，可以出炉了！', 'All steps done. Time to take it out!'));
 }
 
-function findTimer(el) {
-  return state.session.timers.find((t) => t.id === el.dataset.id);
+function findTimer(s, el) {
+  return s.timers.find((t) => t.id === el.dataset.id);
 }
 
 document.addEventListener('click', (e) => {
-  const nav = e.target.closest('[data-go]');
-  if (nav) { location.replace(nav.dataset.go); return; }
   const el = e.target.closest('[data-act]');
-  if (!el || !actions[el.dataset.act]) return;
-  if (el.tagName === 'BUTTON' || el.tagName === 'LI' || el.dataset.act === 'focus-step') e.preventDefault();
-  actions[el.dataset.act](el, e);
+  if (el && actions[el.dataset.act]) {
+    if (el.tagName === 'BUTTON' || el.tagName === 'LI' || el.dataset.act === 'focus-step') e.preventDefault();
+    actions[el.dataset.act](el, e);
+    return;
+  }
+  // 小组件里的面包本身是链接，点空白处才跳整个组件的地址
+  if (e.target.closest('a')) return;
+  const nav = e.target.closest('[data-go]');
+  if (nav) {
+    if (nav.classList.contains('widget')) location.hash = nav.dataset.go;
+    else location.replace(nav.dataset.go);
+  }
 });
 
 document.addEventListener('change', (e) => {
@@ -1282,13 +1449,13 @@ document.addEventListener('change', (e) => {
 document.addEventListener('input', (e) => {
   const el = e.target;
   if (el.dataset.d != null && state.draft) applyField(state.draft, el.dataset.d, el.value);
-  else if (el.dataset.s != null && state.session) {
-    const s = state.session;
+  else if (el.dataset.s != null && routeSession()) {
+    const s = routeSession();
     let v = el.value;
     if (/\.amount$/.test(el.dataset.s) && v !== '') v = String(Number(v) / s.scale);
     applyField(s.recipe, el.dataset.s, v);
-    persistSession(400);
-  } else if (el.dataset.f != null) state.finish[el.dataset.f] = el.value;
+    persistSessions(400);
+  } else if (el.dataset.f != null) { const s = routeSession(); if (s) finishDraft(s.id)[el.dataset.f] = el.value; }
   else if (el.dataset.actInput === 'filter') {
     state.filter = el.value;
     clearTimeout(filterTimer);
@@ -1310,15 +1477,13 @@ document.addEventListener('input', (e) => {
 let filterTimer = null;
 let noteTimer = null;
 
-// 在烘焙页里改了配方并且编辑框失焦时，刷新一下改动提示
+// 在烘焙页里改了配方并且编辑框失焦时，马上存一下
 document.addEventListener('focusout', (e) => {
-  if (e.target.dataset?.s != null && location.hash === '#/bake') {
-    persistSession();
-  }
+  if (e.target.dataset?.s != null && location.hash.startsWith('#/bake/')) persistSessions();
 });
 
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) { tick(); if (state.session) keepAwake(location.hash === '#/bake'); }
+  if (!document.hidden) { tick(); keepAwake(location.hash.startsWith('#/bake/')); }
 });
 
 // =====================================================================
@@ -1330,15 +1495,17 @@ async function boot() {
     const t = localStorage.getItem('baker-theme');
     if (t && t !== 'auto') document.documentElement.dataset.theme = t;
   } catch { /* 无痕模式 */ }
+  setLang(getLang());
+  document.title = APP_NAME();
 
   state.shop = await getShop();
   if (!(await db.getKv('shop'))) await saveShop(state.shop);
   if (!(await db.getKv('seeded'))) {
-    for (const r of SAMPLE_RECIPES) await saveRecipe(r);
+    for (const r of isEn() ? SAMPLE_RECIPES_EN : SAMPLE_RECIPES) await saveRecipe(r);
     await db.setKv('seeded', true);
   }
-  state.session = (await getSession()) || null;
-  if (state.session) state.session.editing = false;
+  state.sessions = await getSessions();
+  for (const s of state.sessions) s.editing = false;
 
   window.addEventListener('hashchange', route);
   await route();

@@ -1,5 +1,7 @@
 // 本地存储：配方、出炉记录、照片都放在 IndexedDB（照片太大，localStorage 放不下）。
 
+import { L, getCurrency } from './i18n.js';
+
 const DB_NAME = 'baker';
 const DB_VERSION = 1;
 const STORES = ['recipes', 'bakes', 'photos', 'kv'];
@@ -56,7 +58,7 @@ export function normalizeRecipe(r) {
   const now = Date.now();
   return {
     id: r.id || uid(),
-    name: (r.name || '未命名配方').trim(),
+    name: (r.name || L('未命名配方', 'Untitled recipe')).trim(),
     shape: r.shape || guessShape(r.name),
     yield: r.yield || '',
     ingredients: (r.ingredients || []).map((i) => ({
@@ -73,7 +75,7 @@ export function normalizeRecipe(r) {
       kind: s.kind || 'other',
     })),
     notes: r.notes || '',
-    price: r.price === '' || r.price == null || Number.isNaN(Number(r.price)) ? randomPrice(r.shape || guessShape(r.name)) : Math.max(0, Number(r.price)),
+    prices: normPrices(r),
     createdAt: r.createdAt || now,
     updatedAt: now,
     version: (r.version || 0) + 1,
@@ -95,31 +97,58 @@ export function guessShape(name = '') {
   return 'loaf';
 }
 
-// 价签：按面包种类给一个说得过去的价格区间，随机挑一个整数（元）
+// 价签：按面包种类给一个说得过去的价格区间随机挑一个。人民币取整，美元按 50 美分一档
 const PRICE_RANGE = {
-  cookie: [6, 12], muffin: [10, 16], anpan: [8, 14], melonpan: [8, 14], bagel: [10, 16], pretzel: [10, 16],
-  croissant: [12, 18], baguette: [14, 22], loaf: [16, 28], toast: [18, 32], cake: [28, 48],
+  CNY: {
+    cookie: [6, 12], muffin: [10, 16], anpan: [8, 14], melonpan: [8, 14], bagel: [10, 16], pretzel: [10, 16],
+    croissant: [12, 18], baguette: [14, 22], loaf: [16, 28], toast: [18, 32], cake: [28, 48],
+  },
+  USD: {
+    cookie: [2, 4], muffin: [3, 5], anpan: [2.5, 4.5], melonpan: [2.5, 4.5], bagel: [3, 5], pretzel: [3, 5],
+    croissant: [3.5, 6], baguette: [4, 7], loaf: [6, 10], toast: [6, 11], cake: [28, 48],
+  },
 };
-export function randomPrice(shape) {
-  const [lo, hi] = PRICE_RANGE[shape] || [10, 20];
-  return lo + Math.floor(Math.random() * (hi - lo + 1));
+export function randomPrice(shape, cur = getCurrency()) {
+  const table = PRICE_RANGE[cur] || PRICE_RANGE.CNY;
+  const [lo, hi] = table[shape] || (cur === 'USD' ? [3, 6] : [10, 20]);
+  const step = cur === 'USD' ? 0.5 : 1;
+  return lo + step * Math.floor(Math.random() * (Math.round((hi - lo) / step) + 1));
 }
 
-// 老配方没有价签的，第一次上架时补一个（不改 updatedAt / version）
+// 每种货币各记一个价（切换货币时不用换算，各是各的价签）；老数据里的 price 当作人民币
+export function getPrice(r, cur = getCurrency()) {
+  const v = r?.prices?.[cur] ?? (cur === 'CNY' ? r?.price : null);
+  return v == null || v === '' || Number.isNaN(Number(v)) ? null : Number(v);
+}
+function normPrices(r) {
+  const out = { ...(r.prices || {}) };
+  if (out.CNY == null && r.price != null && r.price !== '' && !Number.isNaN(Number(r.price))) out.CNY = Number(r.price);
+  for (const k of Object.keys(out)) if (out[k] === '' || out[k] == null || Number.isNaN(Number(out[k]))) delete out[k];
+  const cur = getCurrency();
+  if (out[cur] == null) out[cur] = randomPrice(r.shape || guessShape(r.name), cur);
+  return out;
+}
+
+// 还没有当前货币价签的配方，第一次上架时补一个（不改 updatedAt / version）
 export async function listRecipes() {
   const all = await db.all('recipes');
+  const cur = getCurrency();
   for (const r of all) {
-    if (r.price == null) { r.price = randomPrice(r.shape); await db.put('recipes', r); }
+    if (getPrice(r, cur) == null) {
+      r.prices = { ...(r.prices || {}), [cur]: randomPrice(r.shape, cur) };
+      await db.put('recipes', r);
+    }
   }
   return all.sort((a, b) => b.updatedAt - a.updatedAt);
 }
 export const getRecipe = (id) => db.get('recipes', id);
 // 只改价签，不算改配方
-export async function setPrice(id, price) {
+export async function setPrice(id, price, cur = getCurrency()) {
   const r = await getRecipe(id);
-  if (!r) return;
-  r.price = price;
+  if (!r) return null;
+  r.prices = { ...(r.prices || {}), [cur]: price };
   await db.put('recipes', r);
+  return r;
 }
 export async function saveRecipe(r) {
   const rec = normalizeRecipe(r);
@@ -175,13 +204,19 @@ export async function compressImage(file, max = 1280, quality = 0.82) {
 // ---------- 店铺设置 & 进行中的烘焙 ----------
 
 export async function getShop() {
-  return (await db.getKv('shop')) || { name: '我的小烘焙铺', openedAt: Date.now() };
+  return (await db.getKv('shop')) || { name: L('我的小烘焙铺', 'My Little Bakery'), openedAt: Date.now() };
 }
 export const saveShop = (shop) => db.setKv('shop', shop);
 
-export const getSession = () => db.getKv('session');
-export const saveSession = (s) => db.setKv('session', s);
-export const clearSession = () => db.delKv('session');
+// 正在烤的可以有好几炉，一炉一个 session；老版本只存了一个 'session'，读的时候顺手迁过来
+export async function getSessions() {
+  const list = await db.getKv('sessions');
+  if (Array.isArray(list)) return list;
+  const old = await db.getKv('session');
+  if (old) { await db.setKv('sessions', [old]); await db.delKv('session'); return [old]; }
+  return [];
+}
+export const saveSessions = (list) => db.setKv('sessions', list);
 
 // ---------- 备份 ----------
 
@@ -208,7 +243,7 @@ export async function exportAll() {
 }
 
 export async function importAll(data) {
-  if (!data || data.app !== 'baker') throw new Error('不是烘焙铺的备份文件');
+  if (!data || data.app !== 'baker') throw new Error(L('不是这个 app 的备份文件', 'Not a backup file from this app'));
   if (data.shop) await saveShop(data.shop);
   for (const r of data.recipes || []) await db.put('recipes', r);
   for (const b of data.bakes || []) await db.put('bakes', b);
