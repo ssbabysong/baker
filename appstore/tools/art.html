@@ -1,0 +1,93 @@
+<!doctype html>
+<!-- App Store 的「详情页顶部图」（21:9）和「搜索结果图」（3:2）。用 app 自己的简笔画拼出来：
+     art.html?kind=header&lang=zh   → 1920×823 @2x = 3840×1646
+     art.html?kind=search&lang=zh&shots=http://localhost:8081  → 1920×1280 @2x = 3840×2560 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../css/style.css">
+<style>
+  html, body { margin: 0; overflow: hidden; background: #f7f2e8; }
+  body { position: relative; }
+  body::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .55;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .2 0 0 0 .055 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  .abs { position: absolute; }
+  .float svg { width: 100%; height: 100%; display: block; }
+  .ground { position: absolute; left: -2%; width: 104%; height: 30px; }
+  .shop { position: absolute; }
+  .shop .storefront { max-width: none; width: 100%; }
+  .shop .storefront .sign { font-size: var(--sign, 30px); cursor: default; }
+  .mascot-big svg { width: 100%; height: auto; display: block; }
+  h1 { position: absolute; left: 0; right: 0; text-align: center; margin: 0; font-weight: 400; color: #4a3a2e; }
+  h1 span { padding: 0 14px; background: linear-gradient(transparent 60%, #f3dcb6 60%, #f3dcb6 92%, transparent 92%); }
+  .sub { position: absolute; left: 0; right: 0; text-align: center; color: #8a7a6a; letter-spacing: .06em; }
+  .phone { position: absolute; padding: 14px; border-radius: 74px; background: #3d322b;
+    box-shadow: 0 40px 80px -30px rgba(74, 58, 46, .5), 0 0 0 2px #2b231e inset; }
+  .phone .screen { border-radius: 60px; overflow: hidden; background: #f7f2e8; }
+  .phone img { display: block; width: 100%; }
+  .phone .bar { height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 44px 0 58px;
+    font: 600 22px -apple-system, 'Helvetica Neue', Arial, sans-serif; color: #2b231e; position: relative; }
+  .phone .bar i { position: absolute; left: 50%; top: 14px; width: 160px; height: 46px; border-radius: 26px; background: #000; transform: translateX(-50%); }
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="rough" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="crayon" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3" result="grain"/>
+    <feColorMatrix in="grain" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  2.6 0 0 0 -0.55" result="mask"/>
+    <feComposite in="SourceGraphic" in2="mask" operator="in" result="grainy"/>
+    <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="5" result="wob"/>
+    <feDisplacementMap in="grainy" in2="wob" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+<div id="stage"></div>
+<script type="module">
+import { storefront, storefrontSign, mascot, shape } from '../../js/sketch.js';
+const q = new URLSearchParams(location.search);
+const kind = q.get('kind') || 'header';
+const lang = q.get('lang') || 'zh';
+const shots = q.get('shots') || '';
+const stage = document.getElementById('stage');
+const W = kind === 'header' ? 1920 : 1920, H = kind === 'header' ? 823 : 1280;
+document.body.style.width = W + 'px'; document.body.style.height = H + 'px';
+const name = lang === 'zh' ? '晴天面包铺' : 'Sunny Day Bakery';
+
+// 店面 + 招牌上的店名（和 app 里一样的叠法）
+function shop(level, x, bottom, width, sign) {
+  const g = storefrontSign(level);
+  const st = `left:${(g.x / g.vbW * 100).toFixed(2)}%;width:${(g.w / g.vbW * 100).toFixed(2)}%;top:${(g.y / g.vbH * 100).toFixed(2)}%;height:${(g.h / g.vbH * 100).toFixed(2)}%`;
+  return `<div class="shop" style="left:${x}px;bottom:${bottom}px;width:${width}px;--sign:${sign}px"><div class="storefront">${storefront(level)}<span class="sign" style="${st}">${name}</span></div></div>`;
+}
+const floatBread = (s, x, y, size, rot) => `<div class="abs float" style="left:${x}px;top:${y}px;width:${size}px;height:${size}px;transform:rotate(${rot}deg)">${shape(s)}</div>`;
+const cloud = (x, y, w) => `<svg class="abs sk" style="left:${x}px;top:${y}px;width:${w}px" viewBox="0 0 120 50" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M14 40 C4 40 4 26 16 26 C16 14 34 10 40 20 C44 8 66 8 70 22 C80 14 98 20 94 32 C106 32 108 42 98 42 Z" fill="#fffcf5"/></svg>`;
+const ground = (y) => `<svg class="ground sk" style="top:${y}px" viewBox="0 0 1000 20" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+  <path d="M0 8 C120 6 240 10 360 8 S600 6 720 9 S900 7 1000 8"/></svg>`;
+
+if (kind === 'header') {
+  // 一条安静的小街：中间是排队的小店，店长站在门口；天上飘着几朵云和几个面包。左下留白给 App Store 叠的图标和名字
+  stage.innerHTML = `
+    ${cloud(230, 80, 220)}${cloud(1450, 64, 250)}${cloud(1720, 240, 150)}${cloud(40, 300, 140)}
+    ${floatBread('croissant', 430, 230, 104, -14)}${floatBread('pretzel', 1390, 250, 112, 12)}
+    ${floatBread('baguette', 210, 420, 120, 24)}${floatBread('melonpan', 1600, 420, 96, -8)}${floatBread('chocobun', 1180, 96, 86, 10)}
+    ${floatBread('bagel', 760, 70, 80, -6)}
+    ${ground(704)}
+    ${shop(5, 505, 70, 910, 40)}`;
+} else {
+  const t = lang === 'zh'
+    ? ['烘焙配方 + 发酵计时', '导入配方 · 发酵和烘烤自动提醒 · 每一炉记进日历']
+    : ['Recipes & bake timers', 'Import recipes · timers for every proof and bake · a baking diary'];
+  const phone = (img, x, y, w, rot) => `<div class="phone" style="left:${x}px;top:${y}px;width:${w}px;transform:rotate(${rot}deg)">
+    <div class="screen"><div class="bar"><span>9:41</span><i></i><span>▪︎▪︎▪︎</span></div><img src="${shots}/raw-${lang}/${img}.png"></div></div>`;
+  stage.innerHTML = `
+    <h1 style="top:110px;font-size:${lang === 'zh' ? 92 : 88}px;letter-spacing:${lang === 'zh' ? '.08em' : '.01em'}"><span>${t[0]}</span></h1>
+    <div class="sub" style="top:262px;font-size:${lang === 'zh' ? 38 : 36}px">${t[1]}</div>
+    ${floatBread('croissant', 250, 520, 120, -14)}${floatBread('pretzel', 1550, 500, 130, 12)}
+    ${floatBread('toast', 300, 900, 110, 6)}${floatBread('chocobun', 1530, 880, 120, -8)}
+    ${phone('2-proof', 520, 400, 430, -4)}
+    ${phone('4-rack', 990, 430, 430, 4)}
+    <div class="abs mascot-big" style="left:1420px;top:1060px;width:120px">${mascot('yay')}</div>`;
+}
+document.fonts.ready.then(() => { document.body.dataset.ready = '1'; });
+</script></body></html>
