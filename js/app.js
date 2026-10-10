@@ -129,6 +129,10 @@ async function route() {
   const token = ++routeToken;
   const r = resolve(hash);
   if (!r) { go('#/'); return; }
+  if (hash !== '#/bake' && state.session?.editing) {
+    state.session.editing = false;
+    persistSession();
+  }
   const html = await r.view(...r.args);
   if (token !== routeToken) return; // 期间又跳转了
   $app.innerHTML = html;
@@ -553,7 +557,10 @@ function viewBake() {
 
   <h2>步骤</h2>
   <ol class="steps bake-steps">${stepsHtml}</ol>
-  ${ed ? `<button class="btn sm" data-act="bake-add-step">${icon('plus')} 加步骤</button>` : ''}
+  ${ed ? `<div class="row" style="justify-content:space-between;margin-top:8px">
+    <button class="btn sm" data-act="bake-add-step">${icon('plus')} 加步骤</button>
+    <button class="btn sm primary" data-act="bake-edit-toggle">${icon('check')} 改好了</button></div>
+    <p class="small muted center" style="margin-top:10px">改动会自动保存，离开这一页也会自动退出修改</p>` : ''}
 
   <div class="stack" style="margin-top:26px">
     <button class="btn crust block" data-act="go-finish">${icon('camera')} 出炉啦！拍照记录</button>
@@ -589,7 +596,7 @@ function bakeHero(s) {
   // 烤箱：倒计时显示在烤箱面板上；发酵：大号倒计时在碗下面；其他步骤：不计时，只放揉面动画
   let scene;
   if (!cur) {
-    scene = `<div class="oven-wrap">${ovenScene('', false)}<span class="display">出炉啦</span>${mascot('yay')}</div>`;
+    scene = `<div class="oven-wrap">${ovenScene('', false, true)}<span class="display">出炉啦</span>${mascot('yay')}</div>`;
   } else if (kind === 'bake') {
     const t = curTimer;
     const display = t ? `<span class="display ${t.done ? 'ring' : ''}" data-clock="${t.id}">${clockText(t)}</span>`
@@ -1262,6 +1269,7 @@ async function boot() {
     await db.setKv('seeded', true);
   }
   state.session = (await getSession()) || null;
+  if (state.session) state.session.editing = false;
 
   window.addEventListener('hashchange', route);
   await route();

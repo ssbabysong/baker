@@ -231,7 +231,7 @@ export function storefront(cls = '') {
 
 // ---------- 烤箱：显示屏位置留给 HTML 叠加倒计时 ----------
 
-export function ovenScene(cls = '', baking = false) {
+export function ovenScene(cls = '', baking = false, done = false) {
   return wrap(`
     ${crayon([['soft', 'M10 22 H110 V92 H10 Z'], ['skysoft', 'M22 46 H98 V82 H22 Z'], ['sky', 'M10 92 H110 V97 H10 Z']], 1.6, 1.8)}
     ${baking ? '<rect class="oven-glow" x="23" y="47" width="74" height="34" rx="2" stroke="none"/>' : ''}
@@ -243,7 +243,8 @@ export function ovenScene(cls = '', baking = false) {
     <path d="M30 42 H90" stroke-width="2.6"/>
     <path d="M16 93 v6"/><path d="M104 93 v6"/>
     ${baking ? `<path d="M36 76 C34 64 46 58 60 58 C74 58 86 64 84 76 Z" class="rise"/>
-      <path d="M30 18 q-4 -5 0 -10" class="steam"/><path d="M60 16 q-4 -5 0 -10" class="steam s2"/><path d="M90 18 q-4 -5 0 -10" class="steam s3"/>` : '<path d="M44 76 H76" stroke-dasharray="3 5"/>'}
+      <path d="M30 18 q-4 -5 0 -10" class="steam"/><path d="M60 16 q-4 -5 0 -10" class="steam s2"/><path d="M90 18 q-4 -5 0 -10" class="steam s3"/>` : done ? `${crayon([['crust', 'M36 76 C34 62 46 56 60 56 C74 56 86 62 84 76 Z']], 0.8, 1)}
+      <path d="M36 76 C34 62 46 56 60 56 C74 56 86 62 84 76 Z"/><path d="M50 62 q3 3 2 8"/><path d="M60 59 q3 3 2 8"/><path d="M70 62 q3 3 2 8"/>` : '<path d="M44 76 H76" stroke-dasharray="3 5"/>'}
   `, '0 0 120 104', cls);
 }
 
