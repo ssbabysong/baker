@@ -57,8 +57,10 @@ const LEVELS = [
   { at: 0, name: '周末小推车', desc: '在家开烤，推着小车分给邻居尝尝' },
   { at: 1, name: '私房小铺', desc: '有了自己的小门面，挂上暖帘' },
   { at: 5, name: '街角面包屋', desc: '橱窗里摆满面包，门口放了小黑板' },
-  { at: 15, name: '熟客小店', desc: '熟客常来，门口多了灯笼、长椅和打盹的猫' },
-  { at: 40, name: '人气面包店', desc: '加盖了二楼，挂上碱水面包招牌' },
+  { at: 12, name: '熟客小店', desc: '熟客常来，门口多了灯笼、长椅和打盹的猫' },
+  { at: 25, name: '排队小店', desc: '门口开始排队，竖起了「现烤」小旗' },
+  { at: 45, name: '两层小楼', desc: '加盖了二楼，挂上碱水面包招牌' },
+  { at: 70, name: '露台面包店', desc: '旁边开了小露台，撑起阳伞、挂上小灯串' },
   { at: 100, name: '街区招牌店', desc: '成了街坊口中的招牌，门口种了松树' },
 ];
 function levelOf(n) {
@@ -72,7 +74,7 @@ function levelOf(n) {
 // 门店插画 + 叠在招牌上的店名
 function shopFront(level, name = '', small = false) {
   const g = storefrontSign(level);
-  const style = `left:${(g.x / 240 * 100).toFixed(2)}%;width:${(g.w / 240 * 100).toFixed(2)}%;top:${(g.y / g.vbH * 100).toFixed(2)}%;height:${(g.h / g.vbH * 100).toFixed(2)}%`;
+  const style = `left:${(g.x / g.vbW * 100).toFixed(2)}%;width:${(g.w / g.vbW * 100).toFixed(2)}%;top:${(g.y / g.vbH * 100).toFixed(2)}%;height:${(g.h / g.vbH * 100).toFixed(2)}%`;
   return `<div class="storefront ${small ? 'mini' : ''}">${storefront(level)}${name ? (small
     ? `<span class="sign" style="${style}">${esc(name)}</span>`
     : `<button class="sign" style="${style}" data-act="rename-shop" title="点一下改店名">${esc(name)}</button>`) : ''}</div>`;

@@ -99,6 +99,8 @@ img { max-width: 100%; display: block; }
 .f-shu { fill: var(--shu); }
 .ink-paper { stroke: #fffcf5; }
 .sk-text { font-family: var(--title); }
+.ink-fill { fill: #fffcf5; }
+.bulb { fill: var(--crust); stroke-width: .8; }
 .blush { stroke: var(--blush); }
 .rope { stroke: var(--crust); filter: url(#crayon); }
 .salt { stroke: var(--card); }
