@@ -87,7 +87,6 @@ export function normalizeRecipe(r) {
 
 export function guessShape(name = '') {
   const n = name.toLowerCase();
-  if (/盐面包|盐可颂|盐卷|盐之花|海盐卷|shio|salt bread|salt roll/.test(n)) return 'shiopan';
   if (/可颂|牛角|croissant/.test(n)) return 'croissant';
   if (/法棍|长棍|baguette/.test(n)) return 'baguette';
   if (/蛋糕|cake|戚风|芝士/.test(n)) return 'cake';
@@ -97,6 +96,7 @@ export function guessShape(name = '') {
   if (/甜甜圈|多拿滋|donut|doughnut/.test(n)) return 'donut';
   if (/贝果|bagel/.test(n)) return 'bagel';
   if (/菠萝|蜜瓜|melon|pineapple/.test(n)) return 'melonpan';
+  if (/可露丽|卡娜蕾|canel|cannel/.test(n)) return 'canele';
   if (/司康|scone/.test(n)) return 'scone';
   if (/佛卡夏|福卡夏|focaccia/.test(n)) return 'focaccia';
   if (/布里欧|布里奥|brioche/.test(n)) return 'brioche';
@@ -114,12 +114,12 @@ const PRICE_RANGE = {
   CNY: {
     cookie: [6, 12], muffin: [10, 16], anpan: [8, 14], melonpan: [8, 14], bagel: [10, 16], pretzel: [10, 16],
     croissant: [12, 18], baguette: [14, 22], loaf: [16, 28], toast: [18, 32], cake: [28, 48], chocobun: [12, 18],
-    donut: [8, 14], shiopan: [6, 12], scone: [10, 16], focaccia: [16, 26], brioche: [14, 22], eggtart: [6, 10], rolls: [12, 20], puff: [8, 14],
+    donut: [8, 14], canele: [10, 16], scone: [10, 16], focaccia: [16, 26], brioche: [14, 22], eggtart: [6, 10], rolls: [12, 20], puff: [8, 14],
   },
   USD: {
     cookie: [2, 4], muffin: [3, 5], anpan: [2.5, 4.5], melonpan: [2.5, 4.5], bagel: [3, 5], pretzel: [3, 5],
     croissant: [3.5, 6], baguette: [4, 7], loaf: [6, 10], toast: [6, 11], cake: [28, 48], chocobun: [3.5, 5.5],
-    donut: [2, 4], shiopan: [2, 4], scone: [3, 5], focaccia: [5, 9], brioche: [4, 7], eggtart: [2, 3.5], rolls: [4, 7], puff: [2.5, 4.5],
+    donut: [2, 4], canele: [3, 5], scone: [3, 5], focaccia: [5, 9], brioche: [4, 7], eggtart: [2, 3.5], rolls: [4, 7], puff: [2.5, 4.5],
   },
 };
 export function randomPrice(shape, cur = getCurrency()) {
