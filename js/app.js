@@ -4,7 +4,7 @@ import {
   exportAll, importAll, guessShape,
 } from './store.js';
 import { parseRecipeText, formatAmount, formatMinutes, guessStepKind } from './parser.js';
-import { shape, icon, storefront, ovenScene, emptyShelf, mascot, tabIcon, blob, SHAPE_NAMES } from './sketch.js';
+import { shape, icon, storefront, ovenScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES } from './sketch.js';
 import {
   remainingMs, formatClock, createTimer, pauseTimer, resumeTimer, addMinutes,
   unlockAudio, playChime, startRinging, stopRinging, askNotifyPermission, notify, keepAwake,
@@ -146,13 +146,35 @@ async function rerender() {
   window.scrollTo(0, y);
 }
 
+const TABS = [['shop', '#/', '店铺', 'shop'], ['recipes', '#/recipes', '配方本', 'book'], ['logs', '#/logs', '日历', 'calendar']];
+
+// 只在第一次画出整排按钮；之后切换只改选中状态，这样镜片能平滑地滑过去
 function renderTabs(active) {
-  const tabs = [['shop', '#/', '店铺', 'shop'], ['recipes', '#/recipes', '配方本', 'book'], ['logs', '#/logs', '日历', 'calendar']];
-  $tabs.innerHTML = tabs.map(([k, href, label, ic]) => {
+  if (!$tabs.querySelector('.lens')) {
+    $tabs.innerHTML = '<span class="lens" aria-hidden="true"></span>' + TABS.map(([k, href, label]) =>
+      `<a href="${href}" data-tab="${k}"><i class="tab-ic"></i><span>${label}</span></a>`).join('');
+  }
+  TABS.forEach(([k, , , ic], i) => {
+    const a = $tabs.querySelector(`[data-tab="${k}"]`);
     const on = k === active;
-    return `<a href="${href}" class="${on ? 'on' : ''}">${on ? blob() : ''}${tabIcon(ic, on)}<span>${label}</span></a>`;
-  }).join('');
+    if (a.classList.contains('on') === on && a.dataset.drawn) return;
+    a.classList.toggle('on', on);
+    on ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current');
+    a.querySelector('.tab-ic').innerHTML = tabIcon(ic, on);
+    a.dataset.drawn = '1';
+    if (on) $tabs.style.setProperty('--i', i);
+  });
 }
+
+// 往下滚动时把菜单栏缩小，往上滚动或回到顶部时展开（和 iOS 一样）
+let lastY = 0;
+window.addEventListener('scroll', () => {
+  const y = window.scrollY;
+  const bar = $tabs.parentElement;
+  if (y < 40 || y < lastY - 6) bar.classList.remove('mini');
+  else if (y > lastY + 6) bar.classList.add('mini');
+  lastY = y;
+}, { passive: true });
 
 // =====================================================================
 // 店铺首页

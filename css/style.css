@@ -38,7 +38,11 @@
   --font: 'ShopFont', 'PingFang SC', 'Noto Sans SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
   --title: 'ShopFont', 'ZCOOL KuaiLe', 'PingFang SC', 'Noto Sans SC', sans-serif;
   --mono: 'Courier Prime', 'Courier New', ui-monospace, monospace;
-  --tabbar-h: 66px;
+  --tabbar-h: 64px;
+  --glass: rgba(255, 252, 245, .58);          /* 菜单栏：半透明玻璃 */
+  --glass-edge: rgba(255, 255, 255, .75);     /* 玻璃边缘的高光 */
+  --glass-shade: rgba(74, 58, 46, .14);       /* 玻璃投影 */
+  --lens: rgba(74, 58, 46, .08);              /* 选中项下面那块"镜片" */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .26 0 0 0 0 .2 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
   color-scheme: light;
 }
@@ -51,6 +55,7 @@
     --crust: #cf9a4c; --crust-soft: #4a3a24; --wood: #8a6a48; --tile: #5d636b;
     --ai: #6d8cbc; --ai-soft: #2c3646; --shu: #e07a62; --sky: #6f93b5; --sky-soft: #2e3b47;
     --leaf: #9aab6a; --leaf-ink: #1f1d19; --blush: #c97c69;
+    --glass: rgba(42, 37, 32, .55); --glass-edge: rgba(255, 255, 255, .14); --glass-shade: rgba(0, 0, 0, .45); --lens: rgba(255, 255, 255, .1);
     color-scheme: dark;
   }
 }
@@ -60,6 +65,7 @@
   --crust: #cf9a4c; --crust-soft: #4a3a24; --wood: #8a6a48; --tile: #5d636b;
   --ai: #6d8cbc; --ai-soft: #2c3646; --shu: #e07a62; --sky: #6f93b5; --sky-soft: #2e3b47;
   --leaf: #9aab6a; --leaf-ink: #1f1d19; --blush: #c97c69;
+    --glass: rgba(42, 37, 32, .55); --glass-edge: rgba(255, 255, 255, .14); --glass-shade: rgba(0, 0, 0, .45); --lens: rgba(255, 255, 255, .1);
   color-scheme: dark;
 }
 
@@ -343,7 +349,7 @@ textarea.input.tall { min-height: 260px; }
 .badge { display: inline-block; font-size: 12px; padding: 0 9px; border: 1.2px solid var(--line); border-radius: 999px; background: var(--ai-soft); }
 
 /* 全局计时条 */
-#timerbar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 12px); z-index: 20; display: flex; gap: 8px; max-width: calc(100% - 32px); overflow-x: auto; }
+#timerbar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 22px); z-index: 20; display: flex; gap: 8px; max-width: calc(100% - 32px); overflow-x: auto; }
 #timerbar:empty { display: none; }
 #timerbar a { display: flex; align-items: center; gap: 6px; padding: 6px 14px; background: var(--ink); color: var(--paper); border-radius: 999px; text-decoration: none; font-size: 15px; white-space: nowrap; font-family: var(--mono); }
 #timerbar a .ic { width: 16px; height: 16px; color: var(--paper); }
@@ -423,20 +429,54 @@ details[open] > summary::before { content: '▾ '; }
 .empty svg { width: 160px; height: auto; display: block; margin: 0 auto 8px; }
 .empty .mascot { width: 72px; }
 
-/* ---------- 底部菜单栏：贴底平铺，选中时图标上色、背后一团蜡笔 ---------- */
+/* ---------- 底部菜单栏：iOS 26 风格的悬浮玻璃胶囊 ----------
+   半透明 + 背景模糊，顶边一道高光；选中项下面有一块会滑动的"镜片"；
+   往下滚动时缩成只有图标的小胶囊，往上滚又展开 */
 .tabbar {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
-  padding-bottom: env(safe-area-inset-bottom);
-  background: var(--card); border-top: 1px solid color-mix(in srgb, var(--line) 14%, transparent);
-  box-shadow: 0 -4px 16px rgba(90, 67, 53, .05);
+  position: fixed; left: 0; right: 0; z-index: 10;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+  display: flex; justify-content: center; padding: 0 20px; pointer-events: none;
 }
-.tabbar nav { display: flex; max-width: 560px; height: var(--tabbar-h); margin: 0 auto; }
-.tabbar a { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; text-decoration: none; font-size: 12px; color: var(--ink-soft); }
-.tabbar a .ti { width: 30px; height: 30px; color: var(--ink-soft); position: relative; }
-.tabbar a span { position: relative; }
-.tabbar a .blob { position: absolute; width: 50px; height: 50px; top: 3px; left: 50%; margin-left: -25px; }
+.tabbar nav {
+  --n: 3;
+  pointer-events: auto; position: relative; display: flex;
+  width: min(100%, 340px); height: var(--tabbar-h); padding: 5px;
+  border-radius: 999px; isolation: isolate;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%);
+  box-shadow: 0 10px 34px var(--glass-shade), 0 1px 3px var(--glass-shade),
+              inset 0 1px 0 var(--glass-edge), inset 0 0 0 .5px var(--glass-edge);
+  transition: width .45s cubic-bezier(.3, 1.3, .5, 1), height .45s cubic-bezier(.3, 1.3, .5, 1);
+}
+/* 顶部那道弯弯的高光，像玻璃的反光 */
+.tabbar nav::before {
+  content: ''; position: absolute; inset: 1px 14% auto; height: 45%; border-radius: 999px; z-index: -1; pointer-events: none;
+  background: linear-gradient(to bottom, var(--glass-edge), transparent); opacity: .55;
+}
+/* 选中项下面的镜片：按 --i 滑到对应位置，带一点回弹 */
+.tabbar .lens {
+  position: absolute; top: 5px; bottom: 5px; left: 5px; z-index: -1;
+  width: calc((100% - 10px) / var(--n)); border-radius: 999px;
+  background: var(--lens); box-shadow: inset 0 0 0 .5px var(--glass-edge);
+  transform: translateX(calc(var(--i, 0) * 100%));
+  transition: transform .5s cubic-bezier(.3, 1.4, .5, 1);
+}
+.tabbar a {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  text-decoration: none; font-size: 11px; line-height: 1.2; color: var(--ink-soft); border-radius: 999px;
+  transition: transform .2s ease;
+}
+.tabbar a:active { transform: scale(.92); }
+.tabbar a .tab-ic { display: flex; font-style: normal; }
+.tabbar a .ti { width: 28px; height: 28px; color: var(--ink-soft); transition: width .3s ease, height .3s ease; }
+.tabbar a span { white-space: nowrap; transition: opacity .25s ease, max-height .3s ease; max-height: 16px; overflow: hidden; }
 .tabbar a.on { color: var(--shu); font-weight: 500; }
 .tabbar a.on .ti { color: var(--doodle); }
+.tabbar a:focus-visible { outline: 2px solid var(--ai); outline-offset: -4px; }
+/* 往下滚：缩成小胶囊 */
+.tabbar.mini nav { width: min(100%, 196px); height: 50px; }
+.tabbar.mini a span { opacity: 0; max-height: 0; }
+.tabbar.mini a .ti { width: 26px; height: 26px; }
 
 /* ---------- 弹窗 ---------- */
 dialog {

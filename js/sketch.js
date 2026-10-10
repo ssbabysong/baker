@@ -270,6 +270,3 @@ export function tabIcon(name, active) {
   const t = TAB_ICONS[name];
   return wrap((active ? crayon(t.fill, 1.2, 1.4) : '') + t.line, '0 0 64 64', 'ti', 2.6);
 }
-export function blob() {
-  return wrap(crayon([['soft', 'M8 34 C4 18 22 8 34 10 C50 12 60 22 56 36 C52 50 34 56 22 52 C12 49 9 42 8 34 Z']], 0, 0), '0 0 64 64', 'blob');
-}
