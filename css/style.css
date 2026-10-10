@@ -692,9 +692,9 @@ dialog h3 { margin: 0 0 8px; font-size: 21px; }
 .cal button.d { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .cal button.d:active { background: var(--lens); }
 /* 小圆点：选中的那天黑点，今天红点；紧挨在数字下面（画了面包的格子在面包下面） */
-.cal .d.sel::after, .cal .d.today::after { content: ''; position: absolute; left: 50%; top: calc(50% + 12px); width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--ink); }
+.cal .d.sel::after, .cal .d.today::after { content: ''; position: absolute; left: 50%; top: calc(50% + 14px); width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--ink-soft); opacity: .7; }
 .cal .d.today::after { background: var(--shu); }
-.cal .d.has.sel::after, .cal .d.has.today::after { top: calc(50% + 17px); }
+.cal .d.has.sel::after, .cal .d.has.today::after { top: calc(50% + 19px); }
 .day-head { margin: 28px 2px 10px; display: flex; align-items: baseline; gap: 8px; font-family: var(--mono); }
 .day-head b { font-size: 17px; }
 .day-head span { color: var(--ink-soft); font-size: 13px; }
