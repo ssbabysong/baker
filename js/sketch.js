@@ -163,14 +163,14 @@ const SHAPES = {
 };
 
 export const SHAPE_NAMES = {
-  loaf: '欧包', toast: '吐司', croissant: '可颂', baguette: '法棍',
+  loaf: '欧包', toast: '吐司', croissant: '可颂', shiopan: '盐面包',
   cake: '蛋糕', cookie: '饼干', muffin: '玛芬', bagel: '贝果', pretzel: '碱水', melonpan: '菠萝包', anpan: '红豆包', chocobun: '巧克力包',
-  donut: '甜甜圈', shiopan: '盐面包', scone: '司康', focaccia: '佛卡夏', brioche: '布里欧修', eggtart: '蛋挞', rolls: '餐包', puff: '泡芙',
+  donut: '甜甜圈', baguette: '法棍', scone: '司康', focaccia: '佛卡夏', brioche: '布里欧修', eggtart: '蛋挞', rolls: '餐包', puff: '泡芙',
 };
 export const SHAPE_NAMES_EN = {
-  loaf: 'Loaf', toast: 'Shokupan', croissant: 'Croissant', baguette: 'Baguette',
+  loaf: 'Loaf', toast: 'Shokupan', croissant: 'Croissant', shiopan: 'Salt bread',
   cake: 'Cake', cookie: 'Cookie', muffin: 'Muffin', bagel: 'Bagel', pretzel: 'Pretzel', melonpan: 'Pineapple bun', anpan: 'Anpan', chocobun: 'Choco bun',
-  donut: 'Donut', shiopan: 'Salt bread', scone: 'Scone', focaccia: 'Focaccia', brioche: 'Brioche', eggtart: 'Egg tart', rolls: 'Dinner rolls', puff: 'Cream puff',
+  donut: 'Donut', baguette: 'Baguette', scone: 'Scone', focaccia: 'Focaccia', brioche: 'Brioche', eggtart: 'Egg tart', rolls: 'Dinner rolls', puff: 'Cream puff',
 };
 
 export const shape = (name, cls = '') => {
