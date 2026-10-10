@@ -4,25 +4,34 @@
       <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="11"/>
       <feDisplacementMap in="SourceGraphic" scale="6" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
+    <filter id="c" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="2" seed="3" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  2.4 0 0 0 -0.4" result="m"/>
+      <feComposite in="SourceGraphic" in2="m" operator="in" result="t"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="5" result="w"/>
+      <feDisplacementMap in="t" in2="w" scale="8" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
   </defs>
-  <rect width="512" height="512" rx="112" fill="#f8f5ee"/>
-  <g fill="none" stroke="#2a2723" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" filter="url(#r)">
-    <!-- 烟囱和炊烟 -->
+  <rect width="512" height="512" rx="112" fill="#fbf7ef"/>
+  <!-- 蜡笔色块，和线条错开一点 -->
+  <g filter="url(#c)" transform="translate(7 8)">
+    <path d="M86 232 L106 186 H406 L426 232 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 Z" fill="#efae4b"/>
+    <path d="M300 418 V292 Q336 270 372 292 V418 Z" fill="#8fb4d6"/>
+    <path d="M140 284 H268 V378 H140 Z" fill="#e2edf6"/>
+    <path d="M160 368 C154 336 176 318 204 318 C232 318 254 336 248 368 Z" fill="#efae4b"/>
+  </g>
+  <g fill="none" stroke="#b5503f" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" filter="url(#r)">
     <path d="M352 150 V104 H390 V178"/>
     <path d="M370 84 q-14 -16 4 -28 q16 -12 4 -30" stroke-width="10"/>
-    <!-- 屋顶 + 招牌 -->
     <path d="M96 176 L256 140 L416 176"/>
-    <!-- 遮阳棚（唯一的暖色） -->
-    <path d="M86 232 L106 186 H406 L426 232 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 Z" fill="#e6a463"/>
+    <path d="M86 232 L106 186 H406 L426 232"/>
+    <path d="M86 232 q17 22 34 0 q17 22 34 0 q17 22 34 0 q17 22 34 0 q17 22 34 0 q17 22 34 0 q17 22 34 0 q17 22 34 0 q17 22 34 0 q17 22 34 0"/>
     <path d="M154 188 L144 232"/><path d="M222 188 L216 232"/><path d="M290 188 L296 232"/><path d="M358 188 L368 232"/>
-    <!-- 墙 -->
     <path d="M114 248 V418"/><path d="M398 248 V418"/>
     <path d="M70 420 Q256 428 442 418"/>
-    <!-- 橱窗里的面包 -->
     <path d="M140 284 H268 V378 H140 Z"/>
     <path d="M160 368 C154 336 176 318 204 318 C232 318 254 336 248 368"/>
     <path d="M186 334 q8 8 4 20" stroke-width="9"/><path d="M212 330 q8 8 4 20" stroke-width="9"/>
-    <!-- 门 -->
     <path d="M300 418 V292 Q336 270 372 292 V418"/>
     <path d="M352 356 h2"/>
   </g>

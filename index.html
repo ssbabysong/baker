@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>小烘焙铺</title>
   <meta name="description" content="简笔画风格的烘焙配方本：导入配方、发酵计时提醒、出炉拍照记录。">
-  <meta name="theme-color" content="#f8f5ee" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#fbf7ef" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#1f1d1a" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -14,15 +14,25 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Courier+Prime&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.7.0/lxgwwenkaigbscreen.css">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <!-- 手绘抖动滤镜：所有 .sk 线条图都套用它 -->
+  <!-- #rough 手绘抖动：所有 .sk 线条图都套用；#crayon 蜡笔颗粒：上色色块用 -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <filter id="rough" x="-5%" y="-5%" width="110%" height="110%">
       <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="n"/>
       <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="crayon" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3" result="grain"/>
+      <feColorMatrix in="grain" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  2.6 0 0 0 -0.55" result="mask"/>
+      <feComposite in="SourceGraphic" in2="mask" operator="in" result="grainy"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="5" result="wob"/>
+      <feDisplacementMap in="grainy" in2="wob" scale="3" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
   </svg>
 

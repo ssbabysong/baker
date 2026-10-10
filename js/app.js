@@ -4,7 +4,7 @@ import {
   exportAll, importAll, guessShape,
 } from './store.js';
 import { parseRecipeText, formatAmount, formatMinutes, guessStepKind } from './parser.js';
-import { shape, icon, storefront, ovenScene, emptyShelf, SHAPE_NAMES } from './sketch.js';
+import { shape, icon, storefront, ovenScene, emptyShelf, mascot, SHAPE_NAMES } from './sketch.js';
 import {
   remainingMs, formatClock, createTimer, pauseTimer, resumeTimer, addMinutes,
   unlockAudio, playChime, startRinging, stopRinging, askNotifyPermission, notify, keepAwake,
@@ -37,6 +37,7 @@ const fmtDur = (ms) => formatMinutes(Math.round(ms / 60000));
 const go = (hash) => { if (location.hash === hash) route(); else location.hash = hash; };
 
 function toast(msg) {
+  document.querySelectorAll('.toast').forEach((t) => t.remove());
   const el = document.createElement('div');
   el.className = 'toast';
   el.textContent = msg;
@@ -104,7 +105,7 @@ const ROUTES = [
   [/^#\/import$/, viewImport, 'recipes'],
   [/^#\/bake$/, viewBake, 'shop'],
   [/^#\/finish$/, viewFinish, 'shop'],
-  [/^#\/logs$/, viewLogs, 'logs'],
+  [/^#\/logs(?:\/(\d{4}-\d{1,2}))?$/, viewLogs, 'logs'],
   [/^#\/log\/([\w-]+)$/, viewLog, 'logs'],
   [/^#\/settings$/, viewSettings, 'shop'],
 ];
@@ -146,8 +147,8 @@ async function rerender() {
 }
 
 function renderTabs(active) {
-  const tabs = [['shop', '#/', '店铺'], ['recipes', '#/recipes', '配方'], ['logs', '#/logs', '作品']];
-  const ic = { shop: 'shop', recipes: 'book', logs: 'photo' };
+  const tabs = [['shop', '#/', '店铺'], ['recipes', '#/recipes', '配方本'], ['logs', '#/logs', '日历']];
+  const ic = { shop: 'shop', recipes: 'book', logs: 'calendar' };
   $tabs.innerHTML = tabs.map(([k, href, label]) =>
     `<a href="${href}" class="${k === active ? 'on' : ''}">${icon(ic[k])}<span>${label}</span></a>`).join('');
 }
@@ -156,6 +157,17 @@ function renderTabs(active) {
 // 店铺首页
 // =====================================================================
 
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 5) return '夜深了';
+  if (h < 11) return '早上好';
+  if (h < 14) return '中午好';
+  if (h < 18) return '下午好';
+  return '晚上好';
+}
+
+const isToday = (t) => new Date(t).toDateString() === new Date().toDateString();
+
 async function viewShop() {
   const [recipes, bakes] = await Promise.all([listRecipes(), listBakes()]);
   const shop = state.shop;
@@ -163,6 +175,7 @@ async function viewShop() {
   const days = Math.floor((Date.now() - shop.openedAt) / DAY) + 1;
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
   const thisMonth = bakes.filter((b) => b.finishedAt >= monthStart.getTime()).length;
+  const today = bakes.filter((b) => isToday(b.finishedAt)).length;
   const bakeCount = (id) => bakes.filter((b) => b.recipeId === id).length;
 
   const s = state.session;
@@ -174,7 +187,7 @@ async function viewShop() {
       ${ovenScene('', true)}
       <div class="info"><b>${esc(s.recipe.name)}</b>
         <span class="small muted">第 ${Math.min(s.current + 1, s.recipe.steps.length)}/${s.recipe.steps.length} 步${cur ? ` · ${esc(cur.text.slice(0, 16))}` : ''}</span>
-        ${running.map((t) => `<div class="small">${icon('timer')} <span data-clock="${t.id}">${formatClock(remainingMs(t))}</span> ${esc(t.label)}</div>`).join('')}
+        ${running.map((t) => `<div class="small">${icon('timer')} <span class="mono" data-clock="${t.id}">${formatClock(remainingMs(t))}</span> ${esc(t.label)}</div>`).join('')}
       </div>${icon('next')}</a>`;
   } else {
     ovenHtml = `<div class="card dashed oven-card">${ovenScene()}
@@ -185,35 +198,37 @@ async function viewShop() {
   const thumbs = await Promise.all(recent.map((b) => photoUrl(b.photoId)));
 
   return `
-  <div class="topbar"><h1></h1>
-    <a class="btn icon ghost" href="#/settings" aria-label="设置">${icon('gear')}</a></div>
+  <div class="greet"><div class="t"><h1>${greeting()}</h1>
+    <p>${today ? `今天已出炉 ${today} 炉` : s ? `「${esc(s.recipe.name)}」正在烤箱里` : '今天想烤点什么？'}</p></div>
+    <a class="btn icon ghost" href="#/settings" aria-label="店务">${icon('gear')}</a></div>
   <div class="storefront">
     ${storefront()}
     <button class="sign" data-act="rename-shop" title="点一下改店名">${esc(shop.name)}</button>
   </div>
   <div class="shop-meta">
     <span class="lv">Lv.${lv.lv} ${lv.name}</span>
-    <span class="small muted"> · 营业第 ${days} 天</span>
+    <span class="small muted"> · 营业第 <span class="mono">${days}</span> 天</span>
     ${lv.next ? `<div class="progress" title="再出炉 ${lv.next.at - bakes.length} 次升级"><i style="width:${Math.round(lv.progress * 100)}%"></i></div>
       <div class="small muted">再出炉 ${lv.next.at - bakes.length} 次 → ${lv.next.name}</div>` : ''}
   </div>
 
   <div class="stats">
-    <div class="card stat"><b>${recipes.length}</b><span>本店配方</span></div>
-    <div class="card alt stat"><b>${bakes.length}</b><span>累计出炉</span></div>
-    <div class="card stat"><b>${thisMonth}</b><span>本月出炉</span></div>
+    <div class="stat"><b>${recipes.length}</b><span>本店配方</span></div>
+    <div class="stat"><b>${bakes.length}</b><span>累计出炉</span></div>
+    <div class="stat"><b>${thisMonth}</b><span>本月出炉</span></div>
   </div>
 
-  <h2>${icon('oven')} 烤箱</h2>
+  <h2>烤箱 <span class="hand u">fresh from the oven</span></h2>
   ${ovenHtml}
 
-  <h2>${icon('book')} 配方架 <a class="more" href="#/recipes">全部 ›</a></h2>
+  <h2>配方架 <span class="hand u">so many breads</span> <a class="more" href="#/recipes">全部 ›</a></h2>
   <div class="shelf">
     ${recipes.map((r) => `<a class="item" href="#/r/${r.id}">${shape(r.shape)}<span>${esc(r.name)}</span><small>${bakeCount(r.id) ? `做过 ${bakeCount(r.id)} 次` : '还没做过'}</small></a>`).join('')}
     <a class="item add" href="#/import">${icon('plus')}<span class="muted">上新配方</span></a>
   </div>
+  <div class="shelf-board"></div>
 
-  <h2>${icon('photo')} 作品墙 <a class="more" href="#/logs">全部 ›</a></h2>
+  <h2>作品墙 <span class="hand u">little things</span> <a class="more" href="#/logs">日历 ›</a></h2>
   ${recent.length ? `<div class="wall">${recent.map((b, i) => polaroid(b, thumbs[i])).join('')}</div>`
     : `<div class="empty">${emptyShelf()}<div>还没有作品，第一炉在等你</div></div>`}
   `;
@@ -243,7 +258,7 @@ async function viewRecipes() {
     ${list.map((r, i) => {
       const l = last(r.id);
       const total = r.steps.reduce((a, s) => a + (s.minutes || 0), 0);
-      return `<a class="card ${i % 2 ? 'alt' : ''} recipe-row" href="#/r/${r.id}">${shape(r.shape)}
+      return `<a class="card ${i % 2 ? 'alt' : ''} recipe-row" href="#/r/${r.id}"><span class="tile">${shape(r.shape)}</span>
         <div class="t"><b>${esc(r.name)}</b>
         <span>${r.ingredients.length} 种材料 · ${r.steps.length} 步${total ? ` · 约 ${formatMinutes(total)}` : ''}${l ? ` · 上次 ${fmtDate(l.finishedAt)}` : ''}</span></div>
         ${icon('next')}</a>`;
@@ -268,17 +283,17 @@ async function viewRecipe(id) {
       <span class="chip time">做过 ${bakes.length} 次</span>
     </div></div>
 
-  <div style="margin:18px 0 4px"><button class="btn crust block" data-act="start-bake" data-id="${r.id}">${icon('oven')} 开烤！</button></div>
+  <div style="margin:18px 0 4px"><button class="btn primary big block" data-act="start-bake" data-id="${r.id}">${icon('oven')} 开烤！</button></div>
 
-  <h2>${icon('flour')} 材料</h2>
+  <h2>材料 <span class="hand u">ingredients</span></h2>
   ${ingTable(r.ingredients)}
 
-  <h2>${icon('timer')} 步骤</h2>
+  <h2>步骤 <span class="hand u">step by step</span></h2>
   <ol class="steps">${r.steps.map((s) => `<li>${esc(s.text)}${stepMeta(s)}</li>`).join('')}</ol>
 
-  ${r.notes ? `<h2>${icon('pencil')} 备注</h2><div class="card fill notes">${esc(r.notes)}</div>` : ''}
+  ${r.notes ? `<h2>备注 <span class="hand u">notes</span></h2><div class="card fill notes">${esc(r.notes)}</div>` : ''}
 
-  ${bakes.length ? `<h2>${icon('photo')} 这款的作品</h2><div class="wall">${bakes.slice(0, 6).map((b, i) => polaroid(b, thumbs[i])).join('')}</div>` : ''}
+  ${bakes.length ? `<h2>这款的作品 <span class="hand u">so good</span></h2><div class="wall">${bakes.slice(0, 6).map((b, i) => polaroid(b, thumbs[i])).join('')}</div>` : ''}
 
   <div class="row" style="margin-top:32px"><button class="btn danger sm" data-act="delete-recipe" data-id="${r.id}">${icon('trash')} 删除配方</button>
     <span class="small muted grow" style="text-align:right">v${r.version} · 更新于 ${fmtDate(r.updatedAt)}</span></div>`;
@@ -501,15 +516,17 @@ function viewBake() {
   return `
   <div class="bake-head">
     <a class="btn icon ghost" href="#/" aria-label="返回">${icon('back')}</a>
-    <div class="t"><b>${esc(r.name)}</b><span>开烤于 ${fmtDateFull(s.startedAt).slice(5)} · 已经 <span data-elapsed>${fmtDur(Date.now() - s.startedAt)}</span></span></div>
+    <div class="t"><b>${esc(r.name)}</b><span><span class="mono">${fmtDateFull(s.startedAt).slice(-5)}</span> 开烤 · 已 <span data-elapsed>${fmtDur(Date.now() - s.startedAt)}</span></span></div>
     <button class="btn sm ${ed ? 'primary' : ''}" data-act="bake-edit-toggle">${icon(ed ? 'check' : 'pencil')} ${ed ? '改好了' : '改配方'}</button>
   </div>
   ${changes.length ? `<p class="small" style="margin:8px 0 0"><span class="badge">这次改了 ${changes.length} 处</span> <span class="muted">出炉时再决定要不要存回配方</span></p>` : ''}
 
-  <h2>${icon('flour')} 称料 <span class="row" style="margin-left:auto;gap:6px">${scaleBtns}</span></h2>
+  ${ed ? '' : bakeHero(s)}
+
+  <h2>称料 <span class="hand u">weigh it</span> <span class="row" style="margin-left:auto;gap:6px">${scaleBtns}</span></h2>
   ${ingHtml}
 
-  <h2>${icon('timer')} 步骤 <button class="more btn sm ghost" data-act="quick-timer">${icon('plus')} 自定计时</button></h2>
+  <h2>步骤 <span class="hand u">step by step</span> <button class="more btn sm ghost" data-act="quick-timer">${icon('plus')} 计时</button></h2>
   ${s.timers.filter((t) => !t.stepId).map(timerBox).join('')}
   <ol class="steps bake-steps">${stepsHtml}</ol>
   ${ed ? `<button class="btn sm" data-act="bake-add-step">${icon('plus')} 加步骤</button>` : ''}
@@ -517,6 +534,42 @@ function viewBake() {
   <div class="stack" style="margin-top:26px">
     <button class="btn crust block" data-act="go-finish">${icon('camera')} 出炉啦！拍照记录</button>
     <button class="btn ghost block small danger" data-act="abandon">放弃这一炉</button>
+  </div>`;
+}
+
+// 顶部的大烤箱：显示屏上就是当前计时，旁边站着吐司店长
+const START_WORD = { bake: '放进烤箱', ferment: '开始发酵', rest: '开始静置', chill: '放进冰箱', knead: '开始揉面' };
+
+function bakeHero(s) {
+  const r = s.recipe;
+  const cur = r.steps[s.current];
+  const live = s.timers.filter((t) => !t.done).sort((a, b) => remainingMs(a) - remainingMs(b));
+  const ringing = s.timers.find((t) => t.done);
+  const shown = ringing || live[0];
+  const curTimer = cur && s.timers.find((t) => t.stepId === cur.id);
+  const mood = !cur ? 'yay' : live.length ? 'wait' : 'wave';
+  const display = shown
+    ? `<span class="display ${ringing ? 'ring' : ''}" data-clock="${shown.id}">${shown.done ? '时间到！' : formatClock(remainingMs(shown))}</span>`
+    : `<span class="display">${cur?.minutes ? formatClock(cur.minutes * 60000) : '--:--'}</span>`;
+
+  let action;
+  let hint;
+  if (!cur) {
+    action = `<button class="btn primary big block" data-act="go-finish">${icon('camera')} 出炉啦！拍照记录</button>`;
+    hint = '每一步都完成了，辛苦啦';
+  } else if (cur.minutes && !curTimer) {
+    action = `<button class="btn primary big block" data-act="timer-start" data-id="${cur.id}">${START_WORD[cur.kind] || '开始计时'} · ${formatMinutes(cur.minutes)}</button>`;
+    hint = '按下就开始计时，时间到会叫你';
+  } else {
+    action = `<button class="btn primary big block" data-act="step-done" data-id="${cur.id}">${icon('check')} 这步好了，下一步</button>`;
+    hint = curTimer && !curTimer.done ? '安心去做别的吧，时间到我会叫你' : '做完这步就点一下';
+  }
+  return `<div class="bake-hero">
+    <div class="oven-wrap">${ovenScene('', live.length > 0)}${display}${mascot(mood)}</div>
+    ${cur ? `<div class="card step-pill"><span class="n">${s.current + 1}/${r.steps.length}</span>
+      <div class="s"><b>${esc(cur.text)}</b>${cur.minutes || KIND_LABEL[cur.kind] ? `<span class="small muted">${[KIND_LABEL[cur.kind], cur.minutes ? formatMinutes(cur.minutes) : ''].filter(Boolean).join(' · ')}</span>` : ''}</div></div>` : ''}
+    ${action}
+    <p class="hero-hint">${hint}</p>
   </div>`;
 }
 
@@ -598,7 +651,7 @@ async function fireAlarm(t) {
   notify(`⏰ ${t.label}`, `「${state.session?.recipe.name || ''}」这一步的时间到啦`);
   if (state.alarmOpen) return;
   state.alarmOpen = t.id;
-  const v = await dialog(`<div class="alarm">${icon('bell')}<h3>时间到！</h3>
+  const v = await dialog(`<div class="alarm">${mascot('yay')}<h3>时间到！</h3>
     <p>${esc(t.label)}</p>
     <div class="row" style="justify-content:center">
       <button class="btn" data-dlg="more">再等 5 分钟</button>
@@ -624,13 +677,13 @@ function viewFinish() {
   const f = state.finish;
   const changes = diffRecipe(s.original, s.recipe);
   return `
-  <div class="topbar"><a class="btn icon ghost" href="#/bake" aria-label="返回">${icon('back')}</a><h1>出炉啦</h1></div>
+  <div class="topbar"><a class="btn icon ghost" href="#/bake" aria-label="返回">${icon('back')}</a><h1>出炉啦 <span class="hand" style="font-size:22px">freshly baked</span></h1></div>
   <label class="photo-drop">
     ${f.photoUrl ? `<img src="${f.photoUrl}" alt="">` : `${icon('camera')}<span>拍一张 / 选一张照片</span>`}
     <input type="file" accept="image/*" capture="environment" hidden data-act-change="pick-photo">
   </label>
 
-  <h2>${esc(s.recipe.name)} <span class="small muted" style="font-weight:400">用时 ${fmtDur(Date.now() - s.startedAt)}</span></h2>
+  <h2>${esc(s.recipe.name)} <span class="small muted mono" style="font-weight:400">用时 ${fmtDur(Date.now() - s.startedAt)}</span></h2>
   <div class="rating" role="radiogroup" aria-label="打分">
     ${[1, 2, 3, 4, 5].map((n) => `<button class="${f.rating >= n ? 'on' : ''}" data-act="rate" data-v="${n}" aria-label="${n} 分">${icon('star')}</button>`).join('')}
   </div>
@@ -639,7 +692,7 @@ function viewFinish() {
     <textarea class="input" data-f="notes" placeholder="组织怎么样？下次想调整什么？">${esc(f.notes)}</textarea></label>
 
   ${changes.length ? `
-  <h2>${icon('pencil')} 这次改了配方</h2>
+  <h2>这次改了配方 <span class="hand u">tweaks</span></h2>
   <ul class="diff">${changes.map((c) => `<li>${esc(c.t)}${c.old != null ? ` <span class="old">${esc(c.old)}</span>` : ''}</li>`).join('')}</ul>
   <div class="choice" style="margin-top:12px">
     <label><input type="radio" name="mode" value="update" ${f.mode === 'update' ? 'checked' : ''} data-act-change="mode"><span>更新原配方<small>以后就按这次的来</small></span></label>
@@ -697,7 +750,7 @@ async function celebrate(count, shapeName) {
   const a = levelOf(count - 1);
   const b = levelOf(count);
   playChime();
-  await dialog(`<div class="celebrate">${shape(shapeName)}
+  await dialog(`<div class="celebrate"><div class="duo">${shape(shapeName)}${mascot('yay')}</div>
     <h3>${b.lv > a.lv ? `小店升级啦！Lv.${b.lv} ${b.name}` : `第 ${count} 炉出炉！`}</h3>
     <p class="muted">${b.next ? `再出炉 ${b.next.at - count} 次，就能升级成「${b.next.name}」` : '已经是最高等级的小店了'}</p>
     <button class="btn primary" data-dlg="ok">好耶</button></div>`);
@@ -705,56 +758,106 @@ async function celebrate(count, shapeName) {
 
 // ---------- 作品 ----------
 
-async function viewLogs() {
-  const bakes = await listBakes();
-  if (!bakes.length) {
-    return `<div class="topbar"><h1>作品墙</h1></div><div class="empty">${emptyShelf()}<p>出炉后拍张照，就会挂在这里</p></div>`;
+const WEEK = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+const WEEK_ZH = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const ymd = (t) => { const d = new Date(t); return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`; };
+
+// 烘焙日历：做过面包的日子画上那款面包
+async function viewLogs(ym) {
+  const now = new Date();
+  let [y, m] = ym ? ym.split('-').map(Number) : [now.getFullYear(), now.getMonth() + 1];
+  if (!(m >= 1 && m <= 12)) [y, m] = [now.getFullYear(), now.getMonth() + 1];
+  const from = new Date(y, m - 1, 1).getTime();
+  const to = new Date(y, m, 1).getTime();
+  const all = await listBakes();
+  const bakes = all.filter((b) => b.finishedAt >= from && b.finishedAt < to);
+
+  const byDay = new Map();
+  for (const b of bakes) {
+    const d = new Date(b.finishedAt).getDate();
+    if (!byDay.has(d)) byDay.set(d, []);
+    byDay.get(d).push(b);
   }
+  const firstDow = new Date(y, m - 1, 1).getDay();
+  const daysIn = new Date(y, m, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < firstDow; i++) cells.push('<span class="d out"></span>');
+  for (let d = 1; d <= daysIn; d++) {
+    const list = byDay.get(d);
+    const today = y === now.getFullYear() && m === now.getMonth() + 1 && d === now.getDate();
+    cells.push(list
+      ? `<a class="d" href="#/log/${list[0].id}" title="${esc(list.map((b) => b.recipeName).join('、'))}">${shape(list[0].shape)}${list.length > 1 ? `<span class="cnt">${list.length}</span>` : ''}</a>`
+      : `<span class="d ${today ? 'today' : ''}">${d}</span>`);
+  }
+
+  const prev = m === 1 ? `${y - 1}-12` : `${y}-${m - 1}`;
+  const next = m === 12 ? `${y + 1}-1` : `${y}-${m + 1}`;
+  const kinds = new Set(bakes.map((b) => b.recipeName)).size;
+  const hours = bakes.reduce((a, b) => a + (b.finishedAt - b.startedAt), 0) / 3600000;
   const urls = await Promise.all(bakes.map((b) => photoUrl(b.photoId)));
-  const groups = new Map();
-  bakes.forEach((b, i) => {
-    const d = new Date(b.finishedAt);
-    const k = `${d.getFullYear()}年${d.getMonth() + 1}月`;
-    if (!groups.has(k)) groups.set(k, []);
-    groups.get(k).push(polaroid(b, urls[i]));
-  });
-  return `<div class="topbar"><h1>作品墙</h1><span class="sub">共 ${bakes.length} 炉</span></div>
-    ${[...groups].map(([k, items]) => `<div class="month">${k} · ${items.length} 炉</div><div class="wall">${items.join('')}</div>`).join('')}`;
+
+  return `
+  <div class="cal-head">
+    <div class="y">${y}</div>
+    <div class="m"><button data-go="#/logs/${prev}" aria-label="上个月">${icon('back')}</button>${MONTHS[m - 1]}<button data-go="#/logs/${next}" aria-label="下个月">${icon('next')}</button></div>
+  </div>
+  <div class="cal">${WEEK.map((w) => `<span class="wd">${w}</span>`).join('')}${cells.join('')}</div>
+
+  <div class="stats cal-stats">
+    <div class="stat"><b>${bakes.length}</b><span>loaves baked</span></div>
+    <div class="stat"><b>${kinds}</b><span>recipes</span></div>
+    <div class="stat"><b>${hours >= 10 ? Math.round(hours) : Math.round(hours * 10) / 10}</b><span>hours</span></div>
+  </div>
+
+  ${bakes.length ? `<div class="diary-list" style="margin-top:30px">${bakes.map((b, i) => `<a class="card ${i % 2 ? 'alt' : ''} diary-row" href="#/log/${b.id}">
+      <span class="ph">${urls[i] ? `<img src="${urls[i]}" alt="" loading="lazy">` : shape(b.shape)}</span>
+      <span class="t"><span class="date">${ymd(b.finishedAt)} · ${WEEK_ZH[new Date(b.finishedAt).getDay()]}</span><b>${esc(b.recipeName)}</b>
+      <span class="small muted">${'★'.repeat(b.rating || 0)}${b.notes ? ` ${esc(b.notes.slice(0, 22))}${b.notes.length > 22 ? '…' : ''}` : ''}</span></span></a>`).join('')}</div>`
+    : `<div class="empty" style="margin-top:20px">${mascot('wait')}<p>这个月还没有开炉</p></div>`}
+
+  <div class="diary-foot">Baking Mood</div>`;
 }
 
+// 一炉一页的烘焙日记
 async function viewLog(id) {
   const b = await getBake(id);
   if (!b) return notFound();
   const url = await photoUrl(b.photoId);
   const recipe = await getRecipe(b.recipeId);
+  const d = new Date(b.finishedAt);
   const modeText = { update: '已更新到原配方', new: '已另存为新配方', none: '只记在这一次' }[b.changeMode] || '';
   return `
-  <div class="topbar"><a class="btn icon ghost" href="#/logs" aria-label="返回">${icon('back')}</a><h1></h1>
+  <div class="topbar"><a class="btn icon ghost" href="#/logs/${d.getFullYear()}-${d.getMonth() + 1}" aria-label="返回">${icon('back')}</a><h1></h1>
     <label class="btn icon ghost" aria-label="换照片">${icon('camera')}<input type="file" accept="image/*" hidden data-act-change="replace-photo" data-id="${b.id}"></label></div>
-  <div class="log-photo">${url ? `<img src="${url}" alt="">` : `<div class="ph-empty">${shape(b.shape)}</div>`}</div>
-  <div class="center">
-    <h1 style="margin:0;font-size:26px">${esc(b.recipeName)}</h1>
-    <div class="small muted">${fmtDateFull(b.finishedAt)} · 用时 ${fmtDur(b.finishedAt - b.startedAt)}${b.scale !== 1 ? ` · ×${b.scale}` : ''}</div>
-    <div class="rating" style="justify-content:center;margin-top:6px">${[1, 2, 3, 4, 5].map((n) => `<button class="${b.rating >= n ? 'on' : ''}" data-act="log-rate" data-id="${b.id}" data-v="${n}" aria-label="${n} 分">${icon('star')}</button>`).join('')}</div>
+  <div class="diary">
+    <div class="date">${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}</div>
+    <div class="wday">${WEEK_ZH[d.getDay()]}</div>
+    ${shape(b.shape)}
+    <div class="name">${esc(b.recipeName)}</div>
+    <div class="photo">${url ? `<img src="${url}" alt="">` : `<div class="ph-empty">${shape(b.shape)}</div>`}</div>
+    <div class="meta">${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} 出炉 · 用时 ${fmtDur(b.finishedAt - b.startedAt)}${b.scale !== 1 ? ` · ×${b.scale}` : ''}</div>
+    <div class="rating" style="justify-content:center;margin-top:8px">${[1, 2, 3, 4, 5].map((n) => `<button class="${b.rating >= n ? 'on' : ''}" data-act="log-rate" data-id="${b.id}" data-v="${n}" aria-label="${n} 分">${icon('star')}</button>`).join('')}</div>
   </div>
 
-  <h2>${icon('pencil')} 笔记</h2>
-  <textarea class="input" data-l="${b.id}" placeholder="写点什么…">${esc(b.notes)}</textarea>
+  <h2>笔记 <span class="hand u">a warm slice of bread</span></h2>
+  <textarea class="input" data-l="${b.id}" placeholder="组织怎么样？下次想调整什么？">${esc(b.notes)}</textarea>
 
   ${b.changes?.length ? `<h2>这次的改动 <span class="badge">${modeText}</span></h2>
     <ul class="diff">${b.changes.map((c) => `<li>${esc(c.t)}${c.old != null ? ` <span class="old">${esc(c.old)}</span>` : ''}</li>`).join('')}</ul>` : ''}
 
   <details style="margin-top:22px"><summary class="muted">这一炉用的配方</summary>
     <div style="margin-top:8px">${ingTable(b.snapshot.ingredients, b.scale)}
-    <ol class="steps" style="margin-top:12px">${b.snapshot.steps.map((s) => `<li>${esc(s.text)}${stepMeta(s)}</li>`).join('')}</ol></div>
+    <ol class="steps" style="margin-top:12px">${b.snapshot.steps.map((st) => `<li>${esc(st.text)}${stepMeta(st)}</li>`).join('')}</ol></div>
   </details>
 
   <div class="row" style="margin-top:28px">
-    ${recipe ? `<a class="btn sm" href="#/r/${recipe.id}">${shape(recipe.shape, 'ic')} 去看配方</a>
-    <button class="btn sm crust" data-act="start-bake" data-id="${recipe.id}">${icon('oven')} 再做一次</button>` : ''}
+    ${recipe ? `<a class="btn sm" href="#/r/${recipe.id}">${icon('book')} 去看配方</a>
+    <button class="btn sm primary" data-act="start-bake" data-id="${recipe.id}">${icon('oven')} 再做一次</button>` : ''}
     <span style="flex:1"></span>
-    <button class="btn sm danger" data-act="delete-bake" data-id="${b.id}">${icon('trash')}</button>
-  </div>`;
+    <button class="btn icon sm danger" data-act="delete-bake" data-id="${b.id}" aria-label="删除">${icon('trash')}</button>
+  </div>
+  <div class="diary-foot">Baking Mood</div>`;
 }
 
 // =====================================================================
@@ -1028,6 +1131,8 @@ function findTimer(el) {
 }
 
 document.addEventListener('click', (e) => {
+  const nav = e.target.closest('[data-go]');
+  if (nav) { location.replace(nav.dataset.go); return; }
   const el = e.target.closest('[data-act]');
   if (!el || !actions[el.dataset.act]) return;
   if (el.tagName === 'BUTTON' || el.tagName === 'LI' || el.dataset.act === 'focus-step') e.preventDefault();
