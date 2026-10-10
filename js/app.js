@@ -906,9 +906,8 @@ async function viewFinish(sid) {
   ${(() => {
     const inner = state.photoBusy ? `<span class="small muted">${L('照片处理中…', 'Processing photo…')}</span>`
       : photo ? `<img src="${photo}" alt="">` : `${icon('camera')}<span>${L('拍一张 / 选一张照片', 'Take or pick a photo')}</span>`;
-    // iOS 原生 app 里直接调系统相机 / 相册，不走网页的选文件
-    return isNative() ? `<button type="button" class="photo-drop" data-act="native-photo" data-target="finish">${inner}</button>`
-      : `<label class="photo-drop">${inner}<input type="file" accept="image/*" hidden data-act-change="pick-photo"></label>`;
+    // 不限定相机：iOS 会弹系统菜单，拍照、照片图库、选取文件都可以
+    return `<label class="photo-drop">${inner}<input type="file" accept="image/*" hidden data-act-change="pick-photo"></label>`;
   })()}
 
   <h2>${esc(s.recipe.name)} <span class="small muted mono" style="font-weight:400">${L('用时', 'took')} ${fmtDur(Date.now() - s.startedAt)}</span></h2>
@@ -1068,8 +1067,7 @@ async function viewLog(id) {
   const modeText = { update: L('已更新到原配方', 'Saved to recipe'), new: L('已另存为新配方', 'Saved as new recipe'), none: L('只记在这一次', 'This bake only') }[b.changeMode] || '';
   return `
   <div class="topbar"><a class="btn icon ghost" href="#/logs/${d.getFullYear()}-${d.getMonth() + 1}" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1></h1>
-    ${isNative() ? `<button class="btn icon ghost" aria-label="${L('换照片', 'Change photo')}" data-act="native-photo" data-target="log" data-id="${b.id}">${icon('camera')}</button>`
-      : `<label class="btn icon ghost" aria-label="${L('换照片', 'Change photo')}">${icon('camera')}<input type="file" accept="image/*" hidden data-act-change="replace-photo" data-id="${b.id}"></label>`}</div>
+    <label class="btn icon ghost" aria-label="${L('换照片', 'Change photo')}">${icon('camera')}<input type="file" accept="image/*" hidden data-act-change="replace-photo" data-id="${b.id}"></label></div>
   <div class="diary">
     <div class="date">${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}</div>
     <div class="wday">${weekday(d.getDay())}</div>
@@ -1371,13 +1369,6 @@ const actions = {
     go('#/');
   },
 
-  async 'native-photo'(el) {
-    const blob = await pickNativePhoto();
-    if (!blob) return;
-    if (el.dataset.target === 'log') await replaceLogPhoto(el.dataset.id, blob);
-    else await setFinishPhoto(blob);
-  },
-
   // 出炉
   'rate'(el) { const s = routeSession(); if (s) { finishDraft(s.id).rating = Number(el.dataset.v); persistSessions(); rerender(); } },
   'save-bake'(el) { el.disabled = true; saveFinish(); },
@@ -1493,30 +1484,6 @@ async function replaceLogPhoto(id, file) {
     await saveBake(b);
   } catch { toast(L('这张照片读不了，换一张试试', 'Couldn’t read that photo, try another')); }
   rerender();
-}
-
-// iOS 原生 app：先问拍照还是从相册选，再调系统相机 / 相册。系统那边就把照片缩到 1600 以内，省内存
-let cameraPlugin = null;
-async function pickNativePhoto() {
-  const how = await dialog(`<h3>${L('照片', 'Photo')}</h3>
-    <div class="stack" style="margin-top:6px">
-      <button class="btn primary block" data-dlg="camera">${icon('camera')} ${L('拍照', 'Take photo')}</button>
-      <button class="btn block" data-dlg="gallery">${icon('photo')} ${L('从相册选', 'Choose from library')}</button>
-      <button class="btn ghost block" data-dlg="cancel">${L('算了', 'Cancel')}</button></div>`);
-  if (how !== 'camera' && how !== 'gallery') return null;
-  cameraPlugin ||= window.Capacitor.registerPlugin('Camera');
-  const opts = { quality: 85, targetWidth: 1600, targetHeight: 1600, correctOrientation: true };
-  try {
-    const res = how === 'camera'
-      ? await cameraPlugin.takePhoto({ ...opts, editable: 'no' })
-      : (await cameraPlugin.chooseFromGallery({ ...opts, mediaType: 0, allowMultipleSelection: false, limit: 1 })).results?.[0];
-    const src = res?.webPath || (res?.uri && window.Capacitor.convertFileSrc(res.uri));
-    if (!src) return null;
-    return await (await fetch(src)).blob();
-  } catch (e) {
-    if (!/cancel/i.test(String(e?.message || e))) toast(L('没拿到照片：', 'No photo: ') + (e?.message || e));
-    return null;
-  }
 }
 
 // 把一步标成完成，跳到下一个没做的步骤
