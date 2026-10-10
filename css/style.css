@@ -2,7 +2,7 @@
    奶油纸底 + 可可色文字 + 砖红线稿 + 蜡笔色块（面包黄 / 雾蓝 / 橄榄绿）
    数字和日期用打字机字体，英文小注用手写体 */
 
-/* 店铺字体：也字工厂小石头（随 app 一起提供，见 fonts/README.md）。也可以在「店务」里上传别的字体替换 */
+/* 店铺字体：也字工厂小石头（随 app 一起提供，见 fonts/README.md） */
 @font-face {
   font-family: 'ShopFont';
   src: local('也字工厂小石头'), local('YEFONTXiaoShiTou'),
@@ -32,9 +32,8 @@
   --leaf-ink: #fffcf5;
   --blush: #eb9c86;
   --danger: #c4513a;
-  --shadow: 0 2px 0 rgba(74, 58, 46, .07);
-  --radius-wobble: 255px 14px 225px 14px / 14px 225px 14px 255px;
-  --radius-wobble-2: 14px 225px 14px 255px / 255px 14px 225px 14px;
+  --shadow: 0 1px 2px rgba(74, 58, 46, .06), 0 6px 18px rgba(74, 58, 46, .07);
+  --hair: rgba(74, 58, 46, .14);              /* 细分隔线 / 轻描边 */
   --font: 'ShopFont', 'PingFang SC', 'Noto Sans SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
   --title: 'ShopFont', 'ZCOOL KuaiLe', 'PingFang SC', 'Noto Sans SC', sans-serif;
   --mono: 'Courier Prime', 'Courier New', ui-monospace, monospace;
@@ -100,11 +99,13 @@ img { max-width: 100%; display: block; }
 .ink-paper { stroke: #fffcf5; }
 .sk-text { font-family: var(--title); }
 .blush { stroke: var(--blush); }
+.rope { stroke: var(--crust); filter: url(#crayon); }
+.salt { stroke: var(--card); }
 
 /* ---------- 字体工具 ---------- */
 .mono { font-family: var(--mono); letter-spacing: .02em; }
 /* 标题统一用站酷快乐体，它本身就够圆够粗，不再加粗 */
-h1, h2, h3, .greet h1, .hero h1, .storefront .sign, .bake-head .t b, .step-pill .s b, .diary .name, .stat b.t, .recipe-row .t b, .shelf .item span {
+h1, h2, h3, .greet h1, .hero h1, .storefront .sign, .bake-head .t b, .diary .name, .stat b.t, .recipe-row .t b, .shelf .item span {
   font-family: var(--title); font-weight: 400;
 }
 .muted { color: var(--ink-soft); }
@@ -139,10 +140,10 @@ h2 .more { margin-left: auto; font-size: 14px; color: var(--ink-soft); font-weig
 /* ---------- 按钮 ---------- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  border: 1.8px solid var(--line);
-  border-radius: var(--radius-wobble);
+  border: 1px solid var(--hair);
+  border-radius: 999px;
   background: var(--card);
-  padding: 8px 16px;
+  padding: 8px 18px;
   min-height: 44px;
   cursor: pointer;
   text-decoration: none;
@@ -151,14 +152,14 @@ h2 .more { margin-left: auto; font-size: 14px; color: var(--ink-soft); font-weig
   box-shadow: var(--shadow);
 }
 .btn .ic { color: currentColor; }
-.btn:active { transform: translate(1px, 2px) rotate(-.5deg); }
-.btn.primary { background: var(--ai); border-color: color-mix(in srgb, var(--ai) 70%, #000); color: #fffcf5; letter-spacing: .04em; }
+.btn:active { transform: scale(.97); }
+.btn.primary { background: var(--ai); border-color: transparent; color: #fffcf5; letter-spacing: .04em; }
 .btn.big { font-family: var(--title); }
-.btn.crust { background: var(--crust); color: #3f3129; }
+.btn.crust { background: var(--crust); border-color: transparent; color: #3f3129; }
 .btn.ghost { border-color: transparent; background: transparent; box-shadow: none; }
 .btn.danger { color: var(--danger); border-color: var(--danger); background: transparent; box-shadow: none; }
 .btn.block { width: 100%; }
-.btn.big { min-height: 58px; font-size: 20px; border-radius: 22px 18px 24px 16px / 18px 24px 16px 22px; }
+.btn.big { min-height: 56px; font-size: 20px; }
 .btn.sm { min-height: 34px; padding: 4px 12px; font-size: 15px; }
 .btn.icon { padding: 0; width: 44px; min-width: 44px; }
 .btn.icon.sm { width: 34px; min-width: 34px; }
@@ -171,15 +172,15 @@ h2 .more { margin-left: auto; font-size: 14px; color: var(--ink-soft); font-weig
 
 /* ---------- 卡片 ---------- */
 .card {
-  border: 1.8px solid var(--line);
-  border-radius: var(--radius-wobble);
+  border: 0;
+  border-radius: 20px;
   padding: 14px 16px;
   background: var(--card);
   position: relative;
   box-shadow: var(--shadow);
 }
-.card.alt { border-radius: var(--radius-wobble-2); }
-.card.dashed { border-style: dashed; background: transparent; box-shadow: none; }
+.card.alt { border-radius: 20px; }
+.card.dashed { border: 1.5px dashed var(--hair); background: transparent; box-shadow: none; }
 .card.fill { background: var(--paper-2); }
 a.card { display: block; text-decoration: none; }
 
@@ -198,8 +199,8 @@ a.card { display: block; text-decoration: none; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .shop-meta { text-align: center; margin-top: 4px; }
-.shop-meta .lv { display: inline-block; padding: 0 12px; border: 1.5px solid var(--line); border-radius: var(--radius-wobble); font-size: 14px; background: var(--card); }
-.progress { height: 9px; border: 1.5px solid var(--line); border-radius: var(--radius-wobble); margin: 10px auto 2px; max-width: 220px; overflow: hidden; background: var(--card); }
+.shop-meta .lv { display: inline-block; padding: 1px 12px; border-radius: 999px; font-size: 14px; background: var(--card); box-shadow: var(--shadow); }
+.progress { height: 8px; border-radius: 999px; margin: 10px auto 2px; max-width: 220px; overflow: hidden; background: var(--paper-2); box-shadow: inset 0 0 0 1px var(--hair); }
 .progress > i { display: block; height: 100%; background: repeating-linear-gradient(-45deg, var(--crust) 0 4px, transparent 4px 7px); }
 
 /* 数字统计：大号打字机数字 + 灰色小字 */
@@ -271,14 +272,14 @@ a.card { display: block; text-decoration: none; }
 .recipe-row .t b { display: block; font-size: 19px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .recipe-row .t span { font-size: 13px; color: var(--ink-soft); }
 
-.search { width: 100%; border: 0; border-bottom: 1.8px solid var(--line); background: transparent; padding: 8px 2px; outline: none; }
+.search { width: 100%; border: 0; border-bottom: 1.5px solid var(--hair); background: transparent; padding: 8px 2px; outline: none; }
 
 /* ---------- 配方详情 ---------- */
 .hero { text-align: center; padding: 6px 0 4px; }
 .hero > svg { width: 104px; height: 104px; }
 .hero h1 { font-size: 30px; margin: 4px 0 0; letter-spacing: .04em; }
 .chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
-.chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 11px; border: 1.5px solid var(--line); border-radius: 999px; font-size: 14px; background: var(--card); cursor: pointer; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 11px; border: 1px solid var(--hair); border-radius: 999px; font-size: 14px; background: var(--card); cursor: pointer; }
 .chip.on { background: var(--ink); color: var(--paper); }
 .chip .ic { width: 15px; height: 15px; }
 .chip.time { border-style: dashed; cursor: default; background: transparent; }
@@ -303,11 +304,11 @@ a.card { display: block; text-decoration: none; }
 label.f { display: block; margin-bottom: 14px; }
 label.f > span { display: block; font-size: 14px; color: var(--ink-soft); margin-bottom: 2px; }
 .input, textarea.input, select.input {
-  width: 100%; border: 0; border-bottom: 1.8px solid var(--line); background: transparent;
+  width: 100%; border: 0; border-bottom: 1.5px solid var(--hair); background: transparent;
   padding: 6px 2px; outline: none; border-radius: 0; min-height: 40px;
 }
 .input:focus { border-bottom-color: var(--crust); }
-textarea.input { border: 1.8px solid var(--line); border-radius: var(--radius-wobble-2); padding: 10px 12px; min-height: 96px; resize: vertical; background: var(--card); }
+textarea.input { border: 1px solid var(--hair); border-radius: 16px; padding: 10px 12px; min-height: 96px; resize: vertical; background: var(--card); }
 textarea.input.tall { min-height: 260px; }
 .input.num { text-align: right; font-family: var(--mono); }
 
@@ -342,10 +343,16 @@ textarea.input.tall { min-height: 260px; }
 .hero-clock.ring { color: var(--danger); animation: blink 1s steps(2) infinite; }
 .hero-clock.small { font-size: 15px; color: var(--ink-soft); }
 .oven-wrap .mascot { position: absolute; right: -26%; bottom: 4%; width: 25%; }
-.step-pill { display: flex; align-items: center; gap: 10px; margin: 14px 0 6px; padding: 10px 14px; text-align: left; }
-.step-pill .n { font-family: var(--mono); font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
-.step-pill .s { flex: 1; min-width: 0; }
-.step-pill .s b { display: block; font-size: 18px; }
+.step-now { display: grid; gap: 2px; justify-items: center; text-align: center; margin: 14px 8px 14px; }
+.step-now .n { font-size: 13px; color: var(--ink-soft); }
+.step-now b { font-size: 20px; font-weight: 400; font-family: var(--title); text-wrap: balance; }
+/* 计时控制：一排轻量的文字按钮 */
+.timer-ctl { display: flex; justify-content: center; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.link-btn { display: inline-flex; align-items: center; gap: 4px; background: none; border: 0; padding: 6px 10px; border-radius: 999px; color: var(--ink-soft); font-size: 14px; cursor: pointer; }
+.link-btn .ic { width: 15px; height: 15px; color: currentColor; }
+.link-btn:active { background: var(--lens); }
+/* 步骤列表里正在计时的那一步，后面挂一个小时钟 */
+.tick { font-size: 14px; color: var(--shu); margin-left: 4px; white-space: nowrap; }
 .hero-hint { margin: 4px 0 12px; font-size: 14px; color: var(--ai); }
 
 .checklist { list-style: none; padding: 0; margin: 0; }
@@ -361,25 +368,13 @@ textarea.input.tall { min-height: 260px; }
 .bake-steps > li.done::before { content: '✓'; }
 .bake-steps > li.current .stext { font-weight: 700; }
 
-.timer-box { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 8px 12px; border: 1.8px solid var(--line); border-radius: var(--radius-wobble-2); background: var(--crust-soft); }
-.timer-box .clock { font-size: 28px; font-family: var(--mono); line-height: 1; flex: 1; }
-.timer-box.paused .clock { opacity: .5; }
-.timer-box.done { background: var(--crust); color: #3f3129; animation: shake .5s ease-in-out infinite alternate; }
 @keyframes shake { from { transform: rotate(-.6deg); } to { transform: rotate(.6deg); } }
 
 .badge { display: inline-block; font-size: 12px; padding: 0 9px; border: 1.2px solid var(--line); border-radius: 999px; background: var(--ai-soft); }
 
-/* 全局计时条 */
-#timerbar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 22px); z-index: 20; display: flex; gap: 8px; max-width: calc(100% - 32px); overflow-x: auto; }
-#timerbar:empty { display: none; }
-/* 有计时小条浮在菜单栏上方时，页面底部多留一点空，最下面的按钮不会被挡住 */
-body.has-timers #app { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 96px); }
-#timerbar a { display: flex; align-items: center; gap: 6px; padding: 6px 14px; background: var(--ink); color: var(--paper); border-radius: 999px; text-decoration: none; font-size: 15px; white-space: nowrap; font-family: var(--mono); }
-#timerbar a .ic { width: 16px; height: 16px; color: var(--paper); }
-#timerbar a.done { background: var(--crust); color: #3f3129; }
 
 /* ---------- 出炉 ---------- */
-.photo-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; aspect-ratio: 4/3; border: 1.8px dashed var(--line); border-radius: 18px; cursor: pointer; overflow: hidden; position: relative; color: var(--ink-soft); background: var(--card); }
+.photo-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; aspect-ratio: 4/3; border: 1.5px dashed var(--hair); border-radius: 18px; cursor: pointer; overflow: hidden; position: relative; color: var(--ink-soft); background: var(--card); }
 .photo-drop svg.ic { width: 44px; height: 44px; }
 .photo-drop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .rating { display: flex; gap: 6px; }
@@ -388,7 +383,7 @@ body.has-timers #app { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inse
 .rating button.on svg { color: var(--shu); }
 .rating button.on svg path { fill: var(--crust); }
 .choice { display: grid; gap: 8px; }
-.choice label { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1.8px solid var(--line); border-radius: var(--radius-wobble); cursor: pointer; background: var(--card); }
+.choice label { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border: 1px solid var(--hair); border-radius: 16px; cursor: pointer; background: var(--card); }
 .choice label:has(input:checked) { background: var(--crust-soft); }
 .choice input { margin-top: 5px; accent-color: var(--leaf); }
 .choice small { display: block; color: var(--ink-soft); }
@@ -494,6 +489,7 @@ details[open] > summary::before { content: '▾ '; }
 .tabbar a .ti { width: 28px; height: 28px; color: var(--ink-soft); transition: width .3s ease, height .3s ease; }
 .tabbar a span { white-space: nowrap; transition: opacity .25s ease, max-height .3s ease; max-height: 16px; overflow: hidden; }
 .tabbar a.on { color: var(--shu); font-weight: 500; }
+.tabbar a.ticking span { color: var(--shu); font-size: 11px; letter-spacing: .02em; }
 .tabbar a.on .ti { color: var(--doodle); }
 .tabbar a:focus-visible { outline: 2px solid var(--ai); outline-offset: -4px; }
 /* 往下滚：缩成小胶囊 */
@@ -503,8 +499,8 @@ details[open] > summary::before { content: '▾ '; }
 
 /* ---------- 弹窗 ---------- */
 dialog {
-  border: 1.8px solid var(--line); border-radius: var(--radius-wobble); background: var(--card) var(--grain); color: var(--ink);
-  padding: 20px; width: min(92vw, 420px);
+  border: 0; border-radius: 26px; background: var(--card) var(--grain); color: var(--ink);
+  padding: 22px; width: min(92vw, 400px); box-shadow: 0 20px 60px rgba(40, 30, 22, .25);
 }
 dialog::backdrop { background: rgba(50, 38, 30, .35); }
 dialog h3 { margin: 0 0 8px; font-size: 21px; }

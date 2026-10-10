@@ -13,7 +13,6 @@ import { SAMPLE_RECIPES } from './samples.js';
 
 const $app = document.getElementById('app');
 const $tabs = document.getElementById('tabs');
-const $timerbar = document.getElementById('timerbar');
 const $dlg = document.getElementById('dlg');
 
 const state = {
@@ -134,7 +133,7 @@ async function route() {
   if (token !== routeToken) return; // 期间又跳转了
   $app.innerHTML = html;
   renderTabs(r.tab);
-  renderTimerbar();
+  renderTabClock();
   keepAwake(hash === '#/bake');
   window.scrollTo(0, 0);
 }
@@ -148,7 +147,7 @@ async function rerender() {
   const html = await r.view(...r.args);
   if (token !== routeToken) return;
   $app.innerHTML = html;
-  renderTimerbar();
+  renderTabClock();
   window.scrollTo(0, y);
 }
 
@@ -217,7 +216,7 @@ async function viewShop() {
       ${stageScene(cur?.kind, running.length > 0, '', progressOf(curT))}
       <div class="info"><b>${esc(s.recipe.name)}</b>
         <span class="small muted">第 ${Math.min(s.current + 1, s.recipe.steps.length)}/${s.recipe.steps.length} 步${cur ? ` · ${esc(cur.text.slice(0, 16))}` : ''}</span>
-        ${running.map((t) => `<div class="small">${icon('timer')} <span class="mono" data-clock="${t.id}">${formatClock(remainingMs(t))}</span> ${esc(t.label)}</div>`).join('')}
+        ${running.length ? `<div class="small">${icon('timer')} <span class="mono" data-clock="${running[0].id}">${formatClock(remainingMs(running[0]))}</span> ${esc(running[0].label.slice(0, 10))}</div>` : ''}
       </div>${icon('next')}</a>`;
   } else {
     ovenHtml = `<div class="card dashed oven-card">${ovenScene()}
@@ -534,12 +533,8 @@ function viewBake() {
         <button class="btn icon sm ghost" data-act="bake-del-step" data-id="${st.id}" aria-label="删除">${icon('close')}</button></div></div></li>`;
     }
     return `<li class="${done ? 'done' : ''} ${cur ? 'current' : ''}">
-      <div class="stext" data-act="focus-step" data-i="${n}">${esc(st.text)}</div>
-      ${timers.map(timerBox).join('')}
-      ${!done ? `<div class="meta">
-        ${isTimed(st) && !timers.some((t) => !t.done) ? `<button class="btn sm ${cur ? 'crust' : ''}" data-act="timer-start" data-id="${st.id}">${icon('play')} 计时 ${formatMinutes(st.minutes)}</button>` : ''}
-        ${cur ? `<button class="btn sm" data-act="step-done" data-id="${st.id}">${icon('check')} 这步好了</button>` : ''}
-      </div>` : ''}
+      <div class="stext" data-act="focus-step" data-i="${n}">${esc(st.text)}${timers.map((t) => ` <span class="tick mono" data-clock="${t.id}">${t.done ? '时间到！' : formatClock(remainingMs(t))}</span>`).join('')}</div>
+      ${!done && isTimed(st) && !timers.length ? `<div class="meta"><span class="chip time">${icon('timer')} ${formatMinutes(st.minutes)}</span></div>` : ''}
     </li>`;
   }).join('');
 
@@ -557,7 +552,6 @@ function viewBake() {
   ${ingHtml}
 
   <h2>步骤</h2>
-  ${s.timers.filter((t) => !t.stepId).map(timerBox).join('')}
   <ol class="steps bake-steps">${stepsHtml}</ol>
   ${ed ? `<button class="btn sm" data-act="bake-add-step">${icon('plus')} 加步骤</button>` : ''}
 
@@ -569,6 +563,16 @@ function viewBake() {
 
 // 顶部的大烤箱：显示屏上就是当前计时，旁边站着吐司店长
 const START_WORD = { bake: '放进烤箱', ferment: '开始发酵' };
+
+// 正在计时时的一排小按钮：暂停 / 继续、加 5 分钟、取消
+function timerControls(t) {
+  const paused = t.pausedRemaining != null;
+  return `<div class="timer-ctl">
+    <button class="link-btn" data-act="${paused ? 'timer-resume' : 'timer-pause'}" data-id="${t.id}">${icon(paused ? 'play' : 'pause')} ${paused ? '继续' : '暂停'}</button>
+    <button class="link-btn" data-act="timer-add" data-id="${t.id}">${icon('plus')} 5 分钟</button>
+    <button class="link-btn" data-act="timer-stop" data-id="${t.id}">${icon('close')} 取消计时</button>
+  </div>`;
+}
 
 function bakeHero(s) {
   const r = s.recipe;
@@ -618,22 +622,11 @@ function bakeHero(s) {
   }
   return `<div class="bake-hero">
     ${scene}
-    ${cur ? `<div class="card step-pill"><span class="n">${s.current + 1}/${r.steps.length}</span>
-      <div class="s"><b>${esc(cur.text)}</b>${cur.minutes || KIND_LABEL[cur.kind] ? `<span class="small muted">${[KIND_LABEL[cur.kind], cur.minutes ? formatMinutes(cur.minutes) : ''].filter(Boolean).join(' · ')}</span>` : ''}</div></div>` : ''}
+    ${curTimer && !curTimer.done ? timerControls(curTimer) : ''}
+    ${cur ? `<div class="step-now"><span class="n">第 ${s.current + 1} 步 · 共 ${r.steps.length} 步</span>
+      <b>${esc(cur.text)}</b>${cur.minutes || KIND_LABEL[cur.kind] ? `<span class="small muted">${[KIND_LABEL[cur.kind], cur.minutes ? formatMinutes(cur.minutes) : ''].filter(Boolean).join(' · ')}</span>` : ''}</div>` : ''}
     ${action}
     <p class="hero-hint">${hint}</p>
-  </div>`;
-}
-
-function timerBox(t) {
-  const rem = remainingMs(t);
-  const paused = t.pausedRemaining != null;
-  return `<div class="timer-box ${t.done ? 'done' : ''} ${paused ? 'paused' : ''}" data-timer="${t.id}">
-    ${icon(t.done ? 'bell' : 'timer')}
-    <div class="clock" data-clock="${t.id}">${t.done ? '时间到！' : formatClock(rem)}</div>
-    ${t.done ? '' : `<button class="btn icon sm" data-act="${paused ? 'timer-resume' : 'timer-pause'}" data-id="${t.id}" aria-label="${paused ? '继续' : '暂停'}">${icon(paused ? 'play' : 'pause')}</button>`}
-    <button class="btn sm" data-act="timer-add" data-id="${t.id}">+5分</button>
-    <button class="btn icon sm ghost" data-act="timer-stop" data-id="${t.id}" aria-label="移除">${icon('close')}</button>
   </div>`;
 }
 
@@ -691,19 +684,24 @@ function tick() {
     persistSession();
     if (location.hash === '#/bake') rerender();
   }
-  renderTimerbar();
+  renderTabClock();
 }
 
-function renderTimerbar() {
+// 别的页面上不再浮一排计时小条：最近的那个倒计时直接显示在菜单栏「店铺」下面
+function renderTabClock() {
+  const label = $tabs.querySelector('[data-tab="shop"] span');
+  if (!label) return;
   const s = state.session;
-  const ts = !s || ['#/bake', '#/', ''].includes(location.hash) ? [] : s.timers.filter((t) => !t.done || state.alarmOpen === t.id);
-  document.body.classList.toggle('has-timers', ts.length > 0);
-  $timerbar.innerHTML = ts.map((t) => `<a href="#/bake" class="${t.done ? 'done' : ''}">${icon(t.done ? 'bell' : 'timer')}
-    ${t.done ? '时间到' : formatClock(remainingMs(t))} · ${esc(t.label.slice(0, 8))}</a>`).join('');
+  const ts = s ? s.timers.slice().sort((a, b) => remainingMs(a) - remainingMs(b)) : [];
+  const t = ts.find((x) => x.done) || ts[0];
+  label.textContent = t ? (t.done ? '时间到' : formatClock(remainingMs(t))) : '店铺';
+  label.classList.toggle('mono', !!t);
+  label.parentElement.classList.toggle('ticking', !!t);
 }
 
 async function fireAlarm(t) {
   startRinging();
+  const autoStop = setTimeout(stopRinging, 60000); // 没人理也只响一分钟
   notify(`⏰ ${t.label}`, `「${state.session?.recipe.name || ''}」这一步的时间到啦`);
   if (state.alarmOpen) return;
   state.alarmOpen = t.id;
@@ -711,14 +709,20 @@ async function fireAlarm(t) {
     <p>${esc(t.label)}</p>
     <div class="row" style="justify-content:center">
       <button class="btn" data-dlg="more">再等 5 分钟</button>
-      <button class="btn primary" data-dlg="ok">知道啦</button></div></div>`);
+      <button class="btn primary" data-dlg="ok">好了，下一步</button></div></div>`);
+  clearTimeout(autoStop);
   state.alarmOpen = null;
   stopRinging();
   const s = state.session;
   const live = s?.timers.find((x) => x.id === t.id);
   if (!live) return;
-  if (v === 'more') addMinutes(live, 5);
-  else if (!live.stepId) s.timers = s.timers.filter((x) => x.id !== live.id); // 自定计时响完就收起
+  if (v === 'more') {
+    addMinutes(live, 5);
+  } else {
+    // 计时到这里就结束了；点了「好了，下一步」再顺手进入下一步
+    s.timers = s.timers.filter((x) => x.id !== live.id);
+    if (v === 'ok' && live.stepId) completeStep(s, live.stepId);
+  }
   await persistSession();
   if (location.hash === '#/bake') rerender();
 }
@@ -932,10 +936,6 @@ function viewSettings() {
     <div class="card alt"><div class="row"><div class="grow"><b>计时提醒通知</b><div class="small muted">${permText}</div></div>
       <button class="btn sm" data-act="notify-perm">开启</button><button class="btn sm" data-act="test-sound">${icon('bell')} 试听</button></div>
       <p class="small muted" style="margin:8px 0 0">计时时屏幕会保持常亮。把 app 添加到主屏幕后，切到后台也能收到提醒（iOS 需 16.4 以上）。</p></div>
-    <div class="card"><div class="row"><div class="grow"><b>字体</b><div class="small muted">${state.fontName ? `正在用：${esc(state.fontName)}` : '也字工厂小石头'}</div></div>
-      <label class="btn sm">${icon('upload')} 上传字体<input type="file" accept=".ttf,.otf,.woff,.woff2,font/*" hidden data-act-change="font-file"></label>
-      ${state.fontName ? '<button class="btn sm ghost" data-act="font-reset">恢复默认</button>' : ''}</div>
-      <p class="small muted" style="margin:8px 0 0">字体文件只存在这台设备里，不会上传到别处。请使用你有授权的字体文件。</p></div>
     <div class="card"><div class="row"><div class="grow"><b>外观</b></div>
       ${[['auto', '跟随系统'], ['light', '白纸'], ['dark', '黑板']].map(([k, l]) => `<button class="chip ${theme === k ? 'on' : ''}" data-act="theme" data-v="${k}">${l}</button>`).join('')}</div></div>
     <div class="card alt"><b>备份</b><p class="small muted" style="margin:2px 0 10px">所有数据只存在这台设备的浏览器里。换手机前记得导出。</p>
@@ -1040,12 +1040,9 @@ const actions = {
   },
   'step-done'(el) {
     const s = state.session;
-    if (!s.doneSteps.includes(el.dataset.id)) s.doneSteps.push(el.dataset.id);
-    s.timers = s.timers.filter((t) => !(t.stepId === el.dataset.id && t.done));
-    const next = s.recipe.steps.findIndex((st) => !s.doneSteps.includes(st.id));
-    s.current = next < 0 ? s.recipe.steps.length : next;
+    s.timers = s.timers.filter((t) => t.stepId !== el.dataset.id); // 这一步完成了，它的计时也一起结束
+    completeStep(s, el.dataset.id);
     persistSession(); rerender();
-    if (next < 0) toast('全部步骤完成，可以出炉了！');
   },
   'timer-start'(el) {
     unlockAudio();
@@ -1112,10 +1109,6 @@ const actions = {
   },
 
   // 设置
-  async 'font-reset'() {
-    await db.delKv('font');
-    location.reload();
-  },
   async 'notify-perm'() {
     const p = await askNotifyPermission();
     toast(p === 'granted' ? '通知已开启' : '没有拿到通知权限');
@@ -1141,17 +1134,6 @@ const actions = {
 };
 
 const changeActions = {
-  async 'font-file'(el) {
-    const file = el.files?.[0];
-    if (!file) return;
-    try {
-      await applyFont(file);
-      await db.setKv('font', { name: file.name.replace(/\.[^.]+$/, ''), blob: file });
-      state.fontName = file.name.replace(/\.[^.]+$/, '');
-      toast('字体换好啦');
-      rerender();
-    } catch { toast('这个字体文件读不了'); }
-  },
   async 'pick-photo'(el) {
     const file = el.files?.[0];
     if (!file) return;
@@ -1188,16 +1170,20 @@ const changeActions = {
     if (!file) return;
     try {
       await importAll(JSON.parse(await file.text()));
-      const font = await db.getKv('font').catch(() => null);
-  if (font?.blob) {
-    try { await applyFont(font.blob); state.fontName = font.name; } catch { /* 坏文件就忽略 */ }
-  }
-  state.shop = await getShop();
+      state.shop = await getShop();
       toast('备份已恢复');
       go('#/');
     } catch (e) { toast(e.message || '文件读不了'); }
   },
 };
+
+// 把一步标成完成，跳到下一个没做的步骤
+function completeStep(s, stepId) {
+  if (!s.doneSteps.includes(stepId)) s.doneSteps.push(stepId);
+  const next = s.recipe.steps.findIndex((st) => !s.doneSteps.includes(st.id));
+  s.current = next < 0 ? s.recipe.steps.length : next;
+  if (next < 0) toast('全部步骤完成，可以出炉了！');
+}
 
 function findTimer(el) {
   return state.session.timers.find((t) => t.id === el.dataset.id);
@@ -1263,23 +1249,12 @@ document.addEventListener('visibilitychange', () => {
 // 启动
 // =====================================================================
 
-// 用户上传的字体：注册成 ShopFont，整站的标题和正文都会用上
-async function applyFont(blob) {
-  const face = new FontFace('ShopFont', await blob.arrayBuffer());
-  await face.load();
-  document.fonts.add(face);
-}
-
 async function boot() {
   try {
     const t = localStorage.getItem('baker-theme');
     if (t && t !== 'auto') document.documentElement.dataset.theme = t;
   } catch { /* 无痕模式 */ }
 
-  const font = await db.getKv('font').catch(() => null);
-  if (font?.blob) {
-    try { await applyFont(font.blob); state.fontName = font.name; } catch { /* 坏文件就忽略 */ }
-  }
   state.shop = await getShop();
   if (!(await db.getKv('shop'))) await saveShop(state.shop);
   if (!(await db.getKv('seeded'))) {

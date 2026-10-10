@@ -86,6 +86,7 @@ export function guessShape(name = '') {
   if (/蛋糕|cake|戚风|芝士/.test(n)) return 'cake';
   if (/饼干|曲奇|cookie|biscuit/.test(n)) return 'cookie';
   if (/玛芬|麦芬|muffin|纸杯|cupcake/.test(n)) return 'muffin';
+  if (/碱水|扭结|pretzel|brezel/.test(n)) return 'pretzel';
   if (/贝果|bagel|甜甜圈|donut/.test(n)) return 'bagel';
   if (/菠萝|蜜瓜|melon/.test(n)) return 'melonpan';
   if (/红豆|豆沙|红豆包|anpan|あんぱん/.test(n)) return 'anpan';

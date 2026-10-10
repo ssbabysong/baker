@@ -38,4 +38,14 @@
     <path d="M256 238 C272 238 282 248 282 264 C282 280 272 290 256 290 C240 290 230 280 230 264 C230 248 240 238 254 238"/>
     <path d="M240 274 C240 260 248 254 256 254 C264 254 272 260 272 274 Z" stroke-width="7"/>
   </g>
+  <!-- 门口挂着的碱水面包招牌 -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#r)">
+    <path d="M376 228 H456 M376 254 L406 228" stroke="#4a3a2e" stroke-width="10"/>
+    <path d="M425 228 V268" stroke="#4a3a2e" stroke-width="6"/>
+    <g transform="translate(379 249) scale(1.45)">
+      <path d="M18 43 C22 36 28 30 32 26 C36 22 40 16 46 16 C54 16 58 24 56 34 C54 46 44 54 32 54 C20 54 10 46 8 34 C6 24 10 16 18 16 C24 16 28 22 32 26 C36 30 42 36 46 43" stroke="#4a3a2e" stroke-width="12"/>
+      <path d="M18 43 C22 36 28 30 32 26 C36 22 40 16 46 16 C54 16 58 24 56 34 C54 46 44 54 32 54 C20 54 10 46 8 34 C6 24 10 16 18 16 C24 16 28 22 32 26 C36 30 42 36 46 43" stroke="#e8b060" stroke-width="6.5"/>
+      <path d="M11 32 h.1 M53 32 h.1 M32 51 h.1 M21 49 h.1 M43 49 h.1 M44 21 h.1 M20 21 h.1" stroke="#fffcf5" stroke-width="2.6"/>
+    </g>
+  </g>
 </svg>
