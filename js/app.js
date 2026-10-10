@@ -8,6 +8,7 @@ import { shape, icon, storefront, storefrontSign, ovenScene, stageScene, emptySh
 import {
   remainingMs, formatClock, createTimer, pauseTimer, resumeTimer, addMinutes,
   unlockAudio, playChime, startRinging, stopRinging, askNotifyPermission, notify, keepAwake,
+  isNative, permissionState, refreshPermission, syncNativeAlarms,
 } from './timers.js';
 import { SAMPLE_RECIPES, SAMPLE_RECIPES_EN } from './samples.js';
 import { L, isEn, getLang, setLang, getCurrency, setCurrency, currencySymbol, formatPrice, APP_NAME } from './i18n.js';
@@ -150,10 +151,18 @@ const sessionOfTimer = (tid) => state.sessions.find((s) => s.timers.some((t) => 
 let saveTimer = null;
 function persistSessions(debounce = 0) {
   clearTimeout(saveTimer);
-  const run = () => saveSessions(state.sessions);
+  const run = () => { syncNativeAlarms(nativeAlarms()); return saveSessions(state.sessions); };
   if (!debounce) return run();
   saveTimer = setTimeout(run, debounce);
   return Promise.resolve();
+}
+
+// 原生 app 里：每个在走的计时器对应一条系统闹钟
+function nativeAlarms() {
+  return state.sessions.flatMap((s) => s.timers.filter((t) => !t.done && t.pausedRemaining == null).map((t) => ({
+    id: t.id, at: t.endsAt, title: `⏰ ${t.label}`,
+    body: L(`「${s.recipe.name}」这一步的时间到啦`, `${s.recipe.name}: time’s up for this step`),
+  })));
 }
 
 // ---------- 路由 ----------
@@ -818,7 +827,7 @@ const alarmQueue = [];
 async function fireAlarm(s, t) {
   startRinging();
   const autoStop = setTimeout(stopRinging, 60000); // 没人理也只响一分钟
-  notify(`⏰ ${t.label}`, L(`「${s.recipe.name}」这一步的时间到啦`, `${s.recipe.name}: time’s up for this step`));
+  if (!isNative()) notify(`⏰ ${t.label}`, L(`「${s.recipe.name}」这一步的时间到啦`, `${s.recipe.name}: time’s up for this step`)); // 原生 app 里系统闹钟已经响了
   // 几炉同时响时一个一个弹
   if (state.alarmOpen) { alarmQueue.push([s, t]); clearTimeout(autoStop); return; }
   state.alarmOpen = t.id;
@@ -1128,7 +1137,7 @@ async function viewWidgets() {
 // =====================================================================
 
 function viewSettings() {
-  const perm = 'Notification' in window ? Notification.permission : 'unsupported';
+  const perm = permissionState();
   const permText = { granted: L('已开启', 'On'), denied: L('已关闭', 'Off'), default: L('未开启', 'Not set'), unsupported: L('不支持', 'Not supported') }[perm];
   const theme = document.documentElement.dataset.theme || 'auto';
   const chips = (act, cur, list) => list.map(([k, l]) => `<button class="chip ${cur === k ? 'on' : ''}" data-act="${act}" data-v="${k}">${l}</button>`).join('');
@@ -1139,7 +1148,7 @@ function viewSettings() {
       <button class="btn sm" data-act="rename-shop">${L('改名', 'Rename')}</button></div></div>
     <div class="card alt"><div class="row"><div class="grow"><b>${L('计时提醒', 'Timer alerts')}</b><div class="small muted">${permText}</div></div>
       ${perm === 'default' ? `<button class="btn sm" data-act="notify-perm">${L('开启', 'Turn on')}</button>` : ''}<button class="btn sm" data-act="test-sound">${icon('bell')} ${L('试听', 'Test')}</button></div>
-      <p class="small muted" style="margin:6px 0 0">${L('加到主屏幕后，后台也会响', 'Add to Home Screen to hear it in the background')}</p></div>
+      <p class="small muted" style="margin:6px 0 0">${isNative() ? L('锁屏或关掉 app 也会准时提醒', 'Alerts even when locked or closed') : L('加到主屏幕后，后台也会响', 'Add to Home Screen to hear it in the background')}</p></div>
     <div class="card"><div class="row"><div class="grow"><b>${L('语言', 'Language')}</b></div>${chips('lang', getLang(), [['zh', '中文'], ['en', 'English']])}</div></div>
     <div class="card alt"><div class="row"><div class="grow"><b>${L('价签货币', 'Currency')}</b></div>${chips('currency', getCurrency(), [['CNY', L('¥ 人民币', '¥ CNY')], ['USD', L('$ 美元', '$ USD')]])}</div></div>
     <div class="card"><div class="row"><div class="grow"><b>${L('外观', 'Look')}</b></div>
@@ -1517,6 +1526,8 @@ async function boot() {
   await seedSamples();
   state.sessions = await getSessions();
   for (const s of state.sessions) s.editing = false;
+  await refreshPermission();
+  syncNativeAlarms(nativeAlarms());
 
   window.addEventListener('hashchange', route);
   await route();

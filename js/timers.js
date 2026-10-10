@@ -97,14 +97,49 @@ export function stopRinging() {
 }
 
 // ---------- 系统通知 ----------
+// 网页 / 主屏幕 PWA：用浏览器通知，时间到那一刻由页面自己弹。
+// iOS 原生 app（Capacitor 打包）：网页通知不可用，而且切到后台 JS 就停了，
+// 所以开始计时时就把「几点几分响」交给系统的本地通知，锁屏、杀掉 app 也会准时响。
+
+export const isNative = () => !!window.Capacitor?.isNativePlatform?.();
+let localNotif = null;
+const LN = () => (localNotif ||= window.Capacitor.registerPlugin('LocalNotifications'));
+let nativePerm = 'default';
+
+// 当前的通知权限：granted / denied / default / unsupported
+export function permissionState() {
+  if (isNative()) return nativePerm;
+  return 'Notification' in window ? Notification.permission : 'unsupported';
+}
+
+export async function refreshPermission() {
+  if (!isNative()) return permissionState();
+  try {
+    const r = await LN().checkPermissions();
+    nativePerm = r.display === 'granted' ? 'granted' : r.display === 'denied' ? 'denied' : 'default';
+  } catch { nativePerm = 'unsupported'; }
+  return nativePerm;
+}
 
 export async function askNotifyPermission() {
+  if (isNative()) {
+    try {
+      const r = await LN().requestPermissions();
+      nativePerm = r.display === 'granted' ? 'granted' : r.display === 'denied' ? 'denied' : 'default';
+    } catch { nativePerm = 'unsupported'; }
+    return nativePerm;
+  }
   if (!('Notification' in window)) return 'unsupported';
   if (Notification.permission === 'default') return Notification.requestPermission();
   return Notification.permission;
 }
 
 export async function notify(title, body) {
+  if (isNative()) {
+    // 原生 app 里只用来「试听」：一秒后弹一条
+    try { await LN().schedule({ notifications: [{ id: 1, title, body, schedule: { at: new Date(Date.now() + 1000) } }] }); } catch { /* 没权限 */ }
+    return;
+  }
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const opts = { body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'baker-timer', renotify: true, vibrate: [300, 150, 300] };
   try {
@@ -112,6 +147,32 @@ export async function notify(title, body) {
     if (reg) return reg.showNotification(title, opts);
     new Notification(title, opts);
   } catch { /* 部分浏览器在非安全上下文下会抛错 */ }
+}
+
+// 计时器 id 是字符串，系统通知要一个整数 id
+const numId = (s) => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) | 0; return (Math.abs(h) % 2000000000) + 10; };
+let alarmSig = null;
+
+// 把所有正在走的计时器同步成系统闹钟：alarms = [{ id, at, title, body }]。没变化就什么都不做
+export async function syncNativeAlarms(alarms) {
+  if (!isNative()) return;
+  const future = alarms.filter((a) => a.at > Date.now() + 500);
+  const sig = future.map((a) => `${a.id}@${a.at}`).join('|');
+  if (sig === alarmSig) return;
+  alarmSig = sig;
+  try {
+    const { notifications } = await LN().getPending();
+    const ours = notifications.filter((n) => n.extra?.baker);
+    if (ours.length) await LN().cancel({ notifications: ours.map((n) => ({ id: n.id })) });
+    if (future.length) {
+      await LN().schedule({
+        notifications: future.map((a) => ({
+          id: numId(a.id), title: a.title, body: a.body, extra: { baker: true },
+          schedule: { at: new Date(a.at), allowWhileIdle: true },
+        })),
+      });
+    }
+  } catch { alarmSig = null; /* 没权限或插件不可用，下次再试 */ }
 }
 
 // ---------- 常亮屏幕：揉面时手上全是面粉，不想一直点亮屏幕 ----------

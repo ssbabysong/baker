@@ -33,6 +33,29 @@ npm test         # 配方解析器的单元测试
 部署到任意静态托管（GitHub Pages、Netlify、Vercel…）即可，在手机浏览器里打开后「添加到主屏幕」就是一个 app。
 通知和离线缓存需要 HTTPS（或 localhost）。
 
+## 用 Xcode 装到 iPhone
+
+`ios/` 是用 [Capacitor](https://capacitorjs.com) 包的原生壳，里面跑的还是这套网页。原生版的计时提醒用系统本地通知，锁屏、关掉 app 也会准时响。
+
+需要一台 Mac，装好 Xcode 和 Node.js（18 以上）：
+
+```bash
+git clone https://github.com/ssbabysong/baker.git && cd baker
+git checkout claude/gifted-bardeen-ba7dmj
+npm install
+npm run ios      # 拷网页文件 → 同步进 iOS 工程 → 打开 Xcode
+```
+
+在 Xcode 里：
+
+1. 左边点最上面的 **App**，选 **Signing & Capabilities**，Team 选你的 Apple ID（没有就点 Add Account 登录，免费账号也行）。
+2. 如果提示 Bundle Identifier 被占用，把 `com.ssbabysong.bakerydays` 改成别的，比如加上你的名字。
+3. 用数据线连上 iPhone，顶部设备选你的手机，点 ▶︎ 运行。第一次要等 Xcode 下载依赖。
+4. 手机上第一次运行会提示不受信任：**设置 → 通用 → VPN 与设备管理**，信任你的开发者账号；iOS 16 以上还要在 **设置 → 隐私与安全性** 里打开 **开发者模式**。
+
+改了网页代码以后，再跑一次 `npm run ios`（或 `npm run build:www && npx cap sync ios`），然后在 Xcode 里重新运行。
+免费 Apple ID 签的 app 7 天后会过期，到时候连上电脑在 Xcode 里再点一次运行就好。
+
 ## 结构
 
 ```

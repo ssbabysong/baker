@@ -1,0 +1,12 @@
+{
+  "appId": "com.ssbabysong.bakerydays",
+  "appName": "面包物语",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#f7f2e8"
+  },
+  "plugins": {
+    "LocalNotifications": {}
+  }
+}
