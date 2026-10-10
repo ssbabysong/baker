@@ -1,8 +1,8 @@
 // 离线缓存：app 外壳预缓存，其余（比如字体）用到时顺手缓存。
-const CACHE = 'baker-v44';
+const CACHE = 'baker-v45';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
-  'js/app.js', 'js/store.js', 'js/parser.js', 'js/sketch.js', 'js/timers.js', 'js/samples.js', 'js/i18n.js',
+  'js/app.js', 'js/store.js', 'js/parser.js', 'js/sketch.js', 'js/timers.js', 'js/i18n.js', 'js/catalog.js', 'catalog/recipes.json',
   'fonts/shopfont.ttf',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
@@ -22,8 +22,14 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// 只管两类请求：本站自己的文件（网络优先），和 Google 字体（缓存优先）。
+// 其他站点的请求（比如线上的内置配方目录）不经过这里，免得被缓存住、永远拿不到新版
+const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  let url;
+  try { url = new URL(e.request.url); } catch { return; }
+  if (url.origin !== self.location.origin && !FONT_HOSTS.includes(url.hostname)) return;
   e.respondWith(handle(e.request));
 });
 

@@ -76,7 +76,9 @@ export function normalizeRecipe(r) {
     })),
     notes: r.notes || '',
     prices: normPrices(r),
-    ...(r.sample ? { sample: r.sample, sampleLang: r.sampleLang } : {}),
+    // 内置配方的来历：哪个 key、哪种语言、第几版、放上架时的内容指纹（用来判断用户改没改过）
+    ...(r.sample ? { sample: r.sample, sampleLang: r.sampleLang, sampleRev: r.sampleRev, sampleHash: r.sampleHash } : {}),
+    ...(r.sampleSkip ? { sampleSkip: r.sampleSkip } : {}),
     createdAt: r.createdAt || now,
     updatedAt: now,
     version: (r.version || 0) + 1,

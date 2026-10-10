@@ -10,7 +10,7 @@ import {
   unlockAudio, playChime, startRinging, stopRinging, askNotifyPermission, notify, keepAwake,
   isNative, permissionState, refreshPermission, syncNativeAlarms,
 } from './timers.js';
-import { SAMPLE_RECIPES, SAMPLE_RECIPES_EN } from './samples.js';
+import { currentCatalog, refreshCatalog, mergeCatalog, takeCatalogUpdate, skipCatalogUpdate } from './catalog.js';
 import { L, isEn, getLang, setLang, getCurrency, setCurrency, currencySymbol, formatPrice, APP_NAME } from './i18n.js';
 
 const $app = document.getElementById('app');
@@ -429,6 +429,9 @@ async function viewRecipe(id) {
       <button class="chip price-chip" data-act="edit-price" data-id="${r.id}" aria-label="${L('改价签', 'Edit price')}">${formatPrice(getPrice(r))} ${icon('pencil')}</button>
     </div></div>
 
+  ${r.sampleUpdate ? `<div class="catalog-update">${icon('star')}<span>${L('店里有新版的这款配方', 'There’s a new version of this recipe')}</span>
+    <button class="link-btn" data-act="catalog-skip" data-id="${r.id}">${L('留着我的', 'Keep mine')}</button>
+    <button class="btn sm primary" data-act="catalog-take" data-id="${r.id}">${L('换成新版', 'Use new')}</button></div>` : ''}
   ${baking.length ? `<a class="baking-now" href="#/bake/${baking[0].id}">${icon('oven')} ${L('这款正在烤箱里，去看看', 'This one is in the oven: take a look')} ›</a>` : ''}
   <div style="margin:18px 0 4px"><button class="btn primary big block" data-act="start-bake" data-id="${r.id}">${icon('oven')} ${baking.length ? L('再烤一炉', 'Bake another batch') : L('开烤！', 'Start baking')}</button></div>
 
@@ -1263,6 +1266,18 @@ function withSession(fn) {
 
 const actions = {
   'roadmap'() { showRoadmap(); },
+  async 'catalog-take'(el) {
+    const r = await getRecipe(el.dataset.id);
+    if (!r) return;
+    if (!(await confirmDlg(L('换成新版配方？', 'Switch to the new version?'), L('你对这款配方的改动会被新版覆盖，价签和做过的记录都保留。', 'Your edits to this recipe will be replaced. Price tag and bake history stay.'), L('换成新版', 'Use new')))) return;
+    await takeCatalogUpdate(r, getLang());
+    toast(L('已换成新版', 'Updated'));
+    rerender();
+  },
+  async 'catalog-skip'(el) {
+    const r = await getRecipe(el.dataset.id);
+    if (r) { await skipCatalogUpdate(r); rerender(); }
+  },
   // 升级路线里已解锁的等级：点开看大图
   async 'level-view'(el) {
     const lv = Number(el.dataset.lv);
@@ -1450,7 +1465,7 @@ const actions = {
   },
   async 'lang'(el) {
     setLang(el.dataset.v);
-    await localizeSamples();
+    await syncCatalog();
     document.title = APP_NAME();
     renderTabs('shop');
     renderTabClock();
@@ -1610,49 +1625,16 @@ document.addEventListener('visibilitychange', () => {
 // 启动
 // =====================================================================
 
-// 把还没上过架的内置配方放上去：按 key 记着哪些放过，用户删掉的不会再回来；同名的已经有了就不重复放
-async function seedSamples() {
-  let done = await db.getKv('seededSamples');
-  if (!Array.isArray(done)) done = (await db.getKv('seeded')) ? ['anpan', 'country', 'milk'] : [];
-  const todo = (isEn() ? SAMPLE_RECIPES_EN : SAMPLE_RECIPES).filter((r) => !done.includes(r.key));
-  if (!todo.length) return;
-  const names = new Set((await db.all('recipes')).map((r) => r.name));
-  for (const r of todo) {
-    if (!names.has(r.name)) await saveRecipe({ ...r, sample: r.key, sampleLang: getLang() });
-    done.push(r.key);
-  }
-  await db.setKv('seededSamples', done);
+// 内置配方：先用手上的目录（app 自带的或上次存下的）放上架；再悄悄去线上看一眼有没有新版
+async function syncCatalog() {
+  await mergeCatalog(await currentCatalog(), getLang());
 }
-
-// 内置配方跟着界面语言走：没改过的就换成另一种语言的版本（id、价签、做过的记录都不变）；改过的保持原样
-const sampleBody = (r) => JSON.stringify([r.name, r.yield || '', r.notes || '',
-  r.ingredients.map((i) => [i.name, i.amount ?? null, i.unit || '', i.note || '']),
-  r.steps.map((st) => [st.text, st.minutes ?? null, st.kind || 'other'])]);
-async function localizeSamples() {
-  const lang = getLang();
-  const target = lang === 'en' ? SAMPLE_RECIPES_EN : SAMPLE_RECIPES;
-  const sets = { zh: SAMPLE_RECIPES, en: SAMPLE_RECIPES_EN };
-  for (const r of await db.all('recipes')) {
-    // 老数据没有记 sample：按名字认一下是不是内置的
-    let key = r.sample;
-    let from = r.sampleLang;
-    if (!key) {
-      for (const [lg, list] of Object.entries(sets)) {
-        const hit = list.find((x) => x.name === r.name);
-        if (hit) { key = hit.key; from = lg; break; }
-      }
-    }
-    if (!key || from === lang) continue;
-    const orig = sets[from]?.find((x) => x.key === key);
-    const next = target.find((x) => x.key === key);
-    if (!orig || !next || sampleBody(r) !== sampleBody(orig)) continue; // 改过了，不动
-    await db.put('recipes', {
-      ...r,
-      name: next.name, yield: next.yield, notes: next.notes, shape: r.shape || next.shape,
-      ingredients: next.ingredients.map((i, n) => ({ id: r.ingredients[n]?.id || uid(), note: '', ...i })),
-      steps: next.steps.map((st, n) => ({ id: r.steps[n]?.id || uid(), ...st })),
-      sample: key, sampleLang: lang,
-    });
+async function checkCatalogOnline(force = false) {
+  const fresh = await refreshCatalog(force).catch(() => null);
+  if (!fresh) return;
+  if (await mergeCatalog(fresh, getLang())) {
+    // 只在看配方的页面上刷新，别打断烘焙
+    if (/^#?\/?$|^#\/recipes|^#\/r\//.test(location.hash || '#/')) rerender();
   }
 }
 
@@ -1666,8 +1648,7 @@ async function boot() {
 
   state.shop = await getShop();
   if (!(await db.getKv('shop'))) await saveShop(state.shop);
-  await seedSamples();
-  await localizeSamples();
+  await syncCatalog();
   state.sessions = await getSessions();
   for (const s of state.sessions) s.editing = false;
   await refreshPermission();
@@ -1676,6 +1657,8 @@ async function boot() {
   window.addEventListener('hashchange', route);
   await route();
   listenWidgetRoutes().catch((e) => console.warn('widget routes', e));
+  checkCatalogOnline();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkCatalogOnline(); });
   setInterval(tick, 1000);
   tick();
 

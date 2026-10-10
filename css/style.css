@@ -643,3 +643,8 @@ dialog h3 { margin: 0 0 8px; font-size: 21px; }
 
 .card.settings-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
 .card.settings-link > .ic { width: 18px; height: 18px; color: var(--ink-soft); flex: none; }
+
+/* 配方页：店里有新版的内置配方 */
+.catalog-update { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding: 10px 12px; border-radius: 14px; background: var(--card); font-size: 14px; }
+.catalog-update > .ic { width: 18px; height: 18px; color: var(--brown); }
+.catalog-update > span { flex: 1; min-width: 140px; }
