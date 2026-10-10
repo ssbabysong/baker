@@ -1809,6 +1809,49 @@ function filterRack(value) {
     if (next) box.replaceWith(next);
   }, 200);
 }
+// 从屏幕左边缘往右滑 = 点左上角的返回（和 iOS 一样）。页面跟着手指走，松手过半或者滑得快就返回，
+// 不然弹回去。走的是每页自己的返回按钮，编辑页、补记页放弃草稿这些逻辑都一样
+let edge = null;
+const backLink = () => document.querySelector('#app .topbar > a.btn.icon:first-child');
+document.addEventListener('touchstart', (e) => {
+  const p = e.touches[0];
+  edge = e.touches.length === 1 && p.clientX < 28 && !document.querySelector('dialog[open]') && backLink()
+    ? { x: p.clientX, y: p.clientY, t: Date.now(), dx: 0, on: false } : null;
+}, { passive: true });
+document.addEventListener('touchmove', (e) => {
+  if (!edge) return;
+  const p = e.touches[0];
+  const dx = p.clientX - edge.x, dy = p.clientY - edge.y;
+  if (!edge.on) {
+    if (Math.abs(dy) > 12 && Math.abs(dy) > dx) { edge = null; return; } // 是在上下滚
+    if (dx < 10) return;
+    edge.on = true;
+    $app.style.transition = 'none';
+  }
+  edge.dx = Math.max(0, dx);
+  $app.style.transform = `translateX(${edge.dx}px)`;
+  $app.style.opacity = String(1 - Math.min(0.4, edge.dx / innerWidth * 0.5));
+}, { passive: true });
+document.addEventListener('touchend', () => {
+  if (!edge) return;
+  const { on, dx, t } = edge;
+  edge = null;
+  if (!on) return;
+  const back = dx > innerWidth * 0.35 || (dx > 50 && dx / (Date.now() - t) > 0.5);
+  $app.style.transition = 'transform .18s ease-out, opacity .18s ease-out';
+  $app.style.transform = back ? `translateX(${innerWidth}px)` : '';
+  $app.style.opacity = back ? '0' : '';
+  setTimeout(() => {
+    if (back) backLink()?.click();
+    $app.style.transition = 'none'; $app.style.transform = ''; $app.style.opacity = '';
+  }, 180);
+}, { passive: true });
+document.addEventListener('touchcancel', () => {
+  if (!edge) return;
+  edge = null;
+  $app.style.transition = ''; $app.style.transform = ''; $app.style.opacity = '';
+}, { passive: true });
+
 // 日历页：左右滑动翻月份（往左滑看下个月），翻的时候轻轻震一下
 let swipe = null;
 document.addEventListener('touchstart', (e) => {
