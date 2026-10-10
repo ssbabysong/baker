@@ -1809,48 +1809,94 @@ function filterRack(value) {
     if (next) box.replaceWith(next);
   }, 200);
 }
-// 从屏幕左边缘往右滑 = 点左上角的返回（和 iOS 一样）。页面跟着手指走，松手过半或者滑得快就返回，
-// 不然弹回去。走的是每页自己的返回按钮，编辑页、补记页放弃草稿这些逻辑都一样
+// 从屏幕左边缘往右滑 = 点左上角的返回（和 iOS 一样）：
+// 手指一碰到边缘，就把要回去的那一页先画在底下（稍微往左错开、压暗一点），当前页跟着手指往右走；
+// 松手过三分之一或者甩得快就返回，不然弹回。返回走的是每页自己的返回按钮（编辑页放弃草稿等逻辑不变），
+// 等新页面真正画出来了才把底下那层撤掉，所以中间不会闪回旧页、也不会露出空白底色
 let edge = null;
 const backLink = () => document.querySelector('#app .topbar > a.btn.icon:first-child');
-document.addEventListener('touchstart', (e) => {
-  const p = e.touches[0];
-  edge = e.touches.length === 1 && p.clientX < 28 && !document.querySelector('dialog[open]') && backLink()
-    ? { x: p.clientX, y: p.clientY, t: Date.now(), dx: 0, on: false } : null;
+const UNDER_SHIFT = 0.3; // 底下那页一开始往左错开屏宽的 30%
+
+function edgeSetup(link) {
+  const e = { x: 0, y: 0, t: 0, dx: 0, on: false, under: null, dim: null };
+  const href = link.getAttribute('href');
+  const r = href && resolve(href);
+  if (r) {
+    Promise.resolve(r.view(...r.args)).then((html) => {
+      if (edge !== e || html == null) return;
+      const under = document.createElement('div');
+      under.className = 'under';
+      under.innerHTML = html;
+      const dim = document.createElement('div');
+      dim.className = 'under-dim';
+      e.under = under; e.dim = dim;
+      if (e.on) { document.body.prepend(dim); document.body.prepend(under); edgePaint(e); }
+    }).catch(() => {});
+  }
+  return e;
+}
+function edgePaint(e) {
+  const p = Math.min(1, e.dx / innerWidth);
+  $app.style.transform = `translate3d(${e.dx}px,0,0)`;
+  if (e.under) e.under.style.transform = `translate3d(${-(1 - p) * UNDER_SHIFT * innerWidth}px,0,0)`;
+  if (e.dim) e.dim.style.opacity = String(1 - p);
+}
+function edgeCleanup(e) {
+  $app.classList.remove('dragging');
+  $app.style.transition = ''; $app.style.transform = '';
+  e.under?.remove(); e.dim?.remove();
+}
+
+document.addEventListener('touchstart', (ev) => {
+  const p = ev.touches[0];
+  const link = ev.touches.length === 1 && p.clientX < 28 && !document.querySelector('dialog[open]') && !edge?.leaving && backLink();
+  if (!link) { if (!edge?.leaving) edge = null; return; }
+  edge = edgeSetup(link);
+  Object.assign(edge, { x: p.clientX, y: p.clientY, t: Date.now() });
 }, { passive: true });
-document.addEventListener('touchmove', (e) => {
-  if (!edge) return;
-  const p = e.touches[0];
+
+document.addEventListener('touchmove', (ev) => {
+  if (!edge || edge.leaving) return;
+  const p = ev.touches[0];
   const dx = p.clientX - edge.x, dy = p.clientY - edge.y;
   if (!edge.on) {
     if (Math.abs(dy) > 12 && Math.abs(dy) > dx) { edge = null; return; } // 是在上下滚
-    if (dx < 10) return;
+    if (dx < 8) return;
     edge.on = true;
-    $app.style.transition = 'none';
+    $app.classList.add('dragging');
+    if (edge.under) { document.body.prepend(edge.dim); document.body.prepend(edge.under); }
   }
+  ev.preventDefault(); // 横着拖的时候别让页面跟着上下滚
   edge.dx = Math.max(0, dx);
-  $app.style.transform = `translateX(${edge.dx}px)`;
-  $app.style.opacity = String(1 - Math.min(0.4, edge.dx / innerWidth * 0.5));
-}, { passive: true });
-document.addEventListener('touchend', () => {
-  if (!edge) return;
-  const { on, dx, t } = edge;
-  edge = null;
-  if (!on) return;
-  const back = dx > innerWidth * 0.35 || (dx > 50 && dx / (Date.now() - t) > 0.5);
-  $app.style.transition = 'transform .18s ease-out, opacity .18s ease-out';
-  $app.style.transform = back ? `translateX(${innerWidth}px)` : '';
-  $app.style.opacity = back ? '0' : '';
+  edgePaint(edge);
+}, { passive: false });
+
+function edgeEnd() {
+  const e = edge;
+  if (!e || e.leaving) return;
+  if (!e.on) { edge = null; return; }
+  const back = e.dx > innerWidth * 0.33 || (e.dx > 40 && e.dx / (Date.now() - e.t) > 0.45);
+  const ease = 'transform .26s cubic-bezier(.2,.8,.3,1)';
+  $app.style.transition = ease;
+  if (e.under) { e.under.style.transition = ease; e.dim.style.transition = 'opacity .26s'; }
+  if (!back) {
+    e.dx = 0; edgePaint(e);
+    setTimeout(() => { edgeCleanup(e); if (edge === e) edge = null; }, 270);
+    return;
+  }
+  e.leaving = true;
+  e.dx = innerWidth; edgePaint(e);
   setTimeout(() => {
-    if (back) backLink()?.click();
-    $app.style.transition = 'none'; $app.style.transform = ''; $app.style.opacity = '';
-  }, 180);
-}, { passive: true });
-document.addEventListener('touchcancel', () => {
-  if (!edge) return;
-  edge = null;
-  $app.style.transition = ''; $app.style.transform = ''; $app.style.opacity = '';
-}, { passive: true });
+    // 新页面画出来（#app 内容被换掉）再收尾；万一没换（比如还在原页）就 1 秒后兜底
+    const done = () => { mo.disconnect(); clearTimeout(fallback); edgeCleanup(e); if (edge === e) edge = null; };
+    const mo = new MutationObserver(done);
+    mo.observe($app, { childList: true });
+    const fallback = setTimeout(done, 1000);
+    backLink()?.click();
+  }, 270);
+}
+document.addEventListener('touchend', edgeEnd, { passive: true });
+document.addEventListener('touchcancel', edgeEnd, { passive: true });
 
 // 日历页：左右滑动翻月份（往左滑看下个月），翻的时候轻轻震一下
 let swipe = null;

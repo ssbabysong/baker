@@ -140,11 +140,16 @@ h1, h2, h3, .greet h1, .hero h1, .storefront .sign, .bake-head .t b, .diary .nam
 .center { text-align: center; }
 .scribble { background: linear-gradient(transparent 62%, var(--crust-soft) 62%, var(--crust-soft) 90%, transparent 90%); padding: 0 2px; }
 
-#app {
+#app, .under {
   max-width: 560px;
   margin: 0 auto;
   padding: calc(env(safe-area-inset-top) + 14px) 16px calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 32px);
 }
+
+/* 边缘右滑返回：当前页浮在上面跟手走（单独一层，只做位移，不重画），底下垫着要回去的那一页 */
+#app.dragging { position: relative; z-index: 2; min-height: 100vh; background: var(--paper) var(--grain); box-shadow: -10px 0 28px rgba(60, 40, 20, .16); will-change: transform; }
+.under { position: fixed; top: 0; left: 0; right: 0; height: 100vh; overflow: hidden; z-index: 0; pointer-events: none; background: var(--paper) var(--grain); will-change: transform; }
+.under-dim { position: fixed; inset: 0; z-index: 1; pointer-events: none; background: rgba(40, 28, 18, .14); will-change: opacity; }
 
 /* ---------- 顶栏 ---------- */
 .topbar { display: flex; align-items: center; gap: 8px; min-height: 48px; margin-bottom: 8px; }
