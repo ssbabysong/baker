@@ -351,6 +351,8 @@ textarea.input.tall { min-height: 260px; }
 /* 全局计时条 */
 #timerbar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 22px); z-index: 20; display: flex; gap: 8px; max-width: calc(100% - 32px); overflow-x: auto; }
 #timerbar:empty { display: none; }
+/* 有计时小条浮在菜单栏上方时，页面底部多留一点空，最下面的按钮不会被挡住 */
+body.has-timers #app { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 96px); }
 #timerbar a { display: flex; align-items: center; gap: 6px; padding: 6px 14px; background: var(--ink); color: var(--paper); border-radius: 999px; text-decoration: none; font-size: 15px; white-space: nowrap; font-family: var(--mono); }
 #timerbar a .ic { width: 16px; height: 16px; color: var(--paper); }
 #timerbar a.done { background: var(--crust); color: #3f3129; }

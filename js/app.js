@@ -663,8 +663,8 @@ function tick() {
 
 function renderTimerbar() {
   const s = state.session;
-  if (!s || ['#/bake', '#/', ''].includes(location.hash)) { $timerbar.innerHTML = ''; return; }
-  const ts = s.timers.filter((t) => !t.done || state.alarmOpen === t.id);
+  const ts = !s || ['#/bake', '#/', ''].includes(location.hash) ? [] : s.timers.filter((t) => !t.done || state.alarmOpen === t.id);
+  document.body.classList.toggle('has-timers', ts.length > 0);
   $timerbar.innerHTML = ts.map((t) => `<a href="#/bake" class="${t.done ? 'done' : ''}">${icon(t.done ? 'bell' : 'timer')}
     ${t.done ? '时间到' : formatClock(remainingMs(t))} · ${esc(t.label.slice(0, 8))}</a>`).join('');
 }
