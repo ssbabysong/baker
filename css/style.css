@@ -72,6 +72,8 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; }
+/* 兜底：任何东西不小心比屏幕宽，也不让整页左右滑 */
+html, body { overflow-x: clip; }
 html { touch-action: manipulation; -webkit-text-size-adjust: 100%; } /* 像 app 一样：不许双击放大 */
 body {
   background: var(--paper) var(--grain);
@@ -260,7 +262,10 @@ a.card { display: block; text-decoration: none; }
 .oven-card .info .clock-line .lbl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-soft); }
 .oven-card .info .ic { width: 16px; height: 16px; }
 /* 好几炉一起烤：烤箱卡片一张张往下排，最后一个虚线小格「再开一炉」 */
-.ovens { display: grid; gap: 12px; }
+.ovens { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+/* 网格里的卡片默认不肯比内容窄：一行长长的步骤文字会把卡片撑出屏幕，整页横向滚动 */
+.ovens > *, .stack > *, .diary-list > * { min-width: 0; }
+.oven-card .info { overflow: hidden; }
 .oven-add { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px; border: 1.5px dashed var(--hair); border-radius: 18px;
   color: var(--ink-soft); text-decoration: none; font-size: 15px; }
 .oven-add .ic { width: 18px; height: 18px; }
