@@ -648,3 +648,14 @@ dialog h3 { margin: 0 0 8px; font-size: 21px; }
 .catalog-update { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding: 10px 12px; border-radius: 14px; background: var(--card); font-size: 14px; }
 .catalog-update > .ic { width: 18px; height: 18px; color: var(--brown); }
 .catalog-update > span { flex: 1; min-width: 140px; }
+
+/* 边等边做：后台还在走的发酵 / 烘烤计时，做别的步骤时显示成一条，点一下回去看 */
+.bg-timer { display: flex; align-items: center; gap: 8px; width: 100%; max-width: 360px; margin: 10px auto 0; padding: 8px 14px; border-radius: 999px;
+  border: 1.5px solid color-mix(in srgb, var(--k, var(--ink)) 45%, transparent); background: color-mix(in srgb, var(--k, var(--ink)) 8%, var(--card));
+  color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; }
+.bg-timer .ic { width: 16px; height: 16px; color: var(--k, var(--ink)); flex: none; }
+.bg-timer span:first-of-type { flex: 1; text-align: left; color: var(--ink-soft); }
+.bg-timer b { font-weight: 400; font-size: 16px; color: var(--k, var(--ink)); }
+.bg-timer .go { color: var(--ink-soft); font-size: 13px; }
+.bg-timer.ring b { animation: blink 1s steps(2) infinite; }
+.end-early { display: flex; margin: 6px auto 0; }

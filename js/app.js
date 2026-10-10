@@ -752,9 +752,14 @@ function bakeHero(s) {
     scene = `<div class="oven-wrap" ${t ? `data-grow="${t.id}"` : ''}>${stageScene('ferment', running, '', progressOf(t))}${mascot(mood)}</div>${clock}`;
   } else {
     // 别的步骤在做的时候，如果之前的发酵/烘烤计时还在跑，用一行小字提醒
-    const other = ringing || live[0];
+    const bg = [...(ringing ? [ringing] : []), ...live.filter((t) => t !== ringing)];
     scene = `<div class="oven-wrap">${stageScene(stepKind(cur, s.current, r.steps), true)}${mascot('wave')}</div>
-      ${other ? `<div class="hero-clock small">${icon(other.done ? 'bell' : 'timer')} <span data-clock="${other.id}">${clockText(other)}</span> · ${esc(other.label.slice(0, 14))}</div>` : ''}`;
+      ${bg.map((t) => {
+        const i = r.steps.findIndex((st) => st.id === t.stepId);
+        const k = stepKind(r.steps[i], i, r.steps);
+        return `<button class="bg-timer k-${k} ${t.done ? 'ring' : ''}" data-act="focus-step" data-i="${i}">${icon(t.done ? 'bell' : 'timer')}
+          <span>${L(`第 ${i + 1} 步`, `Step ${i + 1}`)} · ${esc(kindLabel(k) || t.label.slice(0, 10))}</span><b class="mono" data-clock="${t.id}">${clockText(t)}</b><span class="go">${L('回去看', 'View')} ›</span></button>`;
+      }).join('')}`;
   }
 
   let action;
@@ -765,6 +770,10 @@ function bakeHero(s) {
   } else if (timed && !curTimer) {
     action = `<button class="btn primary big block" data-act="timer-start" data-id="${cur.id}">${startWord(kind)} · ${formatMinutes(stepMin(cur))}</button>`;
     hint = L('按下就开始计时，时间到会叫你', 'Tap to start the timer. I’ll call you when it’s time');
+  } else if (running && r.steps.some((st, i) => i > s.current && !s.doneSteps.includes(st.id))) {
+    action = `<button class="btn primary big block" data-act="step-ahead">${kind === 'ferment' ? L('边发酵，边做下一步', 'Do the next step while it proofs') : L('边烤，边做下一步', 'Do the next step while it bakes')}</button>
+      <button class="link-btn end-early" data-act="step-done" data-id="${cur.id}">${icon('check')} ${kind === 'ferment' ? L('已经发好了，提前结束', 'It’s ready, end early') : L('已经烤好了，提前出炉', 'It’s done, end early')}</button>`;
+    hint = L('计时会在后台继续走，时间到了会叫你', 'The timer keeps running in the background and will call you');
   } else {
     action = `<button class="btn primary big block" data-act="step-done" data-id="${cur.id}">${icon('check')} ${L('这步好了，下一步', 'Done, next step')}</button>`;
     hint = running ? (kind === 'ferment' ? L('面团在睡觉长大，安心去做别的吧', 'The dough is napping and growing. Go do something else')
@@ -878,7 +887,11 @@ async function fireAlarm(s, t) {
     } else {
       // 计时到这里就结束了；点了「好了，下一步」再顺手进入下一步
       s.timers = s.timers.filter((x) => x.id !== live.id);
-      if (v === 'ok' && live.stepId) completeStep(s, live.stepId);
+      if (v === 'ok' && live.stepId) {
+        const curStep = s.recipe.steps[s.current];
+        if (curStep && curStep.id !== live.stepId) { if (!s.doneSteps.includes(live.stepId)) s.doneSteps.push(live.stepId); }
+        else completeStep(s, live.stepId);
+      }
     }
     await persistSessions();
     if (v === 'ok' && multi && location.hash !== `#/bake/${s.id}`) go(`#/bake/${s.id}`);
@@ -1386,6 +1399,7 @@ const actions = {
     s.doneSteps = s.doneSteps.filter((id) => id !== st.id);
     s.current = i;
   }),
+  'step-ahead': withSession((s) => { stepAhead(s); }),
   'step-done': withSession((s, el) => {
     s.timers = s.timers.filter((t) => t.stepId !== el.dataset.id); // 这一步完成了，它的计时也一起结束
     completeStep(s, el.dataset.id);
@@ -1550,11 +1564,25 @@ async function replaceLogPhoto(id, file) {
 }
 
 // 把一步标成完成，跳到下一个没做的步骤
+// 把一步标成完成，然后往后找下一个没做的步骤；后面都做完了，再回头找前面没做完的（比如还在发酵的那一步）
 function completeStep(s, stepId) {
   if (!s.doneSteps.includes(stepId)) s.doneSteps.push(stepId);
-  const next = s.recipe.steps.findIndex((st) => !s.doneSteps.includes(st.id));
-  s.current = next < 0 ? s.recipe.steps.length : next;
+  const steps = s.recipe.steps;
+  const from = steps.findIndex((st) => st.id === stepId);
+  let next = steps.findIndex((st, i) => i > from && !s.doneSteps.includes(st.id));
+  if (next < 0) next = steps.findIndex((st) => !s.doneSteps.includes(st.id));
+  s.current = next < 0 ? steps.length : next;
   if (next < 0) toast(L('全部步骤完成，可以出炉了！', 'All steps done. Time to take it out!'));
+}
+
+// 边等边做：发酵 / 烘烤的计时留在后台继续走，先去做后面的步骤
+function stepAhead(s) {
+  const steps = s.recipe.steps;
+  const busy = (st) => s.doneSteps.includes(st.id) || s.timers.some((t) => t.stepId === st.id && !t.done);
+  const next = steps.findIndex((st, i) => i > s.current && !busy(st));
+  if (next < 0) { toast(L('后面没有能先做的步骤了', 'Nothing left to do ahead')); return false; }
+  s.current = next;
+  return true;
 }
 
 function findTimer(s, el) {
