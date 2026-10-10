@@ -43,5 +43,5 @@ export function formatPrice(n, c = currency) {
   return `${currencySymbol(c)}${text}`;
 }
 
-// 应用名：中文叫面包物语；英文 receipt 早年就是「配方」的意思
-export const APP_NAME = () => L('面包物语', 'Bread Receipt');
+// 应用名：中文「面包物语」，英文「Bakery Days」
+export const APP_NAME = () => L('面包物语', 'Bakery Days');

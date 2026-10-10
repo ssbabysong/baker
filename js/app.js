@@ -950,8 +950,8 @@ async function celebrate(count, shapeName) {
 const WEEK = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const weekday = (d) => L(['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'], ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'])[d];
 const ymd = (t) => { const d = new Date(t); return `${d.getFullYear()}.${pad2(d.getMonth() + 1)}.${pad2(d.getDate())}`; };
-// 日记页脚：一张小票的抬头和流水号
-const receiptFoot = (no) => `<div class="diary-foot">${esc(APP_NAME())}${no ? ` · No.${String(no).padStart(4, '0')}` : ''}</div>`;
+// 日记页脚：app 名 + 第几炉的编号
+const diaryFoot = (no) => `<div class="diary-foot">${esc(APP_NAME())}${no ? ` · No.${String(no).padStart(4, '0')}` : ''}</div>`;
 
 // 烘焙日历：做过面包的日子画上那款面包
 async function viewLogs(ym) {
@@ -988,7 +988,7 @@ async function viewLogs(ym) {
       <span class="small muted">${'★'.repeat(b.rating || 0)}${b.notes ? ` ${esc(b.notes.slice(0, 22))}${b.notes.length > 22 ? '…' : ''}` : ''}</span></span></a>`).join('')}</div>`
     : `<div class="empty" style="margin-top:20px">${mascot('wait')}<p>${L('这个月还没有开炉', 'No bakes this month yet')}</p></div>`}
 
-  ${receiptFoot()}`;
+  ${diaryFoot()}`;
 }
 
 // 一个月的格子：做过面包的日子画上那款面包（日历页和日历小组件共用）
@@ -1054,7 +1054,7 @@ async function viewLog(id) {
     <span style="flex:1"></span>
     <button class="btn icon sm danger" data-act="delete-bake" data-id="${b.id}" aria-label="${L('删除', 'Delete')}">${icon('trash')}</button>
   </div>
-  ${receiptFoot(no)}`;
+  ${diaryFoot(no)}`;
 }
 
 // =====================================================================
@@ -1361,7 +1361,7 @@ const actions = {
     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `${L('面包物语备份', 'bread-receipt-backup')}-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `${L('面包物语备份', 'bakery-days-backup')}-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   },
