@@ -202,7 +202,6 @@ const ROUTES = [
   [/^#\/logs(?:\/(\d{4}-\d{1,2}))?$/, viewLogs, 'logs'],
   [/^#\/log\/([\w-]+)$/, viewLog, 'logs'],
   [/^#\/settings$/, viewSettings, 'shop'],
-  [/^#\/widgets$/, viewWidgets, 'shop'],
 ];
 
 function resolve(hash) {
@@ -232,6 +231,7 @@ async function route() {
   renderTabClock();
   keepAwake(hash.startsWith('#/bake/'));
   window.scrollTo(0, 0);
+  scheduleWidgetSync();
 }
 
 // 原地刷新当前页（保持滚动位置）
@@ -245,6 +245,7 @@ async function rerender() {
   $app.innerHTML = html;
   renderTabClock();
   window.scrollTo(0, y);
+  scheduleWidgetSync();
 }
 
 const TABS = () => [['shop', '#/', L('店铺', 'Shop'), 'shop'], ['recipes', '#/recipes', L('配方架', 'Recipes'), 'rack'], ['logs', '#/logs', L('日历', 'Diary'), 'calendar']];
@@ -1099,69 +1100,117 @@ async function viewLog(id) {
 }
 
 // =====================================================================
-// 小组件：我的店面（小）、配方架（中 / 大）、烘焙日历（中 / 大）
-// 按 iOS 小组件的尺寸画出来，点哪里就跳到对应的页面
+// 桌面小组件（只在 iOS 原生 app 里）：我的店面（小）、配方架（中 / 大）、烘焙日历（中 / 大）
+// 数据写进 App Group 给小组件读；插画就用 app 里的手绘 SVG，转成 PNG 一起存过去，小组件直接贴图
 // =====================================================================
 
-async function widgetData() {
-  const [recipes, bakes] = await Promise.all([listRecipes(), listBakes()]);
-  return { recipes, bakes, lv: levelOf(bakes.length) };
+let widgetPlugin = null;
+let widgetTimer = 0;
+let widgetLast = '';
+const widgetSent = new Set(); // 这次启动已经存过去的图
+
+function scheduleWidgetSync() {
+  if (!isNative()) return;
+  clearTimeout(widgetTimer);
+  widgetTimer = setTimeout(() => syncWidgets().catch((e) => console.warn('widget sync', e)), 1200);
 }
 
-function widgetShop({ bakes, lv }) {
-  return `<a class="widget w-small w-shop" href="#/">
-    ${shopFront(lv.lv, '', true)}
-    <div class="w-shop-foot"><b class="mono">${bakes.length}</b><span>${L('次出炉', 'baked')}</span></div>
-    <span class="w-lv">Lv.${lv.lv}</span></a>`;
-}
-
-function widgetRack({ recipes }, size) {
-  const n = size === 'large' ? 9 : 3;
-  const list = recipes.slice(0, n);
-  const rows = [];
-  for (let i = 0; i < list.length; i += 3) rows.push(list.slice(i, i + 3));
-  // 大号永远画满三层架子，空着的层也留着木板
-  while (rows.length < (size === 'large' ? 3 : 1)) rows.push([]);
-  return `<div class="widget w-${size} w-rack" data-go="#/recipes">
-    <div class="w-head"><b>${L('配方架', 'Recipe shelf')}</b><span class="small muted">${L(`${recipes.length} 款`, `${recipes.length}`)}</span></div>
-    ${rows.map((row) => `<div class="w-rack-row">${row.map((r) => `<a href="#/r/${r.id}"><span class="pic">${shape(r.shape)}${size === 'large' ? priceTag(r) : ''}</span><span class="nm">${esc(r.name)}</span></a>`).join('')}</div>`).join('')}
-  </div>`;
-}
-
-function widgetCalendar({ bakes }, size) {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth() + 1;
-  const monthBakes = bakes.filter((b) => { const d = new Date(b.finishedAt); return d.getFullYear() === y && d.getMonth() + 1 === m; });
-  let body;
-  if (size === 'large') {
-    body = monthGrid(y, m, monthBakes, false);
-  } else {
-    // 中号：这一周七天，每天一格
-    const start = new Date(now); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - start.getDay());
-    body = `<div class="w-week">${WEEK.map((w, i) => {
-      const day = new Date(start.getTime() + i * DAY);
-      const hit = bakes.find((b) => new Date(b.finishedAt).toDateString() === day.toDateString());
-      return `<span class="${day.toDateString() === now.toDateString() ? 'today' : ''}"><i>${w}</i>${hit ? shape(hit.shape) : `<em>${day.getDate()}</em>`}</span>`;
-    }).join('')}</div>`;
+// 把一张 SVG 画成 PNG（base64）。SVG 的颜色、滤镜写在 CSS 里，转图前先把算好的样式抄到每个元素上
+async function svgToPng(markup, w, h, pad = 0) {
+  const host = document.createElement('div');
+  host.style.cssText = `position:fixed;left:-10000px;top:0;width:${w}px;height:${h}px;pointer-events:none`;
+  host.innerHTML = markup;
+  document.body.appendChild(host);
+  try {
+    const svg = host.querySelector('svg');
+    svg.setAttribute('width', w);
+    svg.setAttribute('height', h);
+    const els = [svg, ...svg.querySelectorAll('*')];
+    const styles = els.map((el) => {
+      const cs = getComputedStyle(el);
+      const filter = (cs.filter.match(/#[\w-]+/) || [])[0];
+      return [
+        cs.display === 'none' ? 'display:none' : '',
+        `fill:${cs.fill}`, `stroke:${cs.stroke}`, `stroke-width:${cs.strokeWidth}`,
+        `opacity:${cs.opacity}`, `fill-opacity:${cs.fillOpacity}`, `stroke-opacity:${cs.strokeOpacity}`,
+        cs.strokeDasharray !== 'none' ? `stroke-dasharray:${cs.strokeDasharray}` : '',
+        filter ? `filter:url(${filter})` : '',
+        el.tagName === 'text' ? `font-family:${cs.fontFamily};font-size:${cs.fontSize}` : '',
+      ].filter(Boolean).join(';');
+    });
+    const out = svg.cloneNode(true);
+    [out, ...out.querySelectorAll('*')].forEach((el, i) => { el.removeAttribute('class'); el.setAttribute('style', styles[i]); });
+    out.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    if (pad) {
+      const [x, y, vw, vh] = out.getAttribute('viewBox').split(/[\s,]+/).map(Number);
+      out.setAttribute('viewBox', `${x - vw * pad} ${y - vh * pad} ${vw * (1 + 2 * pad)} ${vh * (1 + 2 * pad)}`);
+    }
+    out.insertAdjacentHTML('afterbegin', `<defs>${document.getElementById('rough').outerHTML}${document.getElementById('crayon').outerHTML}</defs>`);
+    const img = new Image();
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(out));
+    await img.decode();
+    const k = 3; // 按 @3x 出图
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(w * k);
+    canvas.height = Math.round(h * k);
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/png').split(',')[1];
+  } finally {
+    host.remove();
   }
-  return `<a class="widget w-${size} w-cal" href="#/logs">
-    <div class="w-head"><b>${MONTHS[m - 1]}</b><span class="small muted">${L(`本月 ${monthBakes.length} 炉`, `${monthBakes.length} this month`)}</span></div>
-    ${body}</a>`;
 }
 
-async function viewWidgets() {
-  const data = await widgetData();
-  const block = (title, sizes, html) => `<h2>${title} <span class="small muted" style="font-weight:400">${sizes}</span></h2><div class="widget-row">${html}</div>`;
-  return `
-  <div class="topbar"><a class="btn icon ghost" href="#/settings" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1>${L('小组件', 'Widgets')}</h1></div>
-  <div class="widget-wall">
-    ${block(L('我的店面', 'My shop'), L('小号', 'small'), widgetShop(data))}
-    ${block(L('配方架', 'Recipe shelf'), L('中号 · 大号', 'medium · large'), widgetRack(data, 'medium') + widgetRack(data, 'large'))}
-    ${block(L('烘焙日历', 'Bake calendar'), L('中号 · 大号', 'medium · large'), widgetCalendar(data, 'medium') + widgetCalendar(data, 'large'))}
-  </div>
-  <p class="small muted" style="margin-top:22px">${L('点小组件会直接跳到对应的页面。网页版 app 还不能放到手机桌面上，要放上桌面需要一个原生的 iOS 外壳。',
-    'Tap a widget to jump to its page. A web app can’t put widgets on the Home Screen yet; that needs a native iOS shell.')}</p>`;
+async function syncWidgets() {
+  widgetPlugin ||= window.Capacitor.Plugins.WidgetBridge;
+  const [recipes, bakes] = await Promise.all([listRecipes(), listBakes()]);
+  const root = document.documentElement;
+  const css = getComputedStyle(root);
+  const v = (k) => css.getPropertyValue(k).trim();
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  const t = dark ? 'd' : 'l';
+
+  // 用到哪些图：图名带上深浅色，换主题时会重新出一套
+  const draw = {};
+  const pic = (name, make) => { const key = `${name}-${t}`; if (!widgetSent.has(key)) draw[key] = make; return key; };
+  const bread = (sh) => pic(`b-${String(sh || 'loaf').replace(/[^\w-]/g, '')}`, () => [shape(sh), 64, 64, 0.06]);
+  const lv = levelOf(bakes.length);
+  const sign = storefrontSign(lv.lv);
+  const shopPic = pic(`shop${lv.lv}`, () => [storefront(lv.lv), 300, 300 * sign.vbH / sign.vbW]);
+
+  const since = Date.now() - 45 * DAY; // 日历最多看这个月，留够 45 天
+  const data = {
+    colors: { paper: v('--paper'), card: v('--card'), ink: v('--ink'), soft: v('--ink-soft'), line: v('--line'), wood: v('--wood'), brown: v('--brown') },
+    shop: { lv: lv.lv, bakes: bakes.length, img: shopPic },
+    rack: recipes.slice(0, 12).map((r) => ({ id: r.id, name: r.name, img: bread(r.shape), price: getPrice(r) != null ? formatPrice(getPrice(r)) : '' })),
+    recipeCount: recipes.length,
+    bakes: bakes.filter((b) => b.finishedAt >= since).map((b) => ({ t: b.finishedAt, id: b.id, img: bread(b.shape) })),
+    weekdays: WEEK,
+    months: MONTHS,
+    text: {
+      baked: L('次出炉', 'baked'),
+      rack: L('配方架', 'Recipe shelf'),
+      rackCount: L('%d 款', '%d'),
+      emptyRack: L('配方架还空着', 'The shelf is empty'),
+      monthCount: L('本月 %d 炉', '%d this month'),
+    },
+  };
+  const json = JSON.stringify(data);
+  const keys = Object.keys(draw);
+  if (json === widgetLast && !keys.length) return;
+  const images = {};
+  for (const key of keys) images[key] = await svgToPng(...draw[key]());
+  await widgetPlugin.update({ json, images });
+  keys.forEach((k) => widgetSent.add(k));
+  widgetLast = json;
+}
+
+// 点小组件打开 app：bakerydays://route/r/xxx → #/r/xxx
+async function listenWidgetRoutes() {
+  if (!isNative()) return;
+  widgetPlugin ||= window.Capacitor.Plugins.WidgetBridge;
+  const goTo = (hash) => { if (hash && hash !== location.hash) location.hash = hash; };
+  await widgetPlugin.addListener('route', (e) => goTo(e.hash));
+  goTo((await widgetPlugin.takeRoute()).hash);
 }
 
 // =====================================================================
@@ -1185,7 +1234,6 @@ function viewSettings() {
     <div class="card alt"><div class="row"><div class="grow"><b>${L('价签货币', 'Currency')}</b></div>${chips('currency', getCurrency(), [['CNY', L('¥ 人民币', '¥ CNY')], ['USD', L('$ 美元', '$ USD')]])}</div></div>
     <div class="card"><div class="row"><div class="grow"><b>${L('外观', 'Look')}</b></div>
       ${chips('theme', theme, [['auto', L('跟随系统', 'Auto')], ['light', L('白纸', 'Paper')], ['dark', L('黑板', 'Chalkboard')]])}</div></div>
-    <a class="card alt settings-link" href="#/widgets"><div class="grow"><b>${L('小组件', 'Widgets')}</b><div class="small muted">${L('店面 · 配方架 · 烘焙日历', 'Shop · Recipe shelf · Calendar')}</div></div>${icon('next')}</a>
     <div class="card"><b>${L('备份', 'Backup')}</b><p class="small muted" style="margin:2px 0 10px">${L('数据只存在这台设备上，换手机前记得导出。', 'Data lives only on this device. Export before switching phones.')}</p>
       <div class="row"><button class="btn sm" data-act="export-all">${icon('download')} ${L('导出备份', 'Export')}</button>
       <label class="btn sm">${icon('upload')} ${L('从备份恢复', 'Restore')}<input type="file" accept=".json,application/json" hidden data-act-change="import-all"></label></div></div>
@@ -1505,13 +1553,8 @@ document.addEventListener('click', (e) => {
     actions[el.dataset.act](el, e);
     return;
   }
-  // 小组件里的面包本身是链接，点空白处才跳整个组件的地址
-  if (e.target.closest('a')) return;
   const nav = e.target.closest('[data-go]');
-  if (nav) {
-    if (nav.classList.contains('widget')) location.hash = nav.dataset.go;
-    else location.replace(nav.dataset.go);
-  }
+  if (nav) location.replace(nav.dataset.go);
 });
 
 // 记下最近一次点「选照片」的时间：从相机回来时不做版本检查，不刷新
@@ -1632,6 +1675,7 @@ async function boot() {
 
   window.addEventListener('hashchange', route);
   await route();
+  listenWidgetRoutes().catch((e) => console.warn('widget routes', e));
   setInterval(tick, 1000);
   tick();
 

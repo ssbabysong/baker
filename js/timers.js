@@ -103,7 +103,7 @@ export function stopRinging() {
 
 export const isNative = () => !!window.Capacitor?.isNativePlatform?.();
 let localNotif = null;
-const LN = () => (localNotif ||= window.Capacitor.registerPlugin('LocalNotifications'));
+const LN = () => (localNotif ||= window.Capacitor.Plugins.LocalNotifications);
 let nativePerm = 'default';
 
 // 当前的通知权限：granted / denied / default / unsupported

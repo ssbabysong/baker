@@ -8,14 +8,18 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
 
         window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = CAPBridgeViewController()
+        window?.rootViewController = MainViewController()
         window?.makeKeyAndVisible()
 
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
+        // 点桌面小组件冷启动 App
+        if let url = connectionOptions.urlContexts.first?.url { WidgetBridgePlugin.open(url) }
     }
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
         SceneDelegateProxy.shared.scene(scene, openURLContexts: URLContexts)
+        // 点桌面小组件回到 App
+        for context in URLContexts { WidgetBridgePlugin.open(context.url) }
     }
 
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {

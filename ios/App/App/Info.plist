@@ -6,12 +6,6 @@
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
-	<key>NSCameraUsageDescription</key>
-	<string>拍下刚出炉的面包，放上作品墙 · Take a photo of your fresh bake</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>从相册里选一张面包照片 · Pick a bread photo from your library</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>把面包照片存到相册 · Save bread photos to your library</string>
 	<key>CFBundleDisplayName</key>
 	<string>面包物语</string>
 	<key>CFBundleExecutable</key>
@@ -26,10 +20,27 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.ssbabysong.bakerydays</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>bakerydays</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>拍下刚出炉的面包，放上作品墙 · Take a photo of your fresh bake</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>把面包照片存到相册 · Save bread photos to your library</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>从相册里选一张面包照片 · Pick a bread photo from your library</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
