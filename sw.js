@@ -1,5 +1,5 @@
 // 离线缓存：app 外壳预缓存，其余（比如字体）用到时顺手缓存。
-const CACHE = 'baker-v35';
+const CACHE = 'baker-v36';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/app.js', 'js/store.js', 'js/parser.js', 'js/sketch.js', 'js/timers.js', 'js/samples.js', 'js/i18n.js',
@@ -8,7 +8,8 @@ const SHELL = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload'：绕过浏览器的 HTTP 缓存（GitHub Pages 会让文件缓存 10 分钟），保证装进来的是新版本
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -23,7 +24,9 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
     caches.match(e.request).then((hit) => {
-      const net = fetch(e.request).then((res) => {
+      const sameOrigin = new URL(e.request.url).origin === self.location.origin;
+      // 本站文件每次都向服务器确认一下有没有新版本（no-cache），不吃 HTTP 缓存里的旧文件
+      const net = fetch(sameOrigin ? new Request(e.request, { cache: 'no-cache' }) : e.request).then((res) => {
         if (res.ok || res.type === 'opaque') {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(e.request, copy));
@@ -31,7 +34,6 @@ self.addEventListener('fetch', (e) => {
         return res;
       }).catch(() => hit);
       // 本站文件：网络优先保证更新；第三方字体：缓存优先
-      const sameOrigin = new URL(e.request.url).origin === self.location.origin;
       return sameOrigin ? net.then((r) => r || hit) : (hit || net);
     }),
   );
