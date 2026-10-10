@@ -1380,6 +1380,8 @@ function viewSettings() {
     <div class="card alt"><div class="row"><div class="grow"><b>${L('计时提醒', 'Timer alerts')}</b><div class="small muted">${permText}</div></div>
       ${perm === 'default' ? `<button class="btn sm" data-act="notify-perm">${L('开启', 'Turn on')}</button>` : ''}<button class="btn sm" data-act="test-sound">${icon('bell')} ${L('试听', 'Test')}</button></div>
       <p class="small muted" style="margin:6px 0 0">${isNative() ? L('锁屏或关掉 app 也会准时提醒', 'Alerts even when locked or closed') : L('加到主屏幕后，后台也会响', 'Add to Home Screen to hear it in the background')}</p></div>
+    <div class="card"><div class="row"><div class="grow"><b>${L('音效', 'Sounds')}</b><div class="small muted">${L('小店升级时有自己的一段', 'Leveling up has its own tune')}</div></div>
+      <button class="btn sm" data-act="test-chime">${L('出炉', 'Bake')}</button><button class="btn sm" data-act="test-levelup">${L('升级', 'Level up')}</button></div></div>
     <div class="card"><div class="row"><div class="grow"><b>${L('语言', 'Language')}</b></div>${chips('lang', getLang(), [['zh', '中文'], ['en', 'English']])}</div></div>
     <div class="card alt"><div class="row"><div class="grow"><b>${L('价签货币', 'Currency')}</b></div>${chips('currency', getCurrency(), [['CNY', L('¥ 人民币', '¥ CNY')], ['USD', L('$ 美元', '$ USD')]])}</div></div>
     <div class="card"><div class="row"><div class="grow"><b>${L('外观', 'Look')}</b></div>
@@ -1614,6 +1616,8 @@ const actions = {
     toast(p === 'granted' ? L('通知已开启', 'Alerts on') : L('没有拿到通知权限', 'Permission not granted'));
     rerender();
   },
+  'test-chime'() { playChime(); },
+  'test-levelup'() { playLevelUp(); },
   'test-sound'() { playChime(); notify(L('⏰ 试一下', '⏰ Test'), L('时间到的时候会这样提醒你', 'This is how timers will alert you')); },
   'theme'(el) {
     const v = el.dataset.v;
