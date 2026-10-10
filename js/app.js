@@ -184,7 +184,7 @@ async function rerender() {
   window.scrollTo(0, y);
 }
 
-const TABS = [['shop', '#/', '店铺', 'shop'], ['recipes', '#/recipes', '配方本', 'book'], ['logs', '#/logs', '日历', 'calendar']];
+const TABS = [['shop', '#/', '店铺', 'shop'], ['recipes', '#/recipes', '配方架', 'rack'], ['logs', '#/logs', '日历', 'calendar']];
 
 // 只在第一次画出整排按钮；之后切换只改选中状态，这样镜片能平滑地滑过去
 function renderTabs(active) {
@@ -303,26 +303,29 @@ function polaroid(b, url) {
 // 配方
 // =====================================================================
 
+// 配方架：每层木架子放三个面包，面包下面挂一张牛皮纸价签（配方名），架子最后留一个空位上新配方
 async function viewRecipes() {
   const [recipes, bakes] = await Promise.all([listRecipes(), listBakes()]);
   const q = state.filter.trim().toLowerCase();
   const list = q ? recipes.filter((r) => r.name.toLowerCase().includes(q) || r.ingredients.some((i) => i.name.toLowerCase().includes(q))) : recipes;
-  const last = (id) => bakes.find((b) => b.recipeId === id);
+  const count = (id) => bakes.filter((b) => b.recipeId === id).length;
+  const items = list.map((r) => {
+    const total = r.steps.reduce((a, st) => a + (st.minutes || 0), 0);
+    const n = count(r.id);
+    return `<a class="rack-item" href="#/r/${r.id}">${shape(r.shape)}
+      <span class="tag">${esc(r.name)}</span>
+      <small>${total ? `约 ${formatMinutes(total)}` : `${r.steps.length} 步`}${n ? ` · 做过 ${n} 次` : ''}</small></a>`;
+  });
+  if (!q) items.push(`<a class="rack-item add" href="#/import">${icon('plus')}<span>上新配方</span></a>`);
+  const rows = [];
+  for (let i = 0; i < items.length; i += 3) rows.push(items.slice(i, i + 3));
   return `
-  <div class="topbar"><h1>配方本</h1>
+  <div class="topbar"><h1>配方架</h1>
     <a class="btn sm" href="#/import" data-act="new-import">${icon('paste')} 导入</a>
     <a class="btn sm primary" href="#/edit/new" data-act="new-blank">${icon('plus')} 手写</a></div>
   <input class="search" type="search" placeholder="找配方 / 找材料…" value="${esc(state.filter)}" data-act-input="filter">
-  <div class="recipe-list" style="margin-top:14px">
-    ${list.map((r, i) => {
-      const l = last(r.id);
-      const total = r.steps.reduce((a, s) => a + (s.minutes || 0), 0);
-      return `<a class="card ${i % 2 ? 'alt' : ''} recipe-row" href="#/r/${r.id}"><span class="tile">${shape(r.shape)}</span>
-        <div class="t"><b>${esc(r.name)}</b>
-        <span>${r.ingredients.length} 种材料 · ${r.steps.length} 步${total ? ` · 约 ${formatMinutes(total)}` : ''}${l ? ` · 上次 ${fmtDate(l.finishedAt)}` : ''}</span></div>
-        ${icon('next')}</a>`;
-    }).join('') || `<div class="empty">${emptyShelf()}<div>${q ? '没找到' : '配方架还是空的'}</div></div>`}
-  </div>`;
+  ${list.length || !q ? `<div class="rack">${rows.map((row) => `<div class="rack-row">${row.join('')}</div>`).join('')}</div>`
+    : `<div class="empty">${emptyShelf()}<div>没找到「${esc(state.filter)}」</div></div>`}`;
 }
 
 async function viewRecipe(id) {

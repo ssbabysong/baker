@@ -764,6 +764,10 @@ export const TAB_ICONS = {
     fill: [['wood', 'M14 9 H50 V55 H14 Z'], ['paper', 'M36 15 H44 V33 H36 Z']],
     line: '<path d="M14 9 H50 V55 H14 Z"/><path d="M22 9 V55"/><path d="M14 17 H22 M14 27 H22 M14 37 H22 M14 47 H22" stroke-width="1.6"/><path d="M36 15 H44 V33 H36 Z" stroke-width="1.8"/>',
   },
+  rack: {
+    fill: [['wood', 'M8 30 H56 V34 H8 Z M8 52 H56 V56 H8 Z'], ['crust', 'M14 30 C13 22 19 18 24 18 C29 18 35 22 34 30 Z M38 52 C37 45 42 42 46 42 C50 42 55 45 54 52 Z']],
+    line: '<path d="M8 30 H56 V34 H8 Z"/><path d="M8 52 H56 V56 H8 Z"/><path d="M10 34 V56 M54 34 V56" stroke-width="1.8"/><path d="M14 30 C13 22 19 18 24 18 C29 18 35 22 34 30"/><path d="M40 30 V22 H50 V30" stroke-width="1.8"/><path d="M38 52 C37 45 42 42 46 42 C50 42 55 45 54 52"/><path d="M16 52 V44 H28 V52" stroke-width="1.8"/>',
+  },
   calendar: {
     fill: [['soft', 'M10 16 H54 V54 H10 Z'], ['crust', 'M10 16 H54 V26 H10 Z']],
     line: '<path d="M10 16 H54 V54 H10 Z"/><path d="M10 26 H54"/><path d="M22 10 V20"/><path d="M42 10 V20"/><path d="M26 44 C25 38 29 35 32 35 C35 35 39 38 38 44 Z"/>',
