@@ -1,0 +1,38 @@
+<!doctype html><html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'ShopFont'; src: url('file:///home/user/baker/fonts/shopfont.ttf'); }
+html, body { margin: 0; width: 440px; height: 956px; overflow: hidden; }
+body { background: #f7f2e8; font-family: 'ShopFont', sans-serif; color: #4a3a2e; position: relative; }
+/* 纸面上淡淡的颗粒 */
+body::before { content: ''; position: absolute; inset: 0; opacity: .5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .2 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.head { position: absolute; top: 58px; left: 0; right: 0; text-align: center; }
+h1 { display: inline; margin: 0; font-weight: 400; font-size: 38px; letter-spacing: .06em; line-height: 1.3; padding: 0 6px;
+  background: linear-gradient(transparent 60%, #f3dcb6 60%, #f3dcb6 92%, transparent 92%); }
+p { margin: 14px 24px 0; font-size: 17px; letter-spacing: .05em; color: #8a7a6a; }
+.en h1 { letter-spacing: .01em; font-size: 36px; } .en p { letter-spacing: .01em; }
+.phone { position: absolute; left: 50%; top: 196px; width: 318px; transform: translateX(-50%); padding: 11px; border-radius: 58px; background: #3d322b;
+  box-shadow: 0 30px 60px -20px rgba(74, 58, 46, .45), 0 0 0 1.5px #2b231e inset; }
+.screen { width: 318px; height: 691px; border-radius: 47px; overflow: hidden; position: relative; background: #f7f2e8; }
+.inner { width: 440px; height: 956px; transform: scale(calc(318 / 440)); transform-origin: 0 0; }
+.status { height: 54px; display: flex; align-items: center; justify-content: space-between; padding: 0 34px 0 46px; font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 600; font-size: 17px; color: #2b231e; position: relative; }
+.island { position: absolute; left: 50%; top: 11px; width: 124px; height: 36px; border-radius: 20px; background: #000; transform: translateX(-50%); }
+.icons { display: flex; gap: 6px; align-items: center; }
+.icons i { display: block; background: #2b231e; border-radius: 2px; }
+.bat { width: 26px; height: 12px; border-radius: 3.5px !important; position: relative; }
+.inner img { display: block; width: 440px; height: 902px; }
+</style></head><body>
+<div class="head"><h1 id="h"></h1><p id="s"></p></div>
+<div class="phone"><div class="screen"><div class="inner">
+  <div class="status"><span>9:41</span><span class="island"></span>
+    <span class="icons"><i style="width:3px;height:5px"></i><i style="width:3px;height:7px;margin-left:-4px"></i><i style="width:3px;height:9px;margin-left:-4px"></i><i style="width:3px;height:11px;margin-left:-4px"></i><i class="bat"></i></span></div>
+  <img id="img">
+</div></div></div>
+<script>
+const q = new URLSearchParams(location.search);
+document.getElementById('h').textContent = q.get('h');
+document.getElementById('s').textContent = q.get('s');
+document.getElementById('img').src = q.get('img');
+if (q.get('lang') === 'en') document.body.classList.add('en');
+</script></body></html>
