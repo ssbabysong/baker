@@ -71,6 +71,14 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+/* 图、画、按钮、链接、日历格子、底栏这些不是正文的东西：长按不选中、不弹「拷贝/存储图像」菜单、不能拖走；
+   正文和输入框照常可以选 */
+img, svg, button, a, label, summary, nav, .btn, .chip, .tabbar, .cal, .cal-head, .polaroid, .rack-item, .hanko,
+[data-act], [data-go], .ph, .pic, .photo, .stats, .rating {
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+img, svg { -webkit-user-drag: none; }
+input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
 html, body { margin: 0; }
 /* 兜底：任何东西不小心比屏幕宽，也不让整页左右滑 */
 html, body { overflow-x: clip; }
