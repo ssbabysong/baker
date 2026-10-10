@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 const cat = JSON.parse(readFileSync(new URL('../catalog/recipes.json', import.meta.url), 'utf8'));
 const KINDS = new Set(['ferment', 'bake', 'rest', 'chill', 'knead', 'other']);
 const SHAPES = new Set(['loaf', 'toast', 'croissant', 'baguette', 'cake', 'cookie', 'muffin', 'bagel', 'pretzel', 'melonpan', 'anpan', 'chocobun',
-  'donut', 'canele', 'scone', 'focaccia', 'brioche', 'eggtart', 'rolls', 'puff']);
+  'donut', 'shiopan', 'scone', 'focaccia', 'brioche', 'eggtart', 'rolls', 'puff']);
 
 test('目录头：schema / version / recipes / removed', () => {
   assert.equal(cat.schema, 1, 'schema 改了的话，老版本 app 会忽略这份目录');
