@@ -861,20 +861,24 @@ async function fireAlarm(s, t) {
 // 出炉记录
 // =====================================================================
 
+// 出炉页的草稿（照片、星星、笔记）跟着这一炉存下来：拍照时 app 被系统杀掉也不会丢
 function finishDraft(sid) {
-  if (state.finish?.sid !== sid) state.finish = { sid, photo: null, photoUrl: '', rating: 0, notes: '', mode: 'update' };
-  return state.finish;
+  const s = sessionById(sid);
+  if (s && !s.finishDraft) s.finishDraft = { photoId: null, rating: 0, notes: '', mode: 'update' };
+  return s?.finishDraft || { photoId: null, rating: 0, notes: '', mode: 'update' };
 }
 
-function viewFinish(sid) {
+async function viewFinish(sid) {
   const s = sessionById(sid);
   if (!s) { setTimeout(() => go('#/'), 0); return null; }
   const f = finishDraft(sid);
+  const photo = f.photoId ? await photoUrl(f.photoId) : '';
   const changes = diffRecipe(s.original, s.recipe);
   return `
   <div class="topbar"><a class="btn icon ghost" href="#/bake/${s.id}" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1>${L('出炉啦', 'Fresh out')}</h1></div>
   <label class="photo-drop">
-    ${f.photoUrl ? `<img src="${f.photoUrl}" alt="">` : `${icon('camera')}<span>${L('拍一张 / 选一张照片', 'Take or pick a photo')}</span>`}
+    ${state.photoBusy ? `<span class="small muted">${L('照片处理中…', 'Processing photo…')}</span>`
+      : photo ? `<img src="${photo}" alt="">` : `${icon('camera')}<span>${L('拍一张 / 选一张照片', 'Take or pick a photo')}</span>`}
     <input type="file" accept="image/*" capture="environment" hidden data-act-change="pick-photo">
   </label>
 
@@ -916,7 +920,7 @@ async function saveFinish() {
     copy.name = `${s.recipe.name} · ${L('改', 'v2')}`;
     recipeId = (await saveRecipe(copy)).id;
   }
-  const photoId = f.photo ? await savePhoto(f.photo) : null;
+  const photoId = f.photoId || null;
   const bake = {
     id: uid(),
     recipeId,
@@ -1327,7 +1331,7 @@ const actions = {
   },
 
   // 出炉
-  'rate'(el) { const s = routeSession(); if (s) { finishDraft(s.id).rating = Number(el.dataset.v); rerender(); } },
+  'rate'(el) { const s = routeSession(); if (s) { finishDraft(s.id).rating = Number(el.dataset.v); persistSessions(); rerender(); } },
   'save-bake'(el) { el.disabled = true; saveFinish(); },
 
   // 作品
@@ -1383,10 +1387,16 @@ const changeActions = {
     const s = routeSession();
     if (!file || !s) return;
     const f = finishDraft(s.id);
-    const blob = await compressImage(file);
-    if (f.photoUrl) URL.revokeObjectURL(f.photoUrl);
-    f.photo = blob;
-    f.photoUrl = URL.createObjectURL(blob);
+    state.photoBusy = true; rerender();
+    try {
+      const blob = await compressImage(file);
+      el.value = ''; // 放掉原图
+      const old = f.photoId;
+      f.photoId = await savePhoto(blob);
+      if (old) await db.del('photos', old);
+      await persistSessions();
+    } catch { toast(L('这张照片读不了，换一张试试', 'Couldn’t read that photo, try another')); }
+    state.photoBusy = false;
     rerender();
   },
   async 'replace-photo'(el) {
@@ -1397,7 +1407,7 @@ const changeActions = {
     b.photoId = await savePhoto(await compressImage(file));
     await saveBake(b); rerender();
   },
-  'mode'(el) { const s = routeSession(); if (s) finishDraft(s.id).mode = el.value; },
+  'mode'(el) { const s = routeSession(); if (s) { finishDraft(s.id).mode = el.value; persistSessions(); } },
   async 'import-file'(el) {
     const file = el.files?.[0];
     if (!file) return;
@@ -1451,6 +1461,10 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// 记下最近一次点「选照片」的时间：从相机回来时不做版本检查，不刷新
+let lastFilePick = 0;
+document.addEventListener('click', (e) => { if (e.target.closest('input[type=file], label:has(input[type=file])')) lastFilePick = Date.now(); }, true);
+
 document.addEventListener('change', (e) => {
   const el = e.target.closest('[data-act-change]');
   if (el) changeActions[el.dataset.actChange]?.(el, e);
@@ -1465,7 +1479,7 @@ document.addEventListener('input', (e) => {
     if (/\.amount$/.test(el.dataset.s) && v !== '') v = String(Number(v) / s.scale);
     applyField(s.recipe, el.dataset.s, v);
     persistSessions(400);
-  } else if (el.dataset.f != null) { const s = routeSession(); if (s) finishDraft(s.id)[el.dataset.f] = el.value; }
+  } else if (el.dataset.f != null) { const s = routeSession(); if (s) { finishDraft(s.id)[el.dataset.f] = el.value; persistSessions(400); } }
   else if (el.dataset.actInput === 'filter') {
     state.filter = el.value;
     clearTimeout(filterTimer);
@@ -1569,17 +1583,16 @@ async function boot() {
   tick();
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    // 新版本装好接管页面时自动刷新一次，不用手动关掉 app 再开（第一次安装时不刷）
+    // 新版本接管后，等手上没事的时候再刷新一次（不在拍照、烘焙、编辑这些页面上刷，免得打断）。第一次安装不刷
     const hadController = !!navigator.serviceWorker.controller;
-    let reloaded = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!hadController || reloaded) return;
-      reloaded = true;
-      location.reload();
-    });
+    let pending = false;
+    const busy = () => /^#\/(bake|finish|edit|import)/.test(location.hash) || state.photoBusy || Date.now() - lastFilePick < 120000;
+    const tryReload = () => { if (pending && !busy()) { pending = false; location.reload(); } };
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) { pending = true; tryReload(); } });
+    window.addEventListener('hashchange', tryReload);
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
-      // 从后台切回来时也检查一下有没有新版本
-      document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+      // 从后台切回来时也检查一下有没有新版本（刚去拍过照就先不查）
+      document.addEventListener('visibilitychange', () => { if (!document.hidden && !busy()) reg.update().catch(() => {}); });
     }).catch(() => {});
   }
 }

@@ -6,6 +6,12 @@
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<key>NSCameraUsageDescription</key>
+	<string>拍下刚出炉的面包，放上作品墙 · Take a photo of your fresh bake</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>从相册里选一张面包照片 · Pick a bread photo from your library</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>把面包照片存到相册 · Save bread photos to your library</string>
 	<key>CFBundleDisplayName</key>
         <string>面包物语</string>
 	<key>CFBundleExecutable</key>
