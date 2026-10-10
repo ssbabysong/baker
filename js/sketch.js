@@ -163,21 +163,26 @@ const tiles = (x0, x1, y, w) => {
   return d;
 };
 
-// 门店插画随店铺等级变化（一共 8 级）：
-// Lv1 周末小推车 → Lv2 私房小铺（单间小铺）→ Lv3 街角面包屋 → Lv4 熟客小店（一对灯笼、窗台香草、长椅和猫、自行车）
-// → Lv5 排队小店（门口排队、「现烤」小旗）→ Lv6 两层小楼（加盖二楼、碱水面包招牌）
-// → Lv7 露台面包店（旁边的小露台、阳伞、桌椅、小灯串）→ Lv8 街区招牌店（屋脊鬼瓦、「招牌」木牌、松树、石灯笼）
-// 从 Lv5 起画面变宽，小店往旁边长。招牌上的店名由 HTML 叠加，位置用 storefrontSign(level) 取
+// 门店插画随店铺等级变化（一共 8 级），房子的建筑风格也跟着变：
+// Lv1–2 木造：周末小推车 → 私房小铺（单间小铺）
+// Lv3–4 和风町屋：街角面包屋 → 熟客小店（一对灯笼、窗台香草、长椅和猫、自行车）
+// Lv5–6 昭和复古：排队小店（红白条纹布篷、拱形橱窗、马赛克瓷砖、搪瓷招牌、门口排队）→ 两层小楼（拱窗二楼、屋顶大碱水面包）
+// Lv7–8 现代：露台面包店（白墙、木格栅、落地玻璃、吊灯、露台）→ 街区招牌店（木饰面二楼、屋顶花园、松树、石灯笼）
+// 招牌上的店名由 HTML 叠加，位置用 storefrontSign(level) 取
 
-const UPPER = 44; // Lv6 起加盖的二楼高度
-const TWO_STORY = 6;
+const UP = 56; // 两层的店（Lv6、Lv8）加盖的二楼高度
 const widthOf = (level) => (level >= 7 ? 340 : level >= 5 ? 280 : 240);
+const PRETZEL = 'M18 43 C22 36 28 30 32 26 C36 22 40 16 46 16 C54 16 58 24 56 34 C54 46 44 54 32 54 C20 54 10 46 8 34 C6 24 10 16 18 16 C24 16 28 22 32 26 C36 30 42 36 46 43';
+const pretzelAt = (tx, ty, k) => `<g transform="translate(${tx} ${ty}) scale(${k})"><path d="${PRETZEL}" stroke-width="9"/><path class="rope" d="${PRETZEL}" stroke-width="5"/></g>`;
 
 export function storefrontSign(level = 3) {
-  if (level <= 1) return { x: 72, y: 40, w: 96, h: 18, vbW: 240, vbH: 190 };
-  if (level === 2) return { x: 76, y: 80, w: 88, h: 16, vbW: 240, vbH: 190 };
-  const vbH = level >= TWO_STORY ? 190 + UPPER : 190;
-  return { x: 60, y: 38, w: 120, h: 22, vbW: widthOf(level), vbH };
+  const vbW = widthOf(level);
+  if (level <= 1) return { x: 72, y: 40, w: 96, h: 18, vbW, vbH: 190 };
+  if (level === 2) return { x: 76, y: 80, w: 88, h: 16, vbW, vbH: 190 };
+  if (level <= 4) return { x: 60, y: 38, w: 120, h: 22, vbW, vbH: 190 };
+  const dy = level === 6 || level === 8 ? UP : 0;
+  if (level <= 6) return { x: 58, y: 58 + dy, w: 124, h: 20, vbW, vbH: 190 + dy };
+  return { x: 60, y: 63 + dy, w: 120, h: 18, vbW, vbH: 190 + dy };
 }
 
 // 排队的客人：圆脑袋、外套、手里提着纸袋
@@ -225,6 +230,145 @@ function terrace() {
       <path d="M310 168 V152 H302 V160 M302 160 V168 M302 160 H310"/>
       <path d="M322 166 C316 165 316 156 322 156 C321 151 329 150 330 156 C335 156 335 165 329 166" stroke-width="1.2"/>
       <path d="M321 168 L322 166 H330 L331 168" stroke-width="1.2"/>`,
+  };
+}
+
+// 店门外的街景，按等级加：排队的客人（5+）、小旗（5–6）、露台（7+）、石灯笼（8）
+function streetExtras(level) {
+  const fills = [];
+  let lines = '';
+  const add = (o) => { fills.push(...o.fills); lines += o.lines; };
+  if (level >= 5) [customer(216, 'sky'), customer(232, 'crust'), ...(level >= 7 ? [] : [customer(248, 'leaf')])].forEach(add);
+  if (level === 5 || level === 6) [banner(258, 'shu', '现', '烤'), banner(266, 'ai', '面', '包')].forEach(add);
+  if (level >= 7) add(terrace());
+  if (level >= 8) {
+    const sx = 100;
+    add({
+      fills: [['tile', `M${212 + sx} 178 H${234 + sx} V172 H${212 + sx} Z M${219 + sx} 172 V154 H${227 + sx} V172 Z M${210 + sx} 142 L${223 + sx} 133 L${236 + sx} 142 Z`], ['crust', `M${220 + sx} 152 V145 H${226 + sx} V152 Z`]],
+      lines: `<path d="M${212 + sx} 178 H${234 + sx} V172 H${212 + sx} Z"/><path d="M${219 + sx} 172 V154 H${227 + sx} V172"/>
+        <path d="M${214 + sx} 154 H${232 + sx} V142 H${214 + sx} Z"/><path d="M${220 + sx} 152 V145 H${226 + sx} V152 Z" stroke-width="1"/>
+        <path d="M${210 + sx} 142 L${223 + sx} 133 L${236 + sx} 142 Z"/><path d="M${223 + sx} 133 v-3"/>`,
+    });
+  }
+  return { fills, lines };
+}
+
+// 松树（Lv8）：弯弯的树干 + 三层云朵状松针；dy 是二楼加高的量
+function pineTree(dy) {
+  return `
+    ${crayon([['leaf', 'M2 96 q4 -9 14 -8 q6 -7 16 -2 q8 -1 9 6 q-6 6 -18 5 q-12 4 -21 -1 Z M0 124 q3 -8 12 -7 q6 -6 14 -1 q7 0 8 5 q-5 5 -15 4 q-10 3 -19 -1 Z M6 150 q3 -7 11 -6 q6 -5 13 0 q6 0 6 5 q-5 5 -14 4 q-9 2 -16 -3 Z']])}
+    <path d="M18 ${178 + dy} C20 ${158 + dy} 10 160 16 140 C21 124 12 112 20 94" stroke-width="2.2"/>
+    <path d="M16 140 l8 -4 M18 116 l-8 -3" stroke-width="1.4"/>
+    <path d="M2 96 q4 -9 14 -8 q6 -7 16 -2 q8 -1 9 6 q-6 6 -18 5 q-12 4 -21 -1"/>
+    <path d="M0 124 q3 -8 12 -7 q6 -6 14 -1 q7 0 8 5 q-5 5 -15 4 q-10 3 -19 -1"/>
+    <path d="M6 150 q3 -7 11 -6 q6 -5 13 0 q6 0 6 5 q-5 5 -14 4 q-9 2 -16 -3"/>`;
+}
+
+// ---------- Lv5–6 昭和复古面包店 ----------
+function retroGround(level) {
+  const n = 10;
+  const stripes = [];
+  for (let i = 0; i < n; i++) {
+    const t0 = 38 + 16.4 * i, t1 = t0 + 16.4, b0 = 30 + 18 * i, b1 = b0 + 18;
+    stripes.push([i % 2 ? 'paper' : 'shu', `M${t0} 84 H${t1} L${b1} 100 q-9 7 -18 0 Z`]);
+  }
+  let scallop = 'M30 100';
+  for (let i = 0; i < n; i++) scallop += ' q9 7 18 0';
+  const mosaic = [156, 162, 168, 174].map((y) => `<path d="M32 ${y} H134 M180 ${y} H208" stroke-width=".7" opacity=".55"/>`).join('')
+    + Array.from({ length: 17 }, (_, i) => `<path d="M${38 + i * 6} ${150 + (i % 2) * 3} v3" stroke-width=".6" opacity=".5"/>`).join('');
+  return {
+    fills: [
+      ['paper', 'M32 52 H208 V178 H32 Z'],
+      ['skysoft', 'M32 150 H134 V178 H32 Z M180 150 H208 V178 H180 Z'],
+      ['crust', 'M60 58 H180 Q190 58 190 68 Q190 78 180 78 H60 Q50 78 50 68 Q50 58 60 58 Z'],
+      ...stripes,
+      ['skysoft', 'M44 150 V124 Q44 106 81 106 Q118 106 118 124 V150 Z'],
+      ['crust', 'M52 136 C51 129 56 125 62 125 C68 125 73 129 72 136 Z M78 136 C78 130 82 127 87 127 C92 127 96 130 95 136 Z M100 136 V128 C98 125 101 122 105 122 C109 122 112 125 110 128 V136 Z'],
+      ['wood', 'M134 106 H180 V178 H134 Z'],
+      ['skysoft', 'M140 112 H174 V160 H140 Z'],
+      ['leaf', 'M122 168 C116 167 116 158 122 158 C121 153 129 152 130 158 C135 158 135 167 129 168 Z'],
+      ['crust', 'M119 169 H133 L131 178 H121 Z'],
+    ],
+    lines: `
+      <path d="M28 46 H212 V52 H28 Z"/><path d="M32 52 V178"/><path d="M208 52 V178"/>
+      <path d="M60 58 H180 Q190 58 190 68 Q190 78 180 78 H60 Q50 78 50 68 Q50 58 60 58 Z"/>
+      <path d="M38 84 H202 L210 100"/><path d="M38 84 L30 100"/><path d="${scallop}"/>
+      ${Array.from({ length: n - 1 }, (_, i) => `<path d="M${54.4 + 16.4 * i} 84 L${48 + 18 * i} 100" stroke-width=".9"/>`).join('')}
+      <path d="M44 150 V124 Q44 106 81 106 Q118 106 118 124 V150 Z"/><path d="M81 106 V150 M44 128 H118" stroke-width="1"/>
+      <text x="81" y="121" font-size="6.5" text-anchor="middle" stroke="none" class="gold-text" font-family="Courier Prime, monospace">BAKERY</text>
+      <path d="M44 136 H118" stroke-width="1"/>
+      <path d="M52 136 C51 129 56 125 62 125 C68 125 73 129 72 136"/><path d="M78 136 C78 130 82 127 87 127 C92 127 96 130 95 136"/>
+      <path d="M100 136 V128 C98 125 101 122 105 122 C109 122 112 125 110 128 V136"/>
+      <path d="M40 150 H122 V154 H40 Z"/>
+      ${mosaic}
+      <path d="M134 106 H180 V178 H134 Z"/><path d="M140 112 H174 V160 H140 Z"/><path d="M168 132 v12" stroke-width="2.2"/>
+      <path d="M140 166 H174" stroke-width="1"/>
+      <path d="M130 178 V175 H184 V178"/>
+      <path d="M208 108 H198 V112" stroke-width="1.4"/>
+      <path d="M196 113 a9 9 0 1 0 .1 0"/><path d="M196 115.5 a6.5 6.5 0 1 0 .1 0" class="shu-line" stroke-width="1"/>
+      <text x="196" y="125" font-size="6.5" text-anchor="middle" stroke="none" fill="currentColor" class="sk-text">面包</text>
+      <path d="M122 168 C116 167 116 158 122 158 C121 153 129 152 130 158 C135 158 135 167 129 168" stroke-width="1.2"/>
+      <path d="M119 169 H133 L131 178 H121 Z"/>`,
+  };
+}
+
+function retroUpper() {
+  const arch = (x) => `M${x} 92 V68 Q${x} 58 ${x + 16} 58 Q${x + 32} 58 ${x + 32} 68 V92 Z`;
+  return {
+    fills: [['paper', 'M36 46 H204 V102 H36 Z'], ['skysoft', [56, 104, 152].map(arch).join(' ')], ['wood', 'M54 92 H90 V96 H54 Z M102 92 H138 V96 H102 Z M150 92 H186 V96 H150 Z']],
+    lines: `
+      <path d="M32 40 H208 V46 H32 Z"/><path d="M36 46 V102"/><path d="M204 46 V102"/>
+      ${[56, 104, 152].map((x) => `<path d="${arch(x)}"/><path d="M${x + 16} 58 V92 M${x} 76 H${x + 32}" stroke-width="1"/><path d="M${x - 2} 92 H${x + 34} V96 H${x - 2} Z" stroke-width="1.2"/>`).join('')}
+      <path d="M104 40 V30 M136 40 V30" stroke-width="2"/><path d="M100 40 H140" stroke-width="1.4"/>
+      ${pretzelAt(97.6, -6, 0.7)}`,
+  };
+}
+
+// ---------- Lv7–8 现代面包店 ----------
+function modernGround() {
+  const louvers = Array.from({ length: 30 }, (_, i) => `<path d="M${33 + i * 6} 50 V60" stroke-width=".8"/>`).join('');
+  const lamp = (x) => `<path d="M${x} 86 V100" stroke-width=".9"/><path d="M${x - 6} 106 Q${x} 98 ${x + 6} 106 Z" stroke-width="1.2"/>`;
+  return {
+    fills: [
+      ['paper', 'M30 50 H210 V178 H30 Z'],
+      ['tile', 'M24 44 H216 V50 H24 Z'],
+      ['wood', 'M30 50 H210 V60 H30 Z'],
+      ['skysoft', 'M38 86 H142 V172 H38 Z M150 86 H202 V178 H150 Z'],
+      ['crust', 'M58 106 Q64 98 70 106 Z M84 106 Q90 98 96 106 Z M110 106 Q116 98 122 106 Z'],
+      ['wood', 'M42 146 H138 V152 H42 Z M36 172 H144 V178 H36 Z'],
+      ['crust', 'M50 146 C49 139 54 136 60 136 C66 136 70 139 70 146 Z M80 146 V139 C78 136 81 133 85 133 C89 133 92 136 90 139 V146 Z M104 146 C104 141 108 138 113 138 C118 138 121 141 121 146 Z'],
+      ['leaf', 'M38 172 q3 -6 6 0 q3 -7 6 0 q3 -6 6 0 q3 -7 6 0 q3 -6 6 0 q3 -7 6 0 q3 -6 6 0 q3 -7 6 0 q3 -6 6 0 q3 -7 6 0 q3 -6 6 0 q3 -7 6 0 q3 -6 6 0 q3 -7 6 0 q3 -6 6 0 q3 -7 6 0 q3 -6 6 0 Z'],
+    ],
+    lines: `
+      <path d="M24 44 H216 V50 H24 Z"/><path d="M30 50 V178"/><path d="M210 50 V178"/>
+      <path d="M30 60 H210"/>${louvers}
+      <path d="M92 82 H148" stroke-width=".8"/>
+      <path d="M38 86 H142 V172 H38 Z"/><path d="M90 86 V146" stroke-width="1"/>
+      ${lamp(64)}${lamp(90)}${lamp(116)}
+      <path d="M42 146 H138 V152 H42 Z"/><path d="M46 152 V172 M134 152 V172" stroke-width="1"/>
+      <path d="M50 146 C49 139 54 136 60 136 C66 136 70 139 70 146"/>
+      <path d="M80 146 V139 C78 136 81 133 85 133 C89 133 92 136 90 139 V146"/>
+      <path d="M104 146 C104 141 108 138 113 138 C118 138 121 141 121 146"/>
+      <path d="M150 86 H202 V178 H150 Z"/><path d="M176 86 V178" stroke-width="1"/>
+      <path d="M170 116 V146 M182 116 V146" stroke-width="2.4"/>
+      <path d="M36 172 H144 V178 H36 Z"/>
+      <path d="M210 92 H232 M210 100 L218 92" stroke-width="1.8"/><path d="M226 92 V97" stroke-width="1"/>
+      ${pretzelAt(216.8, 94, 0.32)}`,
+  };
+}
+
+function modernUpper() {
+  const bushes = 'M44 44 q2 -10 12 -8 q6 -8 14 0 q8 -4 10 8 Z M150 44 q2 -9 10 -7 q7 -7 14 0 q8 -3 10 7 Z M98 44 q3 -6 9 -4 q5 -5 10 1 q5 -1 6 3 Z';
+  return {
+    fills: [['wood', 'M40 50 H200 V106 H40 Z'], ['tile', 'M34 44 H206 V50 H34 Z'], ['skysoft', 'M54 62 H182 V92 H54 Z'], ['leaf', bushes]],
+    lines: `
+      <path d="M34 44 H206 V50 H34 Z"/><path d="M40 50 V106"/><path d="M200 50 V106"/>
+      ${Array.from({ length: 9 }, (_, i) => `<path d="M40 ${56 + i * 6} H54 M182 ${56 + i * 6} H200" stroke-width=".7" opacity=".6"/>`).join('')}
+      <path d="M54 62 H182 V92 H54 Z"/><path d="M86 62 V92 M118 62 V92 M150 62 V92" stroke-width="1"/>
+      <path d="${bushes.replace(/ Z/g, '')}"/>
+      <path d="M186 64 H198 V96 H186 Z" stroke-width="1.2"/>
+      <text x="192" y="78" font-size="8" text-anchor="middle" stroke="none" fill="currentColor" class="sk-text">招</text>
+      <text x="192" y="90" font-size="8" text-anchor="middle" stroke="none" fill="currentColor" class="sk-text">牌</text>`,
   };
 }
 
@@ -326,67 +470,6 @@ function groundFloor(level) {
     <path d="M61 159 q1.5 1 3 0" stroke-width="1"/><path d="M79 162 q6 0 5 -5" stroke-width="1.2"/>
     <path d="M92 164 L94 158 H108 L110 164"/><path d="M95 158 C95 154 99 152 102 152 C105 152 108 154 107 158"/>`;
   }
-  if (level >= 5) {
-    // 门口排队的客人
-    for (const c of [customer(216, 'sky'), customer(232, 'crust'), ...(level >= 7 ? [] : [customer(248, 'leaf')])]) {
-      fills.push(...c.fills);
-      lines += c.lines;
-    }
-  }
-  if (level === 5 || level === 6) {
-    // 「现烤」「面包」两面小旗
-    for (const b of [banner(258, 'shu', '现', '烤'), banner(266, 'ai', '面', '包')]) {
-      fills.push(...b.fills);
-      lines += b.lines;
-    }
-  }
-  if (level >= 7) {
-    const t = terrace();
-    fills.push(...t.fills);
-    lines += t.lines;
-  }
-  if (level >= TWO_STORY) {
-    // 碱水面包招牌，挂在右边铁架上
-    const pz = 'M18 43 C22 36 28 30 32 26 C36 22 40 16 46 16 C54 16 58 24 56 34 C54 46 44 54 32 54 C20 54 10 46 8 34 C6 24 10 16 18 16 C24 16 28 22 32 26 C36 30 42 36 46 43';
-    lines += `
-    <path d="M204 98 H232 M204 106 L212 98" stroke-width="1.8"/><path d="M222 98 V104" stroke-width="1"/>
-    <g transform="translate(212 101) scale(.32)">
-      <path d="${pz}" stroke-width="9"/><path class="rope" d="${pz}" stroke-width="5"/>
-    </g>`;
-  }
-  if (level >= 8) {
-    // 石灯笼，立在露台的最右边
-    const sx = 100;
-    fills.push(['tile', `M${212 + sx} 178 H${234 + sx} V172 H${212 + sx} Z M${219 + sx} 172 V154 H${227 + sx} V172 Z M${210 + sx} 142 L${223 + sx} 133 L${236 + sx} 142 Z`], ['crust', `M${220 + sx} 152 V145 H${226 + sx} V152 Z`]);
-    lines += `
-    <path d="M${212 + sx} 178 H${234 + sx} V172 H${212 + sx} Z"/><path d="M${219 + sx} 172 V154 H${227 + sx} V172"/>
-    <path d="M${214 + sx} 154 H${232 + sx} V142 H${214 + sx} Z"/><path d="M${220 + sx} 152 V145 H${226 + sx} V152 Z" stroke-width="1"/>
-    <path d="M${210 + sx} 142 L${223 + sx} 133 L${236 + sx} 142 Z"/><path d="M${223 + sx} 133 v-3"/>`;
-  }
-  return { fills, lines };
-}
-
-// 二楼：两扇带窗帘的窗、窗台花箱；招牌店再挂一块「招牌」木牌
-function upperFloor(level) {
-  const y0 = 64;
-  const win = (x) => `
-    <path d="M${x} ${y0 + 6} H${x + 48} V${y0 + 36} H${x} Z"/><path d="M${x + 24} ${y0 + 6} V${y0 + 36} M${x} ${y0 + 21} H${x + 48}" stroke-width="1"/>
-    <path d="M${x + 2} ${y0 + 8} Q${x + 10} ${y0 + 18} ${x + 4} ${y0 + 34}" stroke-width="1.1"/><path d="M${x + 46} ${y0 + 8} Q${x + 38} ${y0 + 18} ${x + 44} ${y0 + 34}" stroke-width="1.1"/>
-    <path d="M${x - 2} ${y0 + 36} H${x + 50} V${y0 + 42} H${x - 2} Z"/>
-    <path d="M${x + 6} ${y0 + 36} q3 -6 6 0 M${x + 18} ${y0 + 36} q3 -7 6 0 M${x + 30} ${y0 + 36} q3 -6 6 0 M${x + 40} ${y0 + 36} q2 -5 5 0" stroke-width="1.1"/>`;
-  const fills = [
-    ['skysoft', `M56 ${y0 + 6} H104 V${y0 + 36} H56 Z M136 ${y0 + 6} H184 V${y0 + 36} H136 Z`],
-    ['wood', `M54 ${y0 + 36} H106 V${y0 + 42} H54 Z M134 ${y0 + 36} H186 V${y0 + 42} H134 Z`],
-    ['leaf', `M60 ${y0 + 36} q3 -6 6 0 Z M72 ${y0 + 36} q3 -7 6 0 Z M84 ${y0 + 36} q3 -6 6 0 Z M140 ${y0 + 36} q3 -6 6 0 Z M152 ${y0 + 36} q3 -7 6 0 Z M164 ${y0 + 36} q3 -6 6 0 Z`],
-    ['shu', `M95 ${y0 + 34} a2 2 0 1 0 .1 0 Z M175 ${y0 + 34} a2 2 0 1 0 .1 0 Z`],
-  ];
-  let lines = win(56) + win(136);
-  if (level >= 8) {
-    fills.push(['wood', `M112 ${y0 + 8} H128 V${y0 + 40} H112 Z`]);
-    lines += `<path d="M112 ${y0 + 8} H128 V${y0 + 40} H112 Z"/>
-      <text x="120" y="${y0 + 22}" font-size="9.5" text-anchor="middle" stroke="none" fill="currentColor" class="sk-text">招</text>
-      <text x="120" y="${y0 + 35}" font-size="9.5" text-anchor="middle" stroke="none" fill="currentColor" class="sk-text">牌</text>`;
-  }
   return { fills, lines };
 }
 
@@ -446,45 +529,51 @@ function stallCart() {
   `, '0 0 240 190', 'store', 1.5);
 }
 
-export function storefront(level = 3, cls = '') {
-  if (level <= 1) return stallCart().replace('class="sk store', `class="sk store ${cls}`);
-  if (level === 2) return tinyShop().replace('class="sk store', `class="sk store ${cls}`);
-  const two = level >= TWO_STORY;
-  const W = widthOf(level);
-  const dy = two ? UPPER : 0;
+// 和风町屋（Lv3–4）
+function machiya(level, cls) {
   const g = groundFloor(level);
-  const u = two ? upperFloor(level) : { fills: [], lines: '' };
   const roofRibs = Array.from({ length: 12 }, (_, i) => `<path d="M${40 + i * 15} 23 V31" stroke-width=".8" opacity=".55"/>`).join('');
-  const crown = level >= 8 ? `
-    <path d="M26 20 H214" stroke-width="2.4"/>
-    <path d="M26 20 q-8 -1 -8 -9 q5 0 8 5"/><path d="M214 20 q8 -1 8 -9 q-5 0 -8 5"/>
-    <path d="M54 34 H186 V64 H54 Z" stroke-width="1"/>` : '';
-  const pine = level >= 8 ? `
-    ${crayon([['leaf', 'M2 96 q4 -9 14 -8 q6 -7 16 -2 q8 -1 9 6 q-6 6 -18 5 q-12 4 -21 -1 Z M0 124 q3 -8 12 -7 q6 -6 14 -1 q7 0 8 5 q-5 5 -15 4 q-10 3 -19 -1 Z M6 150 q3 -7 11 -6 q6 -5 13 0 q6 0 6 5 q-5 5 -14 4 q-9 2 -16 -3 Z']])}
-    <path d="M18 ${178 + dy} C20 ${158 + dy} 10 160 16 140 C21 124 12 112 20 94" stroke-width="2.2"/>
-    <path d="M16 140 l8 -4 M18 116 l-8 -3" stroke-width="1.4"/>
-    <path d="M2 96 q4 -9 14 -8 q6 -7 16 -2 q8 -1 9 6 q-6 6 -18 5 q-12 4 -21 -1"/>
-    <path d="M0 124 q3 -8 12 -7 q6 -6 14 -1 q7 0 8 5 q-5 5 -15 4 q-10 3 -19 -1"/>
-    <path d="M6 150 q3 -7 11 -6 q6 -5 13 0 q6 0 6 5 q-5 5 -14 4 q-9 2 -16 -3"/>` : '';;
   return wrap(`
-    ${crayon([
-      ['tile', 'M22 32 L30 22 H210 L218 32 Z'],
-      ['wood', 'M60 38 H180 V60 H60 Z'],
-      ...u.fills,
-    ])}
-    ${pine}
-    <path d="M22 32 L30 22 H210 L218 32 Z"/>${roofRibs}${crown}
-    <path d="M30 32 V${72 + dy}"/><path d="M210 32 V${72 + dy}"/>
+    ${crayon([['tile', 'M22 32 L30 22 H210 L218 32 Z'], ['wood', 'M60 38 H180 V60 H60 Z'], ...g.fills])}
+    <path d="M4 178 Q120 180 236 177"/>
+    <path d="M22 32 L30 22 H210 L218 32 Z"/>${roofRibs}
+    <path d="M30 32 V72"/><path d="M210 32 V72"/>
     <path d="M60 38 H180 V60 H60 Z"/><path d="M64 42 H176" stroke-width="0.8" opacity=".5"/>
     <path d="M78 38 L82 32"/><path d="M162 38 L158 32"/>
+    ${g.lines}
+    <g transform="translate(8 145) scale(0.6)" stroke-width="2.5">${mascotBody('wave')}</g>
+  `, '0 0 240 190', `store ${cls}`, 1.5);
+}
+
+// 昭和复古（Lv5–6）和现代（Lv7–8）：一楼 + 可选二楼 + 街景
+function grownShop(level, cls) {
+  const modern = level >= 7;
+  const two = level === 6 || level === 8;
+  const dy = two ? UP : 0;
+  const W = widthOf(level);
+  const g = modern ? modernGround() : retroGround(level);
+  const u = two ? (modern ? modernUpper() : retroUpper()) : { fills: [], lines: '' };
+  const st = streetExtras(level);
+  return wrap(`
+    ${level >= 8 ? pineTree(dy) : ''}
+    ${crayon(u.fills)}
     ${u.lines}
     <g transform="translate(0 ${dy})">
-      ${crayon(g.fills)}
+      ${crayon([...g.fills, ...st.fills])}
       <path d="M4 178 Q${W / 2} 180 ${W - 4} 177"/>
       ${g.lines}
+      ${st.lines}
       <g transform="translate(8 145) scale(0.6)" stroke-width="2.5">${mascotBody('wave')}</g>
     </g>
   `, `0 0 ${W} ${190 + dy}`, `store ${cls}`, 1.5);
+}
+
+export function storefront(level = 3, cls = '') {
+  const tag = (svg) => svg.replace('class="sk store', `class="sk store ${cls}`);
+  if (level <= 1) return tag(stallCart());
+  if (level === 2) return tag(tinyShop());
+  if (level <= 4) return machiya(level, cls);
+  return grownShop(level, cls);
 }
 
 // ---------- 烤箱：显示屏位置留给 HTML 叠加倒计时 ----------

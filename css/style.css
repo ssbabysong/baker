@@ -101,6 +101,8 @@ img { max-width: 100%; display: block; }
 .sk-text { font-family: var(--title); }
 .ink-fill { fill: #fffcf5; }
 .bulb { fill: var(--crust); stroke-width: .8; }
+.gold-text { fill: #c9913a; letter-spacing: .08em; }
+.shu-line { stroke: var(--shu); }
 .blush { stroke: var(--blush); }
 .rope { stroke: var(--crust); filter: url(#crayon); }
 .salt { stroke: var(--card); }
