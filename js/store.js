@@ -191,16 +191,39 @@ export async function photoUrl(id) {
   return url;
 }
 
-// 把相机原图压缩到长边 1280，避免存储爆掉
+// 把相机原图压缩到长边 1280，避免存储爆掉。
+// 手机原图动辄几千万像素：尽量让浏览器解码时直接缩小，用完马上释放，免得内存吃紧卡死
+async function decodeImage(file, max) {
+  // onload 时只读了文件头拿到尺寸，还没整张解码，很省内存
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  const ok = await new Promise((res) => { img.onload = () => res(true); img.onerror = () => res(false); img.src = url; });
+  if (!ok || !img.naturalWidth) { URL.revokeObjectURL(url); return null; }
+  const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const w = Math.max(1, Math.round(img.naturalWidth * scale));
+  const h = Math.max(1, Math.round(img.naturalHeight * scale));
+  try {
+    // 直接解码成目标尺寸，不在内存里放一张原图大小的位图
+    const bmp = await createImageBitmap(file, { resizeWidth: w, resizeHeight: h, resizeQuality: 'high' });
+    URL.revokeObjectURL(url);
+    return { src: bmp, w, h };
+  } catch {
+    return { src: img, w, h, keepUrl: url }; // 不支持缩放解码的老系统：退回用 <img> 画
+  }
+}
+
 export async function compressImage(file, max = 1280, quality = 0.82) {
-  const bitmap = await createImageBitmap(file).catch(() => null);
-  if (!bitmap) return file;
-  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+  const d = await decodeImage(file, max);
+  if (!d) return file;
   const canvas = document.createElement('canvas');
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  return new Promise((res) => canvas.toBlob((b) => res(b || file), 'image/jpeg', quality));
+  canvas.width = d.w;
+  canvas.height = d.h;
+  canvas.getContext('2d').drawImage(d.src, 0, 0, d.w, d.h);
+  d.src.close?.();
+  if (d.keepUrl) URL.revokeObjectURL(d.keepUrl);
+  const blob = await new Promise((res) => canvas.toBlob((b) => res(b || file), 'image/jpeg', quality));
+  canvas.width = 0; canvas.height = 0; // 让 iOS 立刻回收画布内存
+  return blob;
 }
 
 // ---------- 店铺设置 & 进行中的烘焙 ----------

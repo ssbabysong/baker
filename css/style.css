@@ -170,9 +170,10 @@ h2 .more { margin-left: auto; font-size: 14px; color: var(--ink-soft); font-weig
 .btn.danger { color: var(--danger); border-color: var(--danger); background: transparent; box-shadow: none; }
 .btn.block { display: flex; width: fit-content; min-width: 160px; margin-inline: auto; }
 .btn.big {
-  border: 0; border-radius: 4px; min-height: 48px; padding: 4px 8px; font-size: 20px; color: var(--ink);
-  background: linear-gradient(transparent 58%, var(--crust-soft) 58%, var(--crust-soft) 88%, transparent 88%);
+  border: 1.8px solid var(--ink); border-radius: 999px; min-height: 52px; padding: 6px 26px; font-size: 19px; color: var(--ink);
+  background: var(--crust-soft); box-shadow: 0 3px 0 color-mix(in srgb, var(--ink) 22%, transparent);
 }
+.btn.big:active { transform: translateY(2px); box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 22%, transparent); }
 .btn.big .ic { display: none; }
 .btn.big::after { content: '→'; font-family: var(--mono); margin-left: 4px; transition: transform .2s ease; }
 .btn.big:active::after { transform: translateX(4px); }
@@ -225,6 +226,13 @@ a.card { display: block; text-decoration: none; }
 .roadmap li .t { display: grid; gap: 1px; min-width: 0; }
 .roadmap li .t b { font-family: var(--title); font-weight: 400; font-size: 16px; }
 .roadmap li.now { background: var(--crust-soft); }
+.roadmap li[data-act] { cursor: pointer; }
+.roadmap li[data-act]:active { background: var(--lens); }
+.level-big { text-align: center; }
+.level-big .storefront { width: 100%; max-width: 360px; margin: 0 auto 8px; }
+.level-big .storefront.mini .sign { font-size: 13px; }
+.level-big h3 { margin: 4px 0 2px; }
+.level-big .row { gap: 10px; margin-top: 12px; }
 .roadmap li.next .storefront { opacity: .45; filter: grayscale(.7); }
 .roadmap .here { color: var(--shu); }
 /* 升级路线和首页里的次数：用清楚的打字机数字，大一号、面包皮棕色 */
@@ -289,6 +297,16 @@ a.card { display: block; text-decoration: none; }
 .flour circle { fill: var(--card); stroke-width: .8; animation: flour 1.6s ease-out infinite; opacity: 0; }
 .flour circle:nth-child(2) { animation-delay: .4s; } .flour circle:nth-child(3) { animation-delay: .8s; } .flour circle:nth-child(4) { animation-delay: 1.2s; }
 @keyframes flour { 0% { opacity: 0; transform: translateY(0); } 30% { opacity: .9; } 100% { opacity: 0; transform: translateY(-12px); } }
+/* 整形：刮板一下下切、面团转圈收圆；装饰：裱花袋一挤一挤、巧克力滴下来 */
+.chop { animation: chop 1.1s ease-in-out infinite; }
+@keyframes chop { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(7px); } 60% { transform: translateY(7px); } }
+.roundup { transform-box: view-box; animation: roundup 1.4s ease-in-out infinite; }
+@keyframes roundup { 0%, 100% { transform: rotate(-4deg) scale(1, 1); } 50% { transform: rotate(4deg) scale(1.04, .96); } }
+.squeeze { transform-box: view-box; animation: squeeze 1.2s ease-in-out infinite; }
+@keyframes squeeze { 0%, 100% { transform: scale(1); } 50% { transform: scale(.94, 1.03); } }
+.drip { animation: drip 1.2s ease-in infinite; }
+@keyframes drip { 0% { transform: translateY(-4px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(8px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .chop, .roundup, .squeeze, .drip { animation: none; } }
 @keyframes steam { 0% { opacity: 0; transform: translateY(4px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px); } }
 
 /* 配方架：横向滚动 */
@@ -382,7 +400,19 @@ a.card { display: block; text-decoration: none; }
   display: flex; align-items: center; justify-content: center; font-size: 14px; font-family: var(--mono);
 }
 .steps > li:not(:last-child)::after { content: ''; position: absolute; left: 14px; top: 35px; bottom: 2px; border-left: 1.5px dashed color-mix(in srgb, var(--doodle) 45%, transparent); }
-.steps .meta { margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; }
+.steps .meta { margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.steps .meta:empty { display: none; }
+/* 步骤正文：还是店里的小石头字体，但用浅一点的可可色；数字用最深的墨色，这样只有数字跳出来 */
+.steps .stext { font-size: 15px; line-height: 1.7; letter-spacing: .02em; color: color-mix(in srgb, var(--ink) 62%, var(--paper)); }
+b.num { font-weight: 400; color: var(--ink); }
+/* 每一步的类型：发酵 / 烘烤 / 揉面 / 整形 / 冷却 / 装饰，各一个颜色，编号圆圈也跟着上色 */
+/* 只有两种「等」的步骤上色：发酵抹茶绿、烘烤朱红；揉面、整形、冷却、装饰都只是一个灰色小字标签 */
+.k-ferment { --k: #7d9150; } .k-bake { --k: var(--shu); }
+.kind { display: inline-flex; align-items: center; font-size: 12px; line-height: 20px; padding: 0 9px; border-radius: 999px;
+  color: var(--ink-soft); border: 1px solid var(--hair); }
+.k-ferment .kind, .kind.k-ferment, .k-bake .kind, .kind.k-bake { color: var(--k); background: color-mix(in srgb, var(--k) 12%, transparent); border-color: color-mix(in srgb, var(--k) 35%, transparent); }
+.steps > li.k-ferment::before, .steps > li.k-bake::before { border-color: var(--k); color: var(--k); }
+.bake-steps > li.current.k-ferment::before, .bake-steps > li.current.k-bake::before { background: var(--k); border-color: var(--k); color: #fff; }
 .notes { white-space: pre-wrap; }
 
 /* ---------- 表单 ---------- */
@@ -428,9 +458,11 @@ textarea.input.tall { min-height: 260px; }
 .hero-clock.ring { color: var(--danger); animation: blink 1s steps(2) infinite; }
 .hero-clock.small { font-size: 15px; color: var(--ink-soft); }
 .oven-wrap .mascot { position: absolute; right: -26%; bottom: 4%; width: 25%; }
-.step-now { display: grid; gap: 2px; justify-items: center; text-align: center; margin: 14px 8px 14px; }
+.step-now { margin: 16px 2px 18px; padding: 12px 14px 12px 16px; border-radius: 14px; background: var(--card); text-align: left;
+  border-left: 4px solid var(--k, var(--hair)); }
+.step-now .top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .step-now .n { font-size: 13px; color: var(--ink-soft); }
-.step-now b { font-size: 20px; font-weight: 400; font-family: var(--title); text-wrap: balance; }
+.step-now p { margin: 6px 0 0; font-size: 17px; line-height: 1.65; letter-spacing: .02em; color: color-mix(in srgb, var(--ink) 62%, var(--paper)); }
 /* 计时控制：一排轻量的文字按钮 */
 .timer-ctl { display: flex; justify-content: center; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
 .link-btn { display: inline-flex; align-items: center; gap: 4px; background: none; border: 0; padding: 6px 10px; border-radius: 999px; color: var(--ink-soft); font-size: 14px; cursor: pointer; }
@@ -451,7 +483,7 @@ textarea.input.tall { min-height: 260px; }
 .bake-steps > li.current::before { background: var(--shu); color: #fff; border-color: var(--shu); }
 .bake-steps > li.done { color: var(--ink-soft); }
 .bake-steps > li.done::before { content: '✓'; }
-.bake-steps > li.current .stext { font-weight: 700; }
+.bake-steps > li.done .stext, .bake-steps > li.done b.num { color: color-mix(in srgb, var(--ink) 38%, var(--paper)); }
 
 @keyframes shake { from { transform: rotate(-.6deg); } to { transform: rotate(.6deg); } }
 
@@ -461,6 +493,7 @@ textarea.input.tall { min-height: 260px; }
 /* ---------- 出炉 ---------- */
 .photo-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; aspect-ratio: 4/3; border: 1.5px dashed var(--hair); border-radius: 18px; cursor: pointer; overflow: hidden; position: relative; color: var(--ink-soft); background: var(--card); }
 .photo-drop svg.ic { width: 44px; height: 44px; }
+button.photo-drop { width: 100%; font: inherit; padding: 0; }
 .photo-drop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .rating { display: flex; gap: 6px; }
 .rating button { background: none; border: 0; padding: 2px; cursor: pointer; }

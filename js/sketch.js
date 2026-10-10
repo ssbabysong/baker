@@ -748,10 +748,65 @@ export function makeScene(cls = '', running = true) {
   `, '0 0 120 104', cls);
 }
 
-// 按步骤类型选画面：烘烤 → 烤箱，发酵 → 发酵碗，其他 → 揉面
+// 整形 / 分割：刮板一下一下切右边的长面团，左边两个小面团在转圈收圆
+export function shapeScene(cls = '') {
+  const ball = (cx, w) => dome(cx, 84, w);
+  const log = 'M80 84 C79 74 84 71 96 71 C108 71 113 74 112 84 Z';
+  return wrap(`
+    ${crayon([['wood', 'M8 84 H112 V92 H8 Z'], ['soft', ball(22, 20)], ['soft', log]], 1.2, 1.4)}
+    <path d="${ball(22, 20)}"/><path d="${log}"/>
+    <g class="roundup" style="transform-origin:52px 84px">
+      ${crayon([['soft', ball(52, 24)]], 0.8, 1)}
+      <path d="${ball(52, 24)}"/><path d="M45 76 q7 -5 14 0" stroke-width="1.2" opacity=".6"/>
+    </g>
+    <g class="chop">
+      ${crayon([['tile', 'M89 52 H103 V66 H89 Z'], ['wood', 'M89 46 H103 V52 H89 Z']], 0.8, 1)}
+      <path d="M89 52 H103 V66 H89 Z"/><path d="M89 46 H103 V52 H89 Z"/>
+    </g>
+    <g class="flour"><circle cx="14" cy="78" r="1"/><circle cx="72" cy="76" r="1.1"/><circle cx="36" cy="70" r=".8"/><circle cx="108" cy="66" r=".9"/></g>
+    <path d="M8 84 H112 V92 H8 Z"/>
+    <path d="M14 92 v8 M106 92 v8"/>
+  `, '0 0 120 104', cls);
+}
+
+// 冷却：出炉的面包躺在晾网上，冒着热气
+export function coolScene(cls = '') {
+  return wrap(`
+    ${crayon([['crust', 'M30 74 C28 56 44 48 60 48 C76 48 92 56 90 74 Z']], 0.9, 1.1)}
+    <path d="M30 74 C28 56 44 48 60 48 C76 48 92 56 90 74 Z"/>
+    <path d="M46 56 q4 4 2 10"/><path d="M58 53 q4 4 2 10"/><path d="M70 56 q4 4 2 10"/>
+    <path d="M10 76 H110 V80 H10 Z"/>
+    <path d="M20 76 V80 M30 76 V80 M40 76 V80 M50 76 V80 M60 76 V80 M70 76 V80 M80 76 V80 M90 76 V80 M100 76 V80" stroke-width="1"/>
+    <path d="M16 80 v10 M104 80 v10"/><path d="M12 90 h8 M100 90 h8"/>
+    <path d="M44 40 q-4 -5 0 -10" class="steam"/><path d="M60 36 q-4 -5 0 -10" class="steam s2"/><path d="M76 40 q-4 -5 0 -10" class="steam s3"/>
+  `, '0 0 120 104', cls);
+}
+
+// 装饰 / 挤馅：裱花袋往切开的面包里挤甘纳许，顶上撒脆脆珠
+export function decorateScene(cls = '') {
+  return wrap(`
+    ${crayon([['wood', 'M10 86 H110 V92 H10 Z'], ['crust', 'M28 84 C26 66 42 58 58 58 C74 58 90 66 88 84 Z']], 1, 1.2)}
+    <path d="M10 86 H110 V92 H10 Z"/>
+    <path d="M28 84 C26 66 42 58 58 58 C74 58 90 66 88 84 Z"/>
+    <path d="M36 70 Q58 60 80 70" stroke-width="3.4" class="ganache"/>
+    <path class="pearl" d="M40 66.5 h.1 M50 63.4 h.1 M62 62.6 h.1 M73 64.8 h.1" stroke-width="3"/>
+    <g class="squeeze" style="transform-origin:84px 22px">
+      ${crayon([['paper', 'M70 14 L100 26 L74 46 Z']], 0.6, 0.8)}
+      <path d="M70 14 L100 26 L74 46 Z"/><path d="M74 46 L70 52" stroke-width="2.6"/>
+      <path d="M76 22 q6 3 12 4" stroke-width="1" opacity=".5"/>
+    </g>
+    <circle class="drip" cx="69" cy="56" r="1.8" fill="#4a2c1e" stroke="none"/>
+  `, '0 0 120 104', cls);
+}
+
+// 按步骤类型选画面：烘烤 → 烤箱，发酵 → 烤盘上长大的面团，整形 → 刮板和小面团，
+// 冷却 / 冷藏 → 晾网，装饰 → 裱花袋，其他 → 揉面
 export function stageScene(kind, running = false, cls = '', progress = 0) {
   if (kind === 'bake') return ovenScene(cls, running);
   if (kind === 'ferment') return proofScene(cls, running, progress);
+  if (kind === 'shape') return shapeScene(cls);
+  if (kind === 'cool' || kind === 'chill') return coolScene(cls);
+  if (kind === 'decorate') return decorateScene(cls);
   return makeScene(cls, true);
 }
 
