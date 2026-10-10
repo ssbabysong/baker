@@ -1037,15 +1037,23 @@ async function viewLogs(ym) {
   const next = m === 12 ? `${y + 1}-1` : `${y}-${m + 1}`;
   const kinds = new Set(bakes.map((b) => b.recipeName)).size;
   const hours = bakes.reduce((a, b) => a + (b.finishedAt - b.startedAt), 0) / 3600000;
-  const urls = await Promise.all(bakes.map((b) => photoUrl(b.photoId)));
+  // 选中的那一天：点过的日子 > 今天（在这个月里）> 这个月最后烤过的那天
+  const inMonth = (k) => k && k.startsWith(`${y}-${pad2(m)}-`);
+  const isToday = y === now.getFullYear() && m === now.getMonth() + 1;
+  const sel = inMonth(state.calSel) ? state.calSel
+    : isToday ? ymdInput(now)
+    : bakes.length ? ymdInput(Math.max(...bakes.map((b) => b.finishedAt))) : null;
+  const dayBakes = sel ? bakes.filter((b) => ymdInput(b.finishedAt) === sel).sort((a, b) => a.finishedAt - b.finishedAt) : [];
+  const urls = await Promise.all(dayBakes.map((b) => photoUrl(b.photoId)));
+  const selDate = sel && new Date(...sel.split('-').map((v, i) => Number(v) - (i === 1 ? 1 : 0)));
+  const canBackfill = selDate && selDate <= now;
 
   return `
   <div class="cal-head">
     <div class="y">${y}</div>
     <div class="m"><button data-go="#/logs/${prev}" aria-label="${L('上个月', 'Previous month')}">${icon('back')}</button>${MONTHS[m - 1]}<button data-go="#/logs/${next}" aria-label="${L('下个月', 'Next month')}">${icon('next')}</button></div>
   </div>
-  ${monthGrid(y, m, bakes, true)}
-  <div class="backfill-cta"><a class="link-btn" href="#/backfill">${icon('plus')} ${L('补记一炉', 'Add a past bake')}</a><span class="small muted">${L('或者点日历上空着的日子', 'or tap an empty day')}</span></div>
+  ${monthGrid(y, m, bakes, true, sel)}
 
   <div class="stats cal-stats">
     <div class="stat"><b>${bakes.length}</b><span>loaves baked</span></div>
@@ -1053,17 +1061,24 @@ async function viewLogs(ym) {
     <div class="stat"><b>${hours >= 10 ? Math.round(hours) : Math.round(hours * 10) / 10}</b><span>hours</span></div>
   </div>
 
-  ${bakes.length ? `<div class="diary-list" style="margin-top:30px">${bakes.map((b, i) => `<a class="card ${i % 2 ? 'alt' : ''} diary-row" href="#/log/${b.id}">
+  ${sel ? `<div class="day-head"><b>${ymd(selDate)}</b> <span>${weekday(selDate.getDay())}</span></div>
+  ${dayBakes.length ? `<div class="diary-list">${dayBakes.map((b, i) => `<a class="card ${i % 2 ? 'alt' : ''} diary-row" href="#/log/${b.id}">
       <span class="ph">${urls[i] ? `<img src="${urls[i]}" alt="" loading="lazy">` : shape(b.shape)}</span>
-      <span class="t"><span class="date">${ymd(b.finishedAt)} · ${weekday(new Date(b.finishedAt).getDay())}</span><b>${esc(b.recipeName)}</b>
+      <span class="t"><span class="date">${hm(b.finishedAt)} ${L('出炉', 'out of the oven')}</span><b>${esc(b.recipeName)}</b>
       <span class="small muted">${b.rating ? `<span class="mini-rate">${rateStar(true).repeat(b.rating)}</span>` : ''}${b.notes ? ` ${esc(b.notes.slice(0, 22))}${b.notes.length > 22 ? '…' : ''}` : ''}</span></span></a>`).join('')}</div>`
-    : `<div class="empty" style="margin-top:20px">${mascot('wait')}<p>${L('这个月还没有开炉', 'No bakes this month yet')}</p></div>`}
+    : `<div class="empty day-empty">${mascot('wait')}<p>${L('这天没有开炉', 'No bakes on this day')}</p></div>`}
+  ${canBackfill ? `<div class="backfill-cta"><a class="link-btn" href="#/backfill/${sel}">${icon('plus')} ${dayBakes.length ? L('这天还烤了别的？补记一炉', 'Baked something else? Add it') : L('补记这一天', 'Add a bake on this day')}</a></div>` : ''}`
+  : `<div class="empty day-empty">${mascot('wait')}<p>${L('这个月还没有开炉', 'No bakes this month yet')}</p></div>
+  <div class="backfill-cta"><a class="link-btn" href="#/backfill">${icon('plus')} ${L('补记一炉', 'Add a past bake')}</a></div>`}
 
   ${diaryFoot()}`;
 }
 
+const hm = (t) => { const d = new Date(t); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+
 // 一个月的格子：做过面包的日子画上那款面包（日历页和日历小组件共用）
-function monthGrid(y, m, bakes, links) {
+// links：日历页里，点哪天就选中哪天，下面换成那天烤的面包
+function monthGrid(y, m, bakes, links, sel = null) {
   const now = new Date();
   const byDay = new Map();
   for (const b of bakes) {
@@ -1077,12 +1092,14 @@ function monthGrid(y, m, bakes, links) {
   for (let i = 0; i < firstDow; i++) cells.push('<span class="d out"></span>');
   for (let d = 1; d <= daysIn; d++) {
     const list = byDay.get(d);
+    const key = `${y}-${pad2(m)}-${pad2(d)}`;
     const today = y === now.getFullYear() && m === now.getMonth() + 1 && d === now.getDate();
-    cells.push(list
-      ? `<${links ? `a href="#/log/${list[0].id}"` : 'span'} class="d" title="${esc(list.map((b) => b.recipeName).join(', '))}">${shape(list[0].shape)}${list.length > 1 ? `<span class="cnt">${list.length}</span>` : ''}</${links ? 'a' : 'span'}>`
-      : links && new Date(y, m - 1, d) <= now
-        ? `<a class="d empty ${today ? 'today' : ''}" href="#/backfill/${y}-${pad2(m)}-${pad2(d)}" aria-label="${L('补记这一天', 'Add a bake on this day')}">${d}</a>`
-        : `<span class="d ${today ? 'today' : ''}">${d}</span>`);
+    const cls = `d ${list ? 'has' : ''} ${today ? 'today' : ''} ${key === sel ? 'sel' : ''}`;
+    const inner = list ? `${shape(list[0].shape)}${list.length > 1 ? `<span class="cnt">${list.length}</span>` : ''}` : d;
+    const title = list ? ` title="${esc(list.map((b) => b.recipeName).join(', '))}"` : '';
+    cells.push(links && (list || new Date(y, m - 1, d) <= now)
+      ? `<button class="${cls}" data-act="cal-day" data-day="${key}"${title} aria-label="${key}"${key === sel ? ' aria-pressed="true"' : ''}>${inner}</button>`
+      : `<span class="${cls}"${title}>${inner}</span>`);
   }
   return `<div class="cal">${WEEK.map((w) => `<span class="wd">${w}</span>`).join('')}${cells.join('')}</div>`;
 }
@@ -1155,6 +1172,7 @@ async function saveBackfill() {
   };
   await saveBake(bake);
   state.backfill = null;
+  state.calSel = ymdInput(finishedAt);
   go(`#/log/${bake.id}`);
   setTimeout(() => celebrate(before + 1, bake.shape), 250);
 }
@@ -1180,6 +1198,7 @@ async function editBakeTime(id) {
   const took = b.finishedAt - b.startedAt;
   b.finishedAt = Math.min(t, Date.now());
   b.startedAt = b.finishedAt - took;
+  state.calSel = ymdInput(b.finishedAt);
   await saveBake(b);
   toast(L('日期改好了', 'Date updated'));
   rerender();
@@ -1189,6 +1208,7 @@ async function editBakeTime(id) {
 async function viewLog(id) {
   const b = await getBake(id);
   if (!b) return notFound();
+  state.calSel = ymdInput(b.finishedAt); // 返回日历时停在这一天
   const url = await photoUrl(b.photoId);
   const recipe = await getRecipe(b.recipeId);
   const all = await listBakes();
@@ -1403,6 +1423,7 @@ const actions = {
     state.backfill = null;
   },
   'edit-bake-time'(el) { editBakeTime(el.dataset.id); },
+  'cal-day'(el) { state.calSel = el.dataset.day; rerender(); },
   async 'catalog-take'(el) {
     const r = await getRecipe(el.dataset.id);
     if (!r) return;
