@@ -76,6 +76,7 @@ export function normalizeRecipe(r) {
     })),
     notes: r.notes || '',
     prices: normPrices(r),
+    ...(r.sample ? { sample: r.sample, sampleLang: r.sampleLang } : {}),
     createdAt: r.createdAt || now,
     updatedAt: now,
     version: (r.version || 0) + 1,

@@ -1357,8 +1357,9 @@ const actions = {
     try { localStorage.setItem('baker-theme', v); } catch { /* 无痕模式 */ }
     rerender();
   },
-  'lang'(el) {
+  async 'lang'(el) {
     setLang(el.dataset.v);
+    await localizeSamples();
     document.title = APP_NAME();
     renderTabs('shop');
     renderTabClock();
@@ -1507,10 +1508,42 @@ async function seedSamples() {
   if (!todo.length) return;
   const names = new Set((await db.all('recipes')).map((r) => r.name));
   for (const r of todo) {
-    if (!names.has(r.name)) await saveRecipe(r);
+    if (!names.has(r.name)) await saveRecipe({ ...r, sample: r.key, sampleLang: getLang() });
     done.push(r.key);
   }
   await db.setKv('seededSamples', done);
+}
+
+// 内置配方跟着界面语言走：没改过的就换成另一种语言的版本（id、价签、做过的记录都不变）；改过的保持原样
+const sampleBody = (r) => JSON.stringify([r.name, r.yield || '', r.notes || '',
+  r.ingredients.map((i) => [i.name, i.amount ?? null, i.unit || '', i.note || '']),
+  r.steps.map((st) => [st.text, st.minutes ?? null, st.kind || 'other'])]);
+async function localizeSamples() {
+  const lang = getLang();
+  const target = lang === 'en' ? SAMPLE_RECIPES_EN : SAMPLE_RECIPES;
+  const sets = { zh: SAMPLE_RECIPES, en: SAMPLE_RECIPES_EN };
+  for (const r of await db.all('recipes')) {
+    // 老数据没有记 sample：按名字认一下是不是内置的
+    let key = r.sample;
+    let from = r.sampleLang;
+    if (!key) {
+      for (const [lg, list] of Object.entries(sets)) {
+        const hit = list.find((x) => x.name === r.name);
+        if (hit) { key = hit.key; from = lg; break; }
+      }
+    }
+    if (!key || from === lang) continue;
+    const orig = sets[from]?.find((x) => x.key === key);
+    const next = target.find((x) => x.key === key);
+    if (!orig || !next || sampleBody(r) !== sampleBody(orig)) continue; // 改过了，不动
+    await db.put('recipes', {
+      ...r,
+      name: next.name, yield: next.yield, notes: next.notes, shape: r.shape || next.shape,
+      ingredients: next.ingredients.map((i, n) => ({ id: r.ingredients[n]?.id || uid(), note: '', ...i })),
+      steps: next.steps.map((st, n) => ({ id: r.steps[n]?.id || uid(), ...st })),
+      sample: key, sampleLang: lang,
+    });
+  }
 }
 
 async function boot() {
@@ -1524,6 +1557,7 @@ async function boot() {
   state.shop = await getShop();
   if (!(await db.getKv('shop'))) await saveShop(state.shop);
   await seedSamples();
+  await localizeSamples();
   state.sessions = await getSessions();
   for (const s of state.sessions) s.editing = false;
   await refreshPermission();
