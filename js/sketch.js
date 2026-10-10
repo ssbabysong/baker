@@ -240,24 +240,38 @@ export function ovenScene(cls = '', baking = false) {
   `, '0 0 120 104', cls);
 }
 
-// 发酵：盖着的碗里，面团闭着眼睛慢慢鼓起来，冒小泡泡，飘出 z z
-export function proofScene(cls = '', running = false) {
+// 发酵：烤盘上一排排小面团，跟着发酵进度一点点变大（progress 0→1），等待时还会轻轻呼吸
+// 圆滚滚的小面团：底部略宽、顶部圆，像刚滚圆放上烤盘的样子
+const dome = (cx, y, w) => {
+  const h = w * 0.5;
+  const x0 = cx - w / 2;
+  const x1 = cx + w / 2;
+  return `M${x0} ${y} C${x0 - w * 0.04} ${y - h * 0.7} ${cx - w * 0.32} ${y - h} ${cx} ${y - h} C${cx + w * 0.32} ${y - h} ${x1 + w * 0.04} ${y - h * 0.7} ${x1} ${y} Q${cx} ${y + w * 0.06} ${x0} ${y} Z`;
+};
+const PROOF_BUNS = [
+  // 后排小一点、前排大一点，做出一点透视
+  [36, 58, 15], [60, 58, 15], [84, 58, 15],
+  [26, 70, 19], [60, 70, 19], [94, 70, 19],
+];
+export function proofScene(cls = '', running = false, progress = 0) {
+  const g = (0.66 + 0.34 * Math.min(1, Math.max(0, progress))).toFixed(3);
+  const buns = PROOF_BUNS.map(([cx, y, w], k) => `
+    <g class="bun" style="transform-origin:${cx}px ${y}px">
+      <g class="${running ? 'breathe' : ''}" style="transform-origin:${cx}px ${y}px;animation-delay:${(k * 0.55).toFixed(2)}s">
+        ${crayon([['soft', dome(cx, y, w)]], 0.6, 0.8)}
+        <path d="${dome(cx, y, w)}"/>
+        ${k === 4 ? `<path d="M${cx - 5} ${y - 6} q1.5 1.5 3 0" stroke-width="1.3"/><path d="M${cx + 2} ${y - 6} q1.5 1.5 3 0" stroke-width="1.3"/><path d="M${cx - 1.5} ${y - 3} q1.5 1 3 0" stroke-width="1.2"/>` : ''}
+      </g>
+    </g>`).join('');
   return wrap(`
-    ${crayon([['skysoft', 'M16 60 C18 88 38 96 60 96 C82 96 102 88 104 60 Z'], ['ai', 'M16 60 C18 66 22 72 26 76 H94 C98 72 102 66 104 60 Z']], 1.4, 1.6)}
-    <g class="${running ? 'proof' : ''}">
-      ${crayon([['soft', 'M24 60 C24 40 42 30 60 30 C78 30 96 40 96 60 Z']], 0.8, 1)}
-      <path d="M24 60 C24 40 42 30 60 30 C78 30 96 40 96 60"/>
-      <path d="M48 46 q3 3 6 0" stroke-width="1.8"/><path d="M66 46 q3 3 6 0" stroke-width="1.8"/>
-      <path d="M56 53 q4 2.5 8 0" stroke-width="1.6"/>
-      <path d="M42 50 h3" class="blush" stroke-width="2.4"/><path d="M75 50 h3" class="blush" stroke-width="2.4"/>
-      ${running ? '<circle class="bub" cx="36" cy="48" r="2" stroke-width="1.2"/><circle class="bub b2" cx="82" cy="44" r="1.6" stroke-width="1.2"/><circle class="bub b3" cx="60" cy="36" r="1.4" stroke-width="1.2"/>' : ''}
-    </g>
-    <path d="M12 60 H108"/>
-    <path d="M16 60 C18 88 38 96 60 96 C82 96 102 88 104 60"/>
-    <path d="M26 76 H94" stroke-width="1.4"/>
-    <path d="M44 96 L42 100 H78 L76 96" stroke-width="1.8"/>
-    ${running ? `<text class="zz" x="96" y="26" font-size="12" stroke="none" fill="currentColor" font-family="Courier Prime, monospace">z</text>
-      <text class="zz z2" x="104" y="16" font-size="9" stroke="none" fill="currentColor" font-family="Courier Prime, monospace">z</text>` : ''}
+    ${crayon([['tile', 'M8 72 L22 50 H98 L112 72 Z'], ['tile', 'M8 72 H112 V78 H8 Z'], ['paper', 'M16 69 L27 53 H93 L104 69 Z']], 1.2, 1.4)}
+    <path d="M8 72 L22 50 H98 L112 72 Z"/>
+    <path d="M16 69 L27 53 H93 L104 69 Z" stroke-width=".9" opacity=".6"/>
+    <path d="M8 72 H112 V78 H8 Z"/>
+    <path d="M16 84 h88" stroke-width="1" opacity=".35"/>
+    <g class="grow" data-grow-scale style="--g:${g}">${buns}</g>
+    ${running ? `<text class="zz" x="70" y="38" font-size="10" stroke="none" fill="currentColor" font-family="Courier Prime, monospace">z</text>
+      <text class="zz z2" x="76" y="30" font-size="8" stroke="none" fill="currentColor" font-family="Courier Prime, monospace">z</text>` : ''}
   `, '0 0 120 104', cls);
 }
 
@@ -280,9 +294,9 @@ export function makeScene(cls = '', running = true) {
 }
 
 // 按步骤类型选画面：烘烤 → 烤箱，发酵 → 发酵碗，其他 → 揉面
-export function stageScene(kind, running = false, cls = '') {
+export function stageScene(kind, running = false, cls = '', progress = 0) {
   if (kind === 'bake') return ovenScene(cls, running);
-  if (kind === 'ferment') return proofScene(cls, running);
+  if (kind === 'ferment') return proofScene(cls, running, progress);
   return makeScene(cls, true);
 }
 

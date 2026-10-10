@@ -48,6 +48,8 @@ function toast(msg) {
 // 只有发酵和烘烤这两种"等待"的步骤才有计时器；揉面、整形之类做完点一下就好
 const TIMED_KINDS = new Set(['ferment', 'bake']);
 const isTimed = (st) => !!(st && st.minutes && TIMED_KINDS.has(st.kind));
+const progressOf = (t) => (t ? (t.done ? 1 : 1 - remainingMs(t) / t.durationMs) : 0);
+const growScale = (p) => (0.66 + 0.34 * Math.min(1, Math.max(0, p))).toFixed(3);
 
 const KIND_LABEL = { ferment: '发酵', bake: '烘烤', rest: '静置', chill: '冷藏', knead: '揉面', other: '' };
 
@@ -210,8 +212,9 @@ async function viewShop() {
   if (s) {
     const cur = s.recipe.steps[s.current];
     const running = s.timers.filter((t) => !t.done);
-    ovenHtml = `<a class="card oven-card" href="#/bake">
-      ${stageScene(cur?.kind, running.length > 0)}
+    const curT = cur && s.timers.find((t) => t.stepId === cur.id);
+    ovenHtml = `<a class="card oven-card" href="#/bake" ${curT ? `data-grow="${curT.id}"` : ''}>
+      ${stageScene(cur?.kind, running.length > 0, '', progressOf(curT))}
       <div class="info"><b>${esc(s.recipe.name)}</b>
         <span class="small muted">第 ${Math.min(s.current + 1, s.recipe.steps.length)}/${s.recipe.steps.length} 步${cur ? ` · ${esc(cur.text.slice(0, 16))}` : ''}</span>
         ${running.map((t) => `<div class="small">${icon('timer')} <span class="mono" data-clock="${t.id}">${formatClock(remainingMs(t))}</span> ${esc(t.label)}</div>`).join('')}
@@ -592,7 +595,7 @@ function bakeHero(s) {
     const t = curTimer;
     const clock = t ? `<div class="hero-clock ${t.done ? 'ring' : ''}" data-clock="${t.id}">${clockText(t)}</div>`
       : timed ? `<div class="hero-clock">${formatClock(cur.minutes * 60000)}</div>` : '';
-    scene = `<div class="oven-wrap">${stageScene('ferment', running)}${mascot(mood)}</div>${clock}`;
+    scene = `<div class="oven-wrap" ${t ? `data-grow="${t.id}"` : ''}>${stageScene('ferment', running, '', progressOf(t))}${mascot(mood)}</div>${clock}`;
   } else {
     // 别的步骤在做的时候，如果之前的发酵/烘烤计时还在跑，用一行小字提醒
     const other = ringing || live[0];
@@ -677,6 +680,10 @@ function tick() {
   document.querySelectorAll('[data-clock]').forEach((el) => {
     const t = s.timers.find((x) => x.id === el.dataset.clock);
     if (t) el.textContent = t.done ? '时间到！' : formatClock(remainingMs(t, now));
+  });
+  document.querySelectorAll('[data-grow]').forEach((el) => {
+    const t = s.timers.find((x) => x.id === el.dataset.grow);
+    el.querySelector('[data-grow-scale]')?.style.setProperty('--g', growScale(progressOf(t)));
   });
   const el = document.querySelector('[data-elapsed]');
   if (el) el.textContent = fmtDur(now - s.startedAt);
