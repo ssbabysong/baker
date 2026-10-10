@@ -372,6 +372,19 @@ function modernShop(level) {
     <path d="M51 ${G - 18} C36 ${G - 20} 38 ${G - 44} 51 ${G - 42} C64 ${G - 44} 66 ${G - 20} 51 ${G - 18}" stroke-width="1.3"/>
     <path d="M212 112 H234 M212 120 L220 112" stroke-width="1.8"/><path d="M228 112 V117" stroke-width="1"/>
     ${pretzelAt(218.8, 114, 0.32)}`;
+  if (level === 7) {
+    // 屋顶：金属双坡顶 + 竖向压条，屋檐挑出来一点；烤炉的烟囱冒着一缕烟
+    const seams = Array.from({ length: 15 }, (_, i) => {
+      const x = 30 + i * 13;
+      const y = 40 - (x <= 121 ? (x - 18) : (224 - x)) * 0.31;
+      return `<path d="M${x} 40 V${y.toFixed(1)}" stroke-width=".7" opacity=".55"/>`;
+    }).join('');
+    fills.push(['tile', 'M18 40 L121 8 L224 40 Z'], ['wood', 'M168 22 H180 V8 H168 Z']);
+    lines += `
+      <path d="M168 23 V8 H180 V27"/><path d="M174 2 q-4 -4 1 -7 q5 -3 1 -7" stroke-width="1.2"/>
+      <path d="M18 40 L121 8 L224 40"/><path d="M14 41 H228" stroke-width="2"/>${seams}
+      <path d="M112 30 H130 V36 H112 Z" stroke-width="1.1"/>`;
+  }
   if (level >= 8) {
     // 入口旁一块黄铜「招牌」
     fills.push(['crust', 'M40 140 H62 V184 H40 Z']);
