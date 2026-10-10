@@ -86,3 +86,38 @@ test('辅助函数', () => {
   assert.equal(formatMinutes(1.5), '1分钟30秒');
   assert.equal(parseNumber('½'), 0.5);
 });
+
+test('parseRecipeText: 下厨房复制出来的排版（名字和用量分两行、步骤序号单独一行）', () => {
+  const r = parseRecipeText(`北海道吐司
+9.1 综合评分
+128 人做过这道菜
+用料
+高筋面粉
+270g
+细砂糖
+40g
+盐
+3g
+黄油
+25g
+炼乳
+适量
+做法
+1
+除黄油外所有材料揉成团，加入黄油揉出膜
+2
+一次发酵 60分钟
+3
+170°C 烤 35分钟
+小贴士
+出炉马上脱模`);
+  assert.equal(r.name, '北海道吐司');
+  assert.equal(r.ingredients.length, 5);
+  assert.deepEqual(r.ingredients[0], { name: '高筋面粉', amount: 270, unit: 'g', note: '' });
+  assert.equal(r.ingredients[4].name, '炼乳');
+  assert.equal(r.steps.length, 3);
+  assert.equal(r.steps[1].minutes, 60);
+  assert.equal(r.steps[1].kind, 'ferment');
+  assert.equal(r.steps[2].kind, 'bake');
+  assert.equal(r.notes, '出炉马上脱模');
+});

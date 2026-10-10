@@ -554,7 +554,7 @@ Steps:
 function viewImport() {
   return `
   <div class="topbar"><a class="btn icon ghost" href="#/recipes" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1>${L('导入配方', 'Import a recipe')}</h1></div>
-  <p class="muted small">${L('把食谱整段粘贴进来就好——小红书、公众号、笔记里抄的都行。我会认出<span class="scribble">材料和用量</span>、<span class="scribble">每一步和它的时间</span>，导入后还能再改。',
+  <p class="muted small">${L('把食谱整段粘贴进来就好——下厨房、小红书、公众号、笔记里抄的都行。我会认出<span class="scribble">材料和用量</span>、<span class="scribble">每一步和它的时间</span>，导入后还能再改。',
     'Paste a whole recipe from anywhere. I’ll pick out the <span class="scribble">ingredients and amounts</span> and <span class="scribble">each step with its time</span>; you can tweak it after.')}</p>
   <textarea class="input tall" id="import-text" placeholder="${esc(IMPORT_EXAMPLE())}"></textarea>
   <div class="row" style="margin-top:12px">

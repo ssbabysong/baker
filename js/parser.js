@@ -95,8 +95,29 @@ export function parseStep(line) {
   return { text, minutes: parseDuration(text), kind: guessStepKind(text) };
 }
 
+// 从下厨房、小红书之类的网页 / app 复制出来的文字，常见两种排版：
+// 用料是「名字」一行、「用量」下一行；做法前面单独一行步骤序号「1」。先把它们整理成一行一条。
+const AMOUNT_ONLY = new RegExp(`^(?:${NUM}\\s*(?:${UNIT_RE})?|适量|少许|少量|一小撮|若干|to taste|as needed)$`, 'i');
+const SITE_JUNK = /^(?:\d+(?:\.\d+)?\s*)?(?:综合评分|人做过这道菜|收藏|分享|举报|下厨房|做过这道菜|上传我做的|加入菜单)$/;
+function tidyLines(lines) {
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\d{1,2}$/.test(line) || /^(?:步骤|step)\s*\d{1,2}$/i.test(line) || SITE_JUNK.test(line)) continue;
+    const next = lines[i + 1];
+    const isHeader = SECTION_ING.test(line) || SECTION_STEP.test(line);
+    if (next && !isHeader && !/\d/.test(line) && line.length <= 20 && AMOUNT_ONLY.test(next)) {
+      out.push(`${line} ${next}`);
+      i++;
+      continue;
+    }
+    out.push(line);
+  }
+  return out;
+}
+
 export function parseRecipeText(input) {
-  const lines = String(input || '').split(/\r?\n/).map((l) => l.trim());
+  const lines = tidyLines(String(input || '').split(/\r?\n/).map((l) => l.trim()));
   const recipe = { name: '', ingredients: [], steps: [], notes: '' };
   let mode = null;
   const notes = [];
