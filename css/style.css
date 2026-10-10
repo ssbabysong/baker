@@ -658,4 +658,11 @@ dialog h3 { margin: 0 0 8px; font-size: 21px; }
 .bg-timer b { font-weight: 400; font-size: 16px; color: var(--k, var(--ink)); }
 .bg-timer .go { color: var(--ink-soft); font-size: 13px; }
 .bg-timer.ring b { animation: blink 1s steps(2) infinite; }
-.end-early { display: flex; margin: 6px auto 0; }
+/* 「边等边做下一步」：主按钮下面一个小一号的描边按钮 */
+.ahead-btn { display: flex; margin: 12px auto 0; }
+.ahead-btn .ic { width: 16px; height: 16px; }
+/* 按钮下面预告下一步做什么 */
+.up-next { display: flex; gap: 8px; align-items: baseline; max-width: 340px; margin: 14px auto 0; padding-top: 10px; border-top: 1.5px dashed var(--hair);
+  font-size: 14px; line-height: 1.6; color: color-mix(in srgb, var(--ink) 55%, var(--paper)); text-align: left; }
+.up-next .n { flex: none; font-size: 12px; padding: 0 8px; border: 1px solid var(--hair); border-radius: 999px; color: var(--ink-soft); }
+.up-next span:last-child { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

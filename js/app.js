@@ -762,6 +762,11 @@ function bakeHero(s) {
       }).join('')}`;
   }
 
+  // 下一步要做什么：往后第一个还没做、也不在后台计时的步骤
+  const aheadIdx = r.steps.findIndex((st, i) => i > s.current && !s.doneSteps.includes(st.id) && !s.timers.some((t) => t.stepId === st.id && !t.done));
+  const ahead = aheadIdx >= 0 ? r.steps[aheadIdx] : null;
+  const upNext = cur ? `<div class="up-next"><span class="n">${L('下一步', 'Next')}</span>${ahead
+    ? `<span>${stepHtml(ahead.text)}</span>` : `<span>${L('出炉，拍照记录', 'Take it out and snap a photo')}</span>`}</div>` : '';
   let action;
   let hint;
   if (!cur) {
@@ -770,12 +775,10 @@ function bakeHero(s) {
   } else if (timed && !curTimer) {
     action = `<button class="btn primary big block" data-act="timer-start" data-id="${cur.id}">${startWord(kind)} · ${formatMinutes(stepMin(cur))}</button>`;
     hint = L('按下就开始计时，时间到会叫你', 'Tap to start the timer. I’ll call you when it’s time');
-  } else if (running && r.steps.some((st, i) => i > s.current && !s.doneSteps.includes(st.id))) {
-    action = `<button class="btn primary big block" data-act="step-ahead">${kind === 'ferment' ? L('边发酵，边做下一步', 'Do the next step while it proofs') : L('边烤，边做下一步', 'Do the next step while it bakes')}</button>
-      <button class="link-btn end-early" data-act="step-done" data-id="${cur.id}">${icon('check')} ${kind === 'ferment' ? L('已经发好了，提前结束', 'It’s ready, end early') : L('已经烤好了，提前出炉', 'It’s done, end early')}</button>`;
-    hint = L('计时会在后台继续走，时间到了会叫你', 'The timer keeps running in the background and will call you');
   } else {
-    action = `<button class="btn primary big block" data-act="step-done" data-id="${cur.id}">${icon('check')} ${L('这步好了，下一步', 'Done, next step')}</button>`;
+    // 主按钮永远是「这步好了，下一步」；发酵 / 烘烤还在计时、后面又有能先做的步骤时，多一个「边等边做下一步」
+    action = `<button class="btn primary big block" data-act="step-done" data-id="${cur.id}">${icon('check')} ${L('这步好了，下一步', 'Done, next step')}</button>
+      ${running && ahead ? `<button class="btn sm ahead-btn" data-act="step-ahead">${icon('timer')} ${kind === 'ferment' ? L('边发酵，边做下一步', 'Next step while it proofs') : L('边烤，边做下一步', 'Next step while it bakes')}</button>` : ''}`;
     hint = running ? (kind === 'ferment' ? L('面团在睡觉长大，安心去做别的吧', 'The dough is napping and growing. Go do something else')
       : L('烤箱在努力，时间到我会叫你', 'The oven’s on it. I’ll call you'))
       : curTimer?.done ? L('时间到啦，看看状态再进行下一步', 'Time’s up. Check it, then move on') : L('慢慢来，做完这步就点一下', 'Take your time. Tap when this step is done');
@@ -788,6 +791,7 @@ function bakeHero(s) {
       <p>${stepHtml(cur.text)}</p></div>` : ''}
     ${action}
     <p class="hero-hint">${hint}</p>
+    ${upNext}
   </div>`;
 }
 
