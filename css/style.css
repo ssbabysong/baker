@@ -221,6 +221,8 @@ a.card { display: block; text-decoration: none; }
 .roadmap li.now { background: var(--crust-soft); }
 .roadmap li.next .storefront { opacity: .45; filter: grayscale(.7); }
 .roadmap .here { color: var(--shu); }
+/* 升级路线里的次数：用清楚的打字机数字，大一号、深一点 */
+.roadmap .need { font-family: 'Courier Prime', 'Courier New', monospace; font-weight: 700; font-size: 16px; color: var(--ink); padding: 0 2px; }
 .celebrate > .storefront { max-width: 260px; margin: 0 auto 6px; }
 .shop-meta { text-align: center; margin-top: 4px; }
 .shop-meta .lv { display: inline-block; padding: 1px 12px; border-radius: 999px; font-size: 14px; background: var(--card); box-shadow: var(--shadow); }

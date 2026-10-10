@@ -167,7 +167,7 @@ const tiles = (x0, x1, y, w) => {
 // Lv1–2 木造：周末小推车 → 私房小铺（单间小铺）
 // Lv3–4 和风町屋：熟客小店（灯笼、长椅和猫、红毡长凳和红伞）→ 街角面包店（门面往右扩、第二扇大橱窗、一对灯笼、窗台香草、自行车）
 // Lv5–6 昭和复古：排队小店（红白条纹布篷、拱形橱窗、马赛克瓷砖、搪瓷招牌、门口排队）→ 两层小楼（拱窗二楼、屋顶大碱水面包）
-// Lv7–8 现代：露台面包店（两层楼、木饰面、钢框窗、暖光吊灯、黄铜门把手、橄榄树、白伞露台）→ 旗舰面包店（三层、屋顶露台、黄铜「招牌」、松树、石灯笼）
+// Lv7–8 现代：露台面包店（两层楼、单坡屋顶带高窗、木饰面、钢框窗、暖光吊灯、黄铜门把手、橄榄树、白伞露台）→ 旗舰面包店（三层、屋顶露台、黄铜「招牌」、松树、石灯笼）
 // 招牌上的店名由 HTML 叠加，位置用 storefrontSign(level) 取
 
 const UP = 56; // 两层的店加盖的二楼高度
@@ -325,6 +325,15 @@ function retroUpper() {
 }
 
 // ---------- Lv7–8 现代面包店：两层楼，坐标直接按地面 y=234 画；旗舰店再在上面加一层和屋顶露台 ----------
+// Lv7 的屋顶：单坡屋顶往右边斜上去，三角墙上开一排高窗
+function lv7Roof() {
+  return {
+    fills: [['paper', 'M30 40 L212 14 V40 Z'], ['wood', 'M30 40 L72 34 V40 Z'], ['tile', 'M14 44 L228 10 L228 16 L14 50 Z'], ['skysoft', 'M96 34 L196 20 V30 L96 38 Z']],
+    lines: `<path d="M14 44 L228 10 L228 16 L14 50 Z"/><path d="M20 48 L222 16" stroke-width=".8" opacity=".5"/>
+      <path d="M212 14 V40"/><path d="M96 34 L196 20 V30 L96 38 Z" stroke-width="1.6"/><path d="M121 31 V37 M146 27 V34 M171 24 V31" stroke-width=".9"/>`,
+  };
+}
+
 function modernShop(level) {
   const G = 178 + UP; // 地面
   const slats = Array.from({ length: 8 }, (_, i) => `<path d="M${35 + i * 5} 40 V${G}" stroke-width=".7" opacity=".7"/>`).join('');
@@ -373,17 +382,9 @@ function modernShop(level) {
     <path d="M212 112 H234 M212 120 L220 112" stroke-width="1.8"/><path d="M228 112 V117" stroke-width="1"/>
     ${pretzelAt(218.8, 114, 0.32)}`;
   if (level === 7) {
-    // 屋顶：金属双坡顶 + 竖向压条，屋檐挑出来一点；烤炉的烟囱冒着一缕烟
-    const seams = Array.from({ length: 15 }, (_, i) => {
-      const x = 30 + i * 13;
-      const y = 40 - (x <= 121 ? (x - 18) : (224 - x)) * 0.31;
-      return `<path d="M${x} 40 V${y.toFixed(1)}" stroke-width=".7" opacity=".55"/>`;
-    }).join('');
-    fills.push(['tile', 'M18 40 L121 8 L224 40 Z'], ['wood', 'M168 22 H180 V8 H168 Z']);
-    lines += `
-      <path d="M168 23 V8 H180 V27"/><path d="M174 2 q-4 -4 1 -7 q5 -3 1 -7" stroke-width="1.2"/>
-      <path d="M18 40 L121 8 L224 40"/><path d="M14 41 H228" stroke-width="2"/>${seams}
-      <path d="M112 30 H130 V36 H112 Z" stroke-width="1.1"/>`;
+    const r = lv7Roof();
+    fills.push(...r.fills);
+    lines += r.lines;
   }
   if (level >= 8) {
     // 入口旁一块黄铜「招牌」

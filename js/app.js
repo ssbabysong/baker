@@ -86,13 +86,13 @@ async function showRoadmap() {
   const cur = levelOf(n);
   await dialog(`<div class="roadmap">
     <h3>升级路线</h3>
-    <p class="small muted">每出炉一次就离下一级近一点。现在累计出炉 <b class="mono">${n}</b> 次。</p>
+    <p class="small muted">每出炉一次就离下一级近一点。现在累计出炉 <b class="need">${n}</b> 次。</p>
     <ol>${LEVELS.map((L, i) => {
       const state = i + 1 < cur.lv ? 'past' : i + 1 === cur.lv ? 'now' : 'next';
       return `<li class="${state}">${shopFront(i + 1, '', true)}
         <div class="t"><b>Lv.${i + 1} ${L.name}</b>
           <span class="small muted">${L.desc}</span>
-          <span class="small ${state === 'now' ? 'here' : 'muted'}">${state === 'now' ? '你在这里' : state === 'past' ? '已达成' : `出炉 ${L.at} 次解锁`}</span></div></li>`;
+          <span class="small ${state === 'now' ? 'here' : 'muted'}">${state === 'now' ? '你在这里' : state === 'past' ? '已达成' : `出炉 <b class="need">${L.at}</b> 次解锁`}</span></div></li>`;
     }).join('')}</ol>
     <div class="row" style="justify-content:center"><button class="btn primary" data-dlg="ok">知道啦</button></div>
   </div>`);
