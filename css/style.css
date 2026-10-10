@@ -38,7 +38,6 @@
   --hair: rgba(74, 58, 46, .14);              /* 细分隔线 / 轻描边 */
   --font: 'ShopFont', 'PingFang SC', 'Noto Sans SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
   --title: 'ShopFont', 'ZCOOL KuaiLe', 'PingFang SC', 'Noto Sans SC', sans-serif;
-  --plain: 'PingFang SC', 'Noto Sans SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;  /* 步骤正文：细一点的黑体，好读 */
   --mono: 'Courier Prime', 'Courier New', 'ShopFont', ui-monospace, monospace;   /* 中文字落到小石头 */
   --tabbar-h: 64px;
   --glass: rgba(255, 252, 245, .58);          /* 菜单栏：半透明玻璃 */
@@ -402,16 +401,17 @@ a.card { display: block; text-decoration: none; }
 .steps > li:not(:last-child)::after { content: ''; position: absolute; left: 14px; top: 35px; bottom: 2px; border-left: 1.5px dashed color-mix(in srgb, var(--doodle) 45%, transparent); }
 .steps .meta { margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .steps .meta:empty { display: none; }
-/* 步骤正文用细一点的字，只有数字加粗 */
-.steps .stext { font-family: var(--plain); font-size: 15.5px; line-height: 1.6; color: var(--ink); }
-b.num { font-weight: 700; font-family: var(--plain); }
+/* 步骤正文：还是店里的小石头字体，但用浅一点的可可色；数字用最深的墨色，这样只有数字跳出来 */
+.steps .stext { font-size: 15px; line-height: 1.7; letter-spacing: .02em; color: color-mix(in srgb, var(--ink) 62%, var(--paper)); }
+b.num { font-weight: 400; color: var(--ink); }
 /* 每一步的类型：发酵 / 烘烤 / 揉面 / 整形 / 冷却 / 装饰，各一个颜色，编号圆圈也跟着上色 */
-.k-ferment { --k: #7d9150; } .k-bake { --k: var(--shu); } .k-knead { --k: #a0703f; } .k-shape { --k: #4d6a9a; }
-.k-cool { --k: #5f97ad; } .k-decorate { --k: #8d5b3c; } .k-rest, .k-chill { --k: #8b8378; }
+/* 只有两种「等」的步骤上色：发酵抹茶绿、烘烤朱红；揉面、整形、冷却、装饰都只是一个灰色小字标签 */
+.k-ferment { --k: #7d9150; } .k-bake { --k: var(--shu); }
 .kind { display: inline-flex; align-items: center; font-size: 12px; line-height: 20px; padding: 0 9px; border-radius: 999px;
-  color: var(--k); background: color-mix(in srgb, var(--k) 14%, transparent); border: 1px solid color-mix(in srgb, var(--k) 40%, transparent); }
-.steps > li[class*="k-"]::before { border-color: var(--k); color: var(--k); }
-.bake-steps > li.current[class*="k-"]::before { background: var(--k); border-color: var(--k); color: #fff; }
+  color: var(--ink-soft); border: 1px solid var(--hair); }
+.k-ferment .kind, .kind.k-ferment, .k-bake .kind, .kind.k-bake { color: var(--k); background: color-mix(in srgb, var(--k) 12%, transparent); border-color: color-mix(in srgb, var(--k) 35%, transparent); }
+.steps > li.k-ferment::before, .steps > li.k-bake::before { border-color: var(--k); color: var(--k); }
+.bake-steps > li.current.k-ferment::before, .bake-steps > li.current.k-bake::before { background: var(--k); border-color: var(--k); color: #fff; }
 .notes { white-space: pre-wrap; }
 
 /* ---------- 表单 ---------- */
@@ -461,7 +461,7 @@ textarea.input.tall { min-height: 260px; }
   border-left: 4px solid var(--k, var(--hair)); }
 .step-now .top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .step-now .n { font-size: 13px; color: var(--ink-soft); }
-.step-now p { margin: 6px 0 0; font-family: var(--plain); font-size: 17px; line-height: 1.55; color: var(--ink); }
+.step-now p { margin: 6px 0 0; font-size: 17px; line-height: 1.65; letter-spacing: .02em; color: color-mix(in srgb, var(--ink) 62%, var(--paper)); }
 /* 计时控制：一排轻量的文字按钮 */
 .timer-ctl { display: flex; justify-content: center; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
 .link-btn { display: inline-flex; align-items: center; gap: 4px; background: none; border: 0; padding: 6px 10px; border-radius: 999px; color: var(--ink-soft); font-size: 14px; cursor: pointer; }
@@ -482,8 +482,7 @@ textarea.input.tall { min-height: 260px; }
 .bake-steps > li.current::before { background: var(--shu); color: #fff; border-color: var(--shu); }
 .bake-steps > li.done { color: var(--ink-soft); }
 .bake-steps > li.done::before { content: '✓'; }
-.bake-steps > li.current .stext { color: var(--ink); }
-.bake-steps > li.done .stext { color: var(--ink-soft); }
+.bake-steps > li.done .stext, .bake-steps > li.done b.num { color: color-mix(in srgb, var(--ink) 38%, var(--paper)); }
 
 @keyframes shake { from { transform: rotate(-.6deg); } to { transform: rotate(.6deg); } }
 
