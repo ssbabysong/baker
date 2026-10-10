@@ -121,6 +121,7 @@ const ICONS = {
   upload: `<path d="M32 42 V12"/><path d="M20 23 L32 11 L44 23"/><path d="M12 46 V54 H52 V46"/>`,
   up: `<path d="M16 40 L32 22 L48 40"/>`,
   down: `<path d="M16 24 L32 42 L48 24"/>`,
+  dice: `<path d="M14 14 H50 V50 H14 Z"/><path d="M23 23 h1"/><path d="M40 23 h1"/><path d="M31.5 31.5 h1"/><path d="M23 40 h1"/><path d="M40 40 h1"/>`,
   next: `<path d="M26 12 L46 32 L26 52"/>`,
   star: `<path d="M32 9 L38.5 24 L55 25.5 L42.5 36.5 L46.5 53 L32 44.5 L17.5 53 L21.5 36.5 L9 25.5 L25.5 24 Z"/>`,
   flour: `<path d="M18 20 Q16 14 20 10 H44 Q48 14 46 20"/><path d="M18 20 L14 54 H50 L46 20 Z"/><path d="M24 36 q8 -6 16 0"/>`,

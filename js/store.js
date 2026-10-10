@@ -73,6 +73,7 @@ export function normalizeRecipe(r) {
       kind: s.kind || 'other',
     })),
     notes: r.notes || '',
+    price: r.price === '' || r.price == null || Number.isNaN(Number(r.price)) ? randomPrice(r.shape || guessShape(r.name)) : Math.max(0, Number(r.price)),
     createdAt: r.createdAt || now,
     updatedAt: now,
     version: (r.version || 0) + 1,
@@ -94,8 +95,32 @@ export function guessShape(name = '') {
   return 'loaf';
 }
 
-export const listRecipes = async () => (await db.all('recipes')).sort((a, b) => b.updatedAt - a.updatedAt);
+// 价签：按面包种类给一个说得过去的价格区间，随机挑一个整数（元）
+const PRICE_RANGE = {
+  cookie: [6, 12], muffin: [10, 16], anpan: [8, 14], melonpan: [8, 14], bagel: [10, 16], pretzel: [10, 16],
+  croissant: [12, 18], baguette: [14, 22], loaf: [16, 28], toast: [18, 32], cake: [28, 48],
+};
+export function randomPrice(shape) {
+  const [lo, hi] = PRICE_RANGE[shape] || [10, 20];
+  return lo + Math.floor(Math.random() * (hi - lo + 1));
+}
+
+// 老配方没有价签的，第一次上架时补一个（不改 updatedAt / version）
+export async function listRecipes() {
+  const all = await db.all('recipes');
+  for (const r of all) {
+    if (r.price == null) { r.price = randomPrice(r.shape); await db.put('recipes', r); }
+  }
+  return all.sort((a, b) => b.updatedAt - a.updatedAt);
+}
 export const getRecipe = (id) => db.get('recipes', id);
+// 只改价签，不算改配方
+export async function setPrice(id, price) {
+  const r = await getRecipe(id);
+  if (!r) return;
+  r.price = price;
+  await db.put('recipes', r);
+}
 export async function saveRecipe(r) {
   const rec = normalizeRecipe(r);
   await db.put('recipes', rec);

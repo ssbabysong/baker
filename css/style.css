@@ -111,7 +111,7 @@ img { max-width: 100%; display: block; }
 /* ---------- 字体工具 ---------- */
 .mono { font-family: var(--mono); letter-spacing: .02em; }
 /* 标题统一用站酷快乐体，它本身就够圆够粗，不再加粗 */
-h1, h2, h3, .greet h1, .hero h1, .storefront .sign, .bake-head .t b, .diary .name, .stat b.t, .recipe-row .t b, .shelf .item span {
+h1, h2, h3, .greet h1, .hero h1, .storefront .sign, .bake-head .t b, .diary .name, .stat b.t, .recipe-row .t b, .shelf .item > span:not(.pic) {
   font-family: var(--title); font-weight: 400;
 }
 .muted { color: var(--ink-soft); }
@@ -223,7 +223,8 @@ a.card { display: block; text-decoration: none; }
 .roadmap li.next .storefront { opacity: .45; filter: grayscale(.7); }
 .roadmap .here { color: var(--shu); }
 /* 升级路线和首页里的次数：用清楚的打字机数字，大一号、面包皮棕色 */
-.need { font-family: 'Courier Prime', 'Courier New', monospace; font-weight: 700; font-size: 16px; color: var(--brown); padding: 0 2px; }
+/* 和下面统计数字同一套字体（Courier 常规体），只是换成棕色 */
+.need { font-family: var(--mono); font-weight: 400; font-size: 20px; line-height: 1; color: var(--brown); padding: 0 3px; vertical-align: -1px; }
 .celebrate > .storefront { max-width: 260px; margin: 0 auto 6px; }
 .shop-meta { text-align: center; margin-top: 4px; }
 .shop-meta .lv { display: inline-block; padding: 1px 12px; border-radius: 999px; font-size: 14px; background: var(--card); box-shadow: var(--shadow); }
@@ -240,8 +241,10 @@ a.card { display: block; text-decoration: none; }
 .oven-card > svg:not(.ic) { width: 92px; flex: none; }
 .oven-card .info { flex: 1; min-width: 0; }
 .oven-card .info b { display: block; font-size: 18px; }
-.oven-card .info > span { display: block; }
-.oven-card .info .small { display: flex; align-items: center; gap: 4px; }
+.oven-card .info .step-line { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 2px; }
+.oven-card .info .clock-line { display: flex; align-items: center; gap: 6px; margin-top: 6px; min-width: 0; }
+.oven-card .info .clock-line .mono { flex: none; font-size: 15px; }
+.oven-card .info .clock-line .lbl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-soft); }
 .oven-card .info .ic { width: 16px; height: 16px; }
 .rise { animation: rise 3s ease-in-out infinite alternate; transform-origin: 60px 76px; transform-box: view-box; }
 @keyframes rise { from { transform: scaleY(.8); } to { transform: scaleY(1.08); } }
@@ -273,9 +276,9 @@ a.card { display: block; text-decoration: none; }
 .shelf-board { height: 10px; margin-top: -6px; border-top: 2px solid var(--line); background: linear-gradient(var(--wood), transparent); opacity: .7; }
 .shelf .item { flex: 0 0 96px; text-align: center; text-decoration: none; scroll-snap-align: start; }
 .shelf .item svg { width: 62px; height: 62px; display: block; margin: 0 auto 2px; }
-.shelf .item span { font-size: 14px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.shelf .item:not(.add) span { background: #ecdcbf; color: #4a3a2e; margin: 2px 6px 0; padding: 1px 6px 1px 12px; border-radius: 3px; position: relative; transform: rotate(-1.5deg); }
-.shelf .item:not(.add) span::before { content: ''; position: absolute; left: 4px; top: 50%; width: 4px; height: 4px; margin-top: -2px; border-radius: 50%; background: var(--paper); }
+.shelf .item > span:not(.pic) { font-size: 14px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shelf .item:not(.add) > span:not(.pic) { background: #ecdcbf; color: #4a3a2e; margin: 2px 6px 0; padding: 1px 6px 1px 12px; border-radius: 3px; position: relative; transform: rotate(-1.5deg); }
+.shelf .item:not(.add) > span:not(.pic)::before { content: ''; position: absolute; left: 4px; top: 50%; width: 4px; height: 4px; margin-top: -2px; border-radius: 50%; background: var(--paper); }
 .shelf .item small { color: var(--ink-soft); font-size: 12px; }
 .shelf .item.add svg { width: 34px; height: 34px; margin: 14px auto 16px; color: var(--ink-soft); }
 
@@ -299,22 +302,39 @@ a.card { display: block; text-decoration: none; }
 .recipe-row .t b { display: block; font-size: 19px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .recipe-row .t span { font-size: 13px; color: var(--ink-soft); }
 
-/* 配方架：一层层木板，面包站在板上，价签挂在木板边上 */
-.rack { margin-top: 18px; display: grid; gap: 26px; }
-.rack-row { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 4px; }
-/* 木板：横在面包脚下（面包图 70px 高，面包底边大约在 55px） */
-.rack-row::before { content: ''; position: absolute; left: -2px; right: -2px; top: 55px; height: 12px; border-radius: 2px; border: 1.5px solid var(--line);
-  background: linear-gradient(var(--wood), color-mix(in srgb, var(--wood) 70%, var(--line))); box-shadow: 0 6px 10px -6px rgba(74, 58, 46, .35); }
-.rack-item { position: relative; display: grid; justify-items: center; align-content: start; gap: 3px; text-decoration: none; min-width: 0; }
-.rack-item svg.shape { width: 70px; height: 70px; display: block; transition: transform .2s ease; }
+/* 配方架：和首页一样的轻木板——面包和名签站成一排，下面一道细木板边 */
+.rack { margin-top: 18px; display: grid; gap: 22px; }
+.rack-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 2px 12px; position: relative; }
+.rack-row::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 10px; border-top: 2px solid var(--line);
+  background: linear-gradient(var(--wood), transparent); opacity: .7; }
+.rack-item { display: grid; justify-items: center; align-content: start; gap: 2px; text-decoration: none; min-width: 0; }
+.rack-item svg.shape { width: 66px; height: 66px; display: block; transition: transform .2s ease; }
 .rack-item:active svg.shape { transform: translateY(-3px); }
-.rack-item .tag { position: relative; max-width: 100%; margin-top: 0; padding: 2px 8px 2px 14px; background: #ecdcbf; color: #4a3a2e; border-radius: 3px;
+.rack-item .tag { position: relative; max-width: calc(100% - 8px); padding: 1px 6px 1px 12px; background: #ecdcbf; color: #4a3a2e; border-radius: 3px;
   font-family: var(--title); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transform: rotate(-1.5deg); }
-.rack-item .tag::before { content: ''; position: absolute; left: 5px; top: 50%; width: 4px; height: 4px; margin-top: -2px; border-radius: 50%; background: var(--paper); }
-.rack-item small { font-size: 11px; color: var(--ink-soft); text-align: center; }
+.rack-item .tag::before { content: ''; position: absolute; left: 4px; top: 50%; width: 4px; height: 4px; margin-top: -2px; border-radius: 50%; background: var(--paper); }
+.rack-item small { font-size: 12px; color: var(--ink-soft); text-align: center; }
 .rack-item.add { color: var(--ink-soft); }
-.rack-item.add .ic { width: 26px; height: 26px; margin-top: 10px; border: 1.5px dashed var(--hair); border-radius: 50%; padding: 8px; box-sizing: content-box; }
-.rack-item.add .ic + span { margin-top: 14px; font-size: 13px; }
+.rack-item.add .ic { width: 34px; height: 34px; margin: 14px auto 16px; }
+.rack-item.add .ic + span { font-size: 14px; }
+
+/* 价签：面包右上角斜插一张小白卡 */
+.pic { position: relative; display: block; }
+.shelf .item .pic { width: 62px; margin: 0 auto; }
+.shelf .price { right: -18px; }
+.price { position: absolute; right: -14px; top: 4px; padding: 0 5px; background: var(--card); color: var(--brown); border: 1.5px solid var(--line);
+  border-radius: 3px; font-family: var(--mono); font-weight: 700; font-size: 12px; line-height: 17px; transform: rotate(9deg); white-space: nowrap; }
+.price-chip { cursor: pointer; font-family: var(--mono); font-weight: 700; color: var(--brown); }
+.price-chip .ic { width: 13px; height: 13px; opacity: .6; }
+.price-f .row { gap: 8px; align-items: center; }
+.price-f .input.num { width: 90px; flex: none; }
+.price-f.row { gap: 8px; align-items: center; }
+
+/* 称料勾完后折成一行 */
+.ing-folded { display: flex; gap: 8px; align-items: center; width: 100%; padding: 8px 2px; border: 0; background: none; color: var(--ink-soft); cursor: pointer; text-align: left; font: inherit; }
+.ing-folded .ic { width: 20px; height: 20px; color: var(--leaf, var(--ink)); }
+.ing-folded span:first-of-type { flex: 1; }
+.fold-again { margin-top: 6px; }
 
 .search { width: 100%; border: 0; border-bottom: 1.5px solid var(--hair); background: transparent; padding: 8px 2px; outline: none; }
 
