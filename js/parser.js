@@ -14,8 +14,50 @@ const NUM_TAIL = new RegExp(`^(.*?)[\\s:：]*${NUM}\\s*(${UNIT_RE})?\\s*(?:[（(
 const NUM_HEAD = new RegExp(`^${NUM}\\s*(?:(${UNIT_RE})(?![a-z]))?\\s*(.+)$`, 'i');
 const FUZZY = /^(.*?)\s*(适量|少许|少量|to taste|as needed)$/i;
 
-const SECTION_ING = /^(材料|配料|原料|用料|食材|主料|辅料|ingredients?)\b|^(材料|配料|原料|用料|食材)/i;
-const SECTION_STEP = /^(步骤|做法|方法|制作|流程|steps?|method|instructions?|directions?)\b|^(步骤|做法|方法|制作过程|流程)/i;
+// ---------- 小标题 ----------
+// 各家写法五花八门：「材料」「原材料」「所需材料」「材料清单」「【用料】」「一、食材：」「面团材料」
+// 「步骤」「操作步骤」「制作过程」「做法：」「Method」「How to make」「小贴士」「注意事项」……
+// 先把标题外面的装饰去掉（#、序号、【】、emoji、冒号、括号里的份量），再看剩下的几个字是不是小标题。
+const ING_WORD = '原材料|材料|用料|原料|配料|食材|主料|辅料|ingredients?';
+const ING_HEAD = new RegExp(`^(.{0,6}?)\\s*(?:${ING_WORD})\\s*(?:清单|表|准备|如下|明细|列表|一览|list)?$`, 'i');
+const ING_EXACT = /^(配方|配方表|配比|you(?:'ll| will)? need|what you(?:'ll)? need|shopping list)$/i;
+const STEP_HEAD = new RegExp('^(?:操作|制作|详细|具体|烘焙|烘烤|烤制|做|详细的|具体的|制作的|操作的|基本|简单|主要|全部)?\\s*'
+  + '(?:步骤|做法|方法|制作|流程|过程|教程|工序|操作|steps?|method|instructions?|directions?|preparation|procedure|how to make(?: it)?|step[- ]by[- ]step)'
+  + '\\s*(?:说明|如下|详解|流程|过程|步骤|图解|方法)?$', 'i');
+const NOTE_HEAD = /^(备注|笔记|小贴士|贴士|提示|小提示|温馨提示|注意事项|注意|小技巧|技巧|心得|小心得|经验|tips?|notes?|cook'?s notes?)$/i;
+const GROUP_FILLER = /^(所需|需要|准备|全部|基础|主要|必备|的)+|的$/g;
+
+function cleanHeader(text) {
+  return String(text)
+    .replace(/^#+\s*/, '')
+    .replace(/^(?:[一二三四五六七八九十]+|\d+)\s*[、.．)）]\s*/, '')
+    .replace(/^[（(][一二三四五六七八九十\d]+[)）]\s*/, '')
+    .replace(/[（(][^)）]*[)）]/g, '')
+    .replace(/[【】\[\]「」『』《》<>〈〉*_~]/g, '')
+    .replace(/[^\p{L}\p{N}\s'-]/gu, '')   // emoji、符号
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// 一行是不是小标题：返回 { mode: 'ing' | 'step' | 'note', group, rest }，不是就返回 null。
+// rest 是冒号后面直接跟着的内容（「材料：面粉 250g、水 160g」）
+export function sectionOf(line) {
+  const m = String(line).match(/^([^:：]{1,24})[:：]\s*(.*)$/);
+  const head = cleanHeader(m ? m[1] : line);
+  const rest = m ? m[2].trim() : '';
+  // 标题都很短：中文不超过 14 个字，英文不超过 24 个字母；带句号逗号、带数字的是正文
+  const cjk = (head.match(/[\u3400-\u9fff]/g) || []).length;
+  if (!head || cjk > 14 || head.length > 24 || /[，。,.;；!?！？]/.test(head) || /\d/.test(head)) return null;
+  if (ING_EXACT.test(head)) return { mode: 'ing', group: '', rest };
+  const ing = head.match(ING_HEAD);
+  if (ing) {
+    const group = ing[1].replace(GROUP_FILLER, '').replace(/\s*for( the)?$/i, '').trim();
+    return { mode: 'ing', group, rest };
+  }
+  if (STEP_HEAD.test(head)) return { mode: 'step', group: '', rest };
+  if (NOTE_HEAD.test(head)) return { mode: 'note', group: '', rest };
+  return null;
+}
 const LIST_MARK = /^\s*(?:\d+\s*[.、)）:：]|[-*•·]|第[一二三四五六七八九十\d]+步[:：、]?|step\s*\d+[:：.]?)\s*/i;
 
 const FRACTIONS = { '½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1 / 3, '⅔': 2 / 3 };
@@ -122,7 +164,7 @@ function tidyLines(lines) {
     const line = lines[i];
     if (/^\d{1,2}$/.test(line) || /^(?:步骤|step)\s*\d{1,2}$/i.test(line) || SITE_JUNK.test(line)) continue;
     const next = lines[i + 1];
-    const isHeader = SECTION_ING.test(line) || SECTION_STEP.test(line);
+    const isHeader = !!sectionOf(line);
     if (next && !isHeader && !/\d/.test(line) && line.length <= 20 && AMOUNT_ONLY.test(next)) {
       out.push(`${line} ${next}`);
       i++;
@@ -140,16 +182,15 @@ export function parseRecipeText(input) {
   let group = '';
   const notes = [];
 
-  for (const line of lines) {
+  for (let line of lines) {
     if (!line) continue;
-    const header = line.replace(/[:：\s]+$/, '');
-    if (SECTION_ING.test(header) && header.length <= 12) { mode = 'ing'; continue; }
-    if (SECTION_STEP.test(header) && header.length <= 12) { mode = 'step'; continue; }
-    if (/^(备注|笔记|小贴士|tips?|notes?)[:：]?/i.test(header)) {
-      mode = 'note';
-      const rest = line.replace(/^(备注|笔记|小贴士|tips?|notes?)[:：]?\s*/i, '');
-      if (rest) notes.push(rest);
-      continue;
+    const sec = sectionOf(line);
+    if (sec) {
+      mode = sec.mode;
+      group = sec.mode === 'ing' ? sec.group : '';
+      if (!sec.rest) continue;
+      if (mode === 'note') { notes.push(sec.rest); continue; }
+      line = sec.rest; // 冒号后面直接写了内容：当成这一段的第一行接着处理
     }
 
     if (!recipe.name && mode == null && !looksLikeIngredient(line) && !LIST_MARK.test(line)) {

@@ -143,3 +143,58 @@ test('parseRecipeText: 材料分组、用量范围、厨师机揉面', () => {
   assert.equal(r.steps[0].kind, 'knead');
   assert.equal(r.steps[0].minutes, 13);
 });
+
+test('sectionOf: 各种写法的小标题都认得', async () => {
+  const { sectionOf } = await import('../js/parser.js');
+  const ing = ['材料', '材料：', '原材料', '所需材料', '准备材料：', '材料清单', '用料', '【用料】', '一、食材', '## 配料', '🥣 材料：', '材料（8个）', '主料', '配方', 'Ingredients', "What you'll need", 'INGREDIENTS:'];
+  for (const h of ing) assert.equal(sectionOf(h)?.mode, 'ing', `材料标题没认出来：${h}`);
+  const step = ['步骤', '操作步骤', '制作步骤', '制作过程', '做法', '做法：', '具体做法', '制作方法', '【步骤】', '二、做法', '流程', '详细步骤', 'Method', 'Directions:', 'Instructions', 'Steps', 'How to make'];
+  for (const h of step) assert.equal(sectionOf(h)?.mode, 'step', `步骤标题没认出来：${h}`);
+  const note = ['小贴士', '备注：', '注意事项', '小技巧', 'Tips', 'Notes:'];
+  for (const h of note) assert.equal(sectionOf(h)?.mode, 'note', `备注标题没认出来：${h}`);
+  // 不是标题的不能误认
+  const not = ['高筋面粉 250g', '制作面团，揉 10 分钟', '一次发酵 60分钟', '巧克力脆脆珠面包', '加入材料揉成团，静置', 'Mix the flour and water'];
+  for (const h of not) assert.equal(sectionOf(h), null, `误认成标题：${h}`);
+  // 前缀变成材料分组；冒号后面的内容留下来
+  assert.equal(sectionOf('面团材料：').group, '面团');
+  assert.equal(sectionOf('所需材料').group, '');
+  assert.equal(sectionOf('Dough ingredients').group, 'Dough');
+  assert.equal(sectionOf('材料：面粉 250g、水 160g').rest, '面粉 250g、水 160g');
+});
+
+test('parseRecipeText: 换一套小标题写法也能完整认出来', () => {
+  const r = parseRecipeText(`奶香小餐包
+
+【原材料】
+高筋面粉 250g
+牛奶 150g
+
+一、操作步骤：
+1. 所有材料揉成团 15分钟
+2. 一次发酵 1小时
+3. 180°C 烤 15分钟
+
+注意事项：
+牛奶温度不要太高`);
+  assert.equal(r.name, '奶香小餐包');
+  assert.equal(r.ingredients.length, 2);
+  assert.equal(r.steps.length, 3);
+  assert.equal(r.steps[1].kind, 'ferment');
+  assert.equal(r.notes, '牛奶温度不要太高');
+});
+
+test('parseRecipeText: 标题后面冒号直接跟内容，前缀当分组', () => {
+  const r = parseRecipeText(`菠萝包
+面团材料：高筋面粉 250g、水 140g
+酥皮材料：
+黄油 50g
+糖粉 40g
+制作过程：揉面 10分钟
+烤 15分钟`);
+  assert.equal(r.ingredients.length, 4);
+  assert.equal(r.ingredients[0].note, '面团');
+  assert.equal(r.ingredients[2].name, '黄油');
+  assert.equal(r.ingredients[2].note, '酥皮');
+  assert.equal(r.steps.length, 2);
+  assert.equal(r.steps[0].minutes, 10);
+});
