@@ -7,7 +7,7 @@ import { parseRecipeText, formatAmount, formatMinutes, guessStepKind } from './p
 import { rateStar, hanko, shape, icon, storefront, storefrontSign, ovenScene, stageScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES, SHAPE_NAMES_EN } from './sketch.js';
 import {
   remainingMs, formatClock, createTimer, pauseTimer, resumeTimer, addMinutes,
-  unlockAudio, playChime, playLevelUp, startRinging, stopRinging, askNotifyPermission, notify, keepAwake,
+  unlockAudio, playChime, playLevelUp, haptic, startRinging, stopRinging, askNotifyPermission, notify, keepAwake,
   isNative, permissionState, refreshPermission, syncNativeAlarms,
 } from './timers.js';
 import { currentCatalog, refreshCatalog, mergeCatalog, takeCatalogUpdate, skipCatalogUpdate } from './catalog.js';
@@ -1048,12 +1048,13 @@ async function viewLogs(ym) {
   const selDate = sel && new Date(...sel.split('-').map((v, i) => Number(v) - (i === 1 ? 1 : 0)));
   const canBackfill = selDate && selDate <= now;
 
+  state.calSlide = null;
   return `
   <div class="cal-head">
     <div class="y">${y}</div>
     <div class="m"><button data-go="#/logs/${prev}" aria-label="${L('上个月', 'Previous month')}">${icon('back')}</button>${MONTHS[m - 1]}<button data-go="#/logs/${next}" aria-label="${L('下个月', 'Next month')}">${icon('next')}</button></div>
   </div>
-  ${monthGrid(y, m, bakes, true, sel)}
+  <div class="cal-swipe ${state.calSlide ? `slide-${state.calSlide}` : ''}">${monthGrid(y, m, bakes, true, sel)}</div>
 
   <div class="stats cal-stats">
     <div class="stat"><b>${bakes.length}</b><span>loaves baked</span></div>
@@ -1069,9 +1070,7 @@ async function viewLogs(ym) {
     : `<div class="empty day-empty">${mascot('wait')}<p>${L('这天没有开炉', 'No bakes on this day')}</p></div>`}
   ${canBackfill ? `<div class="backfill-cta"><a class="link-btn" href="#/backfill/${sel}">${icon('plus')} ${dayBakes.length ? L('这天还烤了别的？补记一炉', 'Baked something else? Add it') : L('补记这一天', 'Add a bake on this day')}</a></div>` : ''}`
   : `<div class="empty day-empty">${mascot('wait')}<p>${L('这个月还没有开炉', 'No bakes this month yet')}</p></div>
-  <div class="backfill-cta"><a class="link-btn" href="#/backfill">${icon('plus')} ${L('补记一炉', 'Add a past bake')}</a></div>`}
-
-  ${diaryFoot()}`;
+  <div class="backfill-cta"><a class="link-btn" href="#/backfill">${icon('plus')} ${L('补记一炉', 'Add a past bake')}</a></div>`}`;
 }
 
 const hm = (t) => { const d = new Date(t); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
@@ -1810,6 +1809,26 @@ function filterRack(value) {
     if (next) box.replaceWith(next);
   }, 200);
 }
+// 日历页：左右滑动翻月份（往左滑看下个月），翻的时候轻轻震一下
+let swipe = null;
+document.addEventListener('touchstart', (e) => {
+  swipe = location.hash.startsWith('#/logs') && e.touches.length === 1
+    ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
+}, { passive: true });
+document.addEventListener('touchend', (e) => {
+  if (!swipe) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
+  const fast = Date.now() - swipe.t < 600;
+  swipe = null;
+  if (!fast || Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+  const btn = document.querySelectorAll('.cal-head .m button')[dx < 0 ? 1 : 0];
+  if (!btn) return;
+  state.calSlide = dx < 0 ? 'next' : 'prev';
+  haptic();
+  go(btn.dataset.go);
+}, { passive: true });
+
 document.addEventListener('compositionend', (e) => {
   if (e.target.dataset?.actInput === 'filter') filterRack(e.target.value);
 });

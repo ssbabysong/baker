@@ -202,6 +202,15 @@ export async function syncNativeAlarms(alarms) {
   } catch { alarmSig = null; /* 没权限或插件不可用，下次再试 */ }
 }
 
+// ---------- 轻轻震一下：滑日历翻月份之类的小反馈 ----------
+// iOS app 里走系统的触感引擎（Haptics 插件）；网页里能震的（安卓）就震一下，不能就算了
+export function haptic() {
+  try {
+    if (isNative()) { window.Capacitor.Plugins.Haptics?.impact({ style: 'LIGHT' }); return; }
+    navigator.vibrate?.(8);
+  } catch { /* 不支持就算了 */ }
+}
+
 // ---------- 常亮屏幕：揉面时手上全是面粉，不想一直点亮屏幕 ----------
 
 let wakeLock = null;
