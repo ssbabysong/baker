@@ -128,7 +128,7 @@ h1, h2, h3, .greet h1, .hero h1, .storefront .sign, .bake-head .t b, .diary .nam
 .greet { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
 .greet .t { flex: 1; }
 .greet h1 { margin: 0; font-size: 34px; letter-spacing: .04em; line-height: 1.25; }
-.greet p { margin: 2px 0 0; color: var(--ai); font-size: 14px; }
+.greet p { margin: 2px 0 0; color: var(--ink-soft); font-size: 14px; }
 
 /* 小节标题 */
 h2 { font-size: 20px; margin: 32px 0 12px; display: flex; align-items: center; gap: 10px; letter-spacing: .03em; }
@@ -142,24 +142,29 @@ h2 .more { margin-left: auto; font-size: 14px; color: var(--ink-soft); font-weig
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   border: 1px solid var(--hair);
   border-radius: 999px;
-  background: var(--card);
+  background: transparent;
   padding: 8px 18px;
   min-height: 44px;
   cursor: pointer;
   text-decoration: none;
   transition: transform .08s ease;
   white-space: nowrap;
-  box-shadow: var(--shadow);
 }
 .btn .ic { color: currentColor; }
 .btn:active { transform: scale(.97); }
-.btn.primary { background: var(--ai); border-color: transparent; color: #fffcf5; letter-spacing: .04em; }
+.btn.primary { border-color: var(--ink); color: var(--ink); letter-spacing: .04em; }
 .btn.big { font-family: var(--title); }
-.btn.crust { background: var(--crust); border-color: transparent; color: #3f3129; }
+.btn.crust { border-color: var(--ink); color: var(--ink); }
 .btn.ghost { border-color: transparent; background: transparent; box-shadow: none; }
 .btn.danger { color: var(--danger); border-color: var(--danger); background: transparent; box-shadow: none; }
-.btn.block { width: 100%; }
-.btn.big { min-height: 56px; font-size: 20px; }
+.btn.block { display: flex; width: fit-content; min-width: 160px; margin-inline: auto; }
+.btn.big {
+  border: 0; border-radius: 4px; min-height: 48px; padding: 4px 8px; font-size: 20px; color: var(--ink);
+  background: linear-gradient(transparent 58%, var(--crust-soft) 58%, var(--crust-soft) 88%, transparent 88%);
+}
+.btn.big .ic { display: none; }
+.btn.big::after { content: '→'; font-family: var(--mono); margin-left: 4px; transition: transform .2s ease; }
+.btn.big:active::after { transform: translateX(4px); }
 .btn.sm { min-height: 34px; padding: 4px 12px; font-size: 15px; }
 .btn.icon { padding: 0; width: 44px; min-width: 44px; }
 .btn.icon.sm { width: 34px; min-width: 34px; }
@@ -262,7 +267,7 @@ a.card { display: block; text-decoration: none; }
 .polaroid .ph img { width: 100%; height: 100%; object-fit: cover; }
 .polaroid .ph svg { width: 56%; }
 .polaroid figcaption { position: absolute; left: 6px; right: 6px; bottom: 2px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
-.polaroid .tape { position: absolute; top: -8px; left: 50%; width: 38px; height: 14px; margin-left: -19px; background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--ai) 35%, transparent) 0 4px, color-mix(in srgb, var(--ai) 18%, transparent) 4px 8px); transform: rotate(-4deg); }
+.polaroid .tape { position: absolute; top: -8px; left: 50%; width: 38px; height: 14px; margin-left: -19px; background: color-mix(in srgb, var(--crust) 30%, transparent); transform: rotate(-4deg); }
 
 /* ---------- 配方列表 ---------- */
 .recipe-list { display: grid; gap: 12px; }
@@ -280,7 +285,7 @@ a.card { display: block; text-decoration: none; }
 .hero h1 { font-size: 30px; margin: 4px 0 0; letter-spacing: .04em; }
 .chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
 .chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 11px; border: 1px solid var(--hair); border-radius: 999px; font-size: 14px; background: var(--card); cursor: pointer; }
-.chip.on { background: var(--ink); color: var(--paper); }
+.chip.on { border-color: var(--ink); color: var(--ink); }
 .chip .ic { width: 15px; height: 15px; }
 .chip.time { border-style: dashed; cursor: default; background: transparent; }
 
@@ -353,7 +358,7 @@ textarea.input.tall { min-height: 260px; }
 .link-btn:active { background: var(--lens); }
 /* 步骤列表里正在计时的那一步，后面挂一个小时钟 */
 .tick { font-size: 14px; color: var(--shu); margin-left: 4px; white-space: nowrap; }
-.hero-hint { margin: 4px 0 12px; font-size: 14px; color: var(--ai); }
+.hero-hint { margin: 4px 0 12px; font-size: 13px; color: var(--ink-soft); }
 
 .checklist { list-style: none; padding: 0; margin: 0; }
 .checklist li { display: flex; gap: 10px; align-items: center; padding: 8px 2px; border-bottom: 1.5px dashed color-mix(in srgb, var(--line) 28%, transparent); cursor: pointer; }
@@ -370,7 +375,7 @@ textarea.input.tall { min-height: 260px; }
 
 @keyframes shake { from { transform: rotate(-.6deg); } to { transform: rotate(.6deg); } }
 
-.badge { display: inline-block; font-size: 12px; padding: 0 9px; border: 1.2px solid var(--line); border-radius: 999px; background: var(--ai-soft); }
+.badge { display: inline-block; font-size: 12px; padding: 0 9px; border: 1px solid var(--hair); border-radius: 999px; background: transparent; }
 
 
 /* ---------- 出炉 ---------- */
@@ -491,7 +496,7 @@ details[open] > summary::before { content: '▾ '; }
 .tabbar a.on { color: var(--shu); font-weight: 500; }
 .tabbar a.ticking span { color: var(--shu); font-size: 11px; letter-spacing: .02em; }
 .tabbar a.on .ti { color: var(--doodle); }
-.tabbar a:focus-visible { outline: 2px solid var(--ai); outline-offset: -4px; }
+.tabbar a:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: -4px; }
 /* 往下滚：缩成小胶囊 */
 .tabbar.mini nav { width: min(100%, 196px); height: 50px; }
 .tabbar.mini a span { opacity: 0; max-height: 0; }
