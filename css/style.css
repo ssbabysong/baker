@@ -334,14 +334,17 @@ a.card { display: block; text-decoration: none; }
 
 /* 作品墙：拍立得 */
 .wall { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 10px; padding-top: 6px; }
-.polaroid { background: #fffdf8; padding: 6px 6px 22px; border: 1px solid rgba(90,67,53,.25); box-shadow: 0 3px 8px rgba(90,67,53,.12); text-decoration: none; color: #3f3129; position: relative; }
+.polaroid { background: #fffdf8; padding: 6px 6px 36px; border: 1px solid rgba(90,67,53,.25); box-shadow: 0 3px 8px rgba(90,67,53,.12); text-decoration: none; color: #3f3129; position: relative; }
 .polaroid:nth-child(3n+1) { transform: rotate(-2deg); }
 .polaroid:nth-child(3n+2) { transform: rotate(1.5deg); }
 .polaroid:nth-child(3n) { transform: rotate(-.6deg); }
 .polaroid .ph { aspect-ratio: 1; background: #f4ede0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .polaroid .ph img { width: 100%; height: 100%; object-fit: cover; }
 .polaroid .ph svg { width: 56%; }
-.polaroid figcaption { position: absolute; left: 6px; right: 6px; bottom: 2px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+.polaroid figcaption { position: absolute; left: 6px; right: 6px; bottom: 4px; text-align: center; line-height: 1.25; }
+/* 名字一行，长了省略；日期单独一行，一直露着 */
+.polaroid figcaption .n { display: block; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.polaroid figcaption .dt { display: block; font-size: 10px; color: #8a7767; font-family: var(--mono); }
 .polaroid .tape { position: absolute; top: -8px; left: 50%; width: 38px; height: 14px; margin-left: -19px; background: color-mix(in srgb, var(--crust) 30%, transparent); transform: rotate(-4deg); }
 
 /* ---------- 配方列表 ---------- */

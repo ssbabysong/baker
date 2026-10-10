@@ -374,7 +374,7 @@ async function viewShop() {
 function polaroid(b, url) {
   return `<a class="polaroid" href="#/log/${b.id}"><span class="tape"></span>
     <div class="ph">${url ? `<img src="${url}" alt="" loading="lazy">` : shape(b.shape)}</div>
-    <figcaption>${esc(b.recipeName)} · ${fmtDate(b.finishedAt)}</figcaption></a>`;
+    <figcaption><span class="n">${esc(b.recipeName)}</span><span class="dt">${fmtDate(b.finishedAt)}</span></figcaption></a>`;
 }
 
 // =====================================================================
