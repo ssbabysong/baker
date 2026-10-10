@@ -2,11 +2,11 @@
    奶油纸底 + 可可色文字 + 砖红线稿 + 蜡笔色块（面包黄 / 雾蓝 / 橄榄绿）
    数字和日期用打字机字体，英文小注用手写体 */
 
-/* 店铺字体：也字工厂小石头。设备上装了就用；也可以把有授权的字体文件放到 fonts/，或在「店务」里上传 */
+/* 店铺字体：也字工厂小石头（随 app 一起提供，见 fonts/README.md）。也可以在「店务」里上传别的字体替换 */
 @font-face {
   font-family: 'ShopFont';
   src: local('也字工厂小石头'), local('YEFONTXiaoShiTou'),
-       url('../fonts/shopfont.woff2') format('woff2'), url('../fonts/shopfont.ttf') format('truetype');
+       url('../fonts/shopfont.ttf') format('truetype');
   font-display: swap;
 }
 

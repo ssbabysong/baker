@@ -877,7 +877,7 @@ function viewSettings() {
     <div class="card alt"><div class="row"><div class="grow"><b>计时提醒通知</b><div class="small muted">${permText}</div></div>
       <button class="btn sm" data-act="notify-perm">开启</button><button class="btn sm" data-act="test-sound">${icon('bell')} 试听</button></div>
       <p class="small muted" style="margin:8px 0 0">计时时屏幕会保持常亮。把 app 添加到主屏幕后，切到后台也能收到提醒（iOS 需 16.4 以上）。</p></div>
-    <div class="card"><div class="row"><div class="grow"><b>字体</b><div class="small muted">${state.fontName ? `正在用：${esc(state.fontName)}` : '也字工厂小石头（设备上装了就会用，没装时用站酷快乐体）'}</div></div>
+    <div class="card"><div class="row"><div class="grow"><b>字体</b><div class="small muted">${state.fontName ? `正在用：${esc(state.fontName)}` : '也字工厂小石头'}</div></div>
       <label class="btn sm">${icon('upload')} 上传字体<input type="file" accept=".ttf,.otf,.woff,.woff2,font/*" hidden data-act-change="font-file"></label>
       ${state.fontName ? '<button class="btn sm ghost" data-act="font-reset">恢复默认</button>' : ''}</div>
       <p class="small muted" style="margin:8px 0 0">字体文件只存在这台设备里，不会上传到别处。请使用你有授权的字体文件。</p></div>
