@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <filter id="r" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="11"/>
+      <feDisplacementMap in="SourceGraphic" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#f8f5ee"/>
+  <g fill="none" stroke="#2a2723" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" filter="url(#r)">
+    <!-- 烟囱和炊烟 -->
+    <path d="M352 150 V104 H390 V178"/>
+    <path d="M370 84 q-14 -16 4 -28 q16 -12 4 -30" stroke-width="10"/>
+    <!-- 屋顶 + 招牌 -->
+    <path d="M96 176 L256 140 L416 176"/>
+    <!-- 遮阳棚（唯一的暖色） -->
+    <path d="M86 232 L106 186 H406 L426 232 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 q-17 22 -34 0 Z" fill="#e6a463"/>
+    <path d="M154 188 L144 232"/><path d="M222 188 L216 232"/><path d="M290 188 L296 232"/><path d="M358 188 L368 232"/>
+    <!-- 墙 -->
+    <path d="M114 248 V418"/><path d="M398 248 V418"/>
+    <path d="M70 420 Q256 428 442 418"/>
+    <!-- 橱窗里的面包 -->
+    <path d="M140 284 H268 V378 H140 Z"/>
+    <path d="M160 368 C154 336 176 318 204 318 C232 318 254 336 248 368"/>
+    <path d="M186 334 q8 8 4 20" stroke-width="9"/><path d="M212 330 q8 8 4 20" stroke-width="9"/>
+    <!-- 门 -->
+    <path d="M300 418 V292 Q336 270 372 292 V418"/>
+    <path d="M352 356 h2"/>
+  </g>
+</svg>

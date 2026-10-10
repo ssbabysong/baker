@@ -1,0 +1,50 @@
+// 第一次打开时放到配方架上的两份示例配方，让小店不至于空荡荡。
+
+export const SAMPLE_RECIPES = [
+  {
+    name: '乡村欧包',
+    shape: 'loaf',
+    yield: '1 个 · 约 800g',
+    ingredients: [
+      { name: '高筋面粉', amount: 400, unit: 'g' },
+      { name: '全麦粉', amount: 100, unit: 'g' },
+      { name: '水', amount: 360, unit: 'g', note: '约 30°C' },
+      { name: '盐', amount: 10, unit: 'g' },
+      { name: '即发干酵母', amount: 3, unit: 'g' },
+    ],
+    steps: [
+      { text: '面粉和水混合成团，静置水解', minutes: 30, kind: 'rest' },
+      { text: '加入盐和酵母，揉到面团光滑', minutes: 10, kind: 'knead' },
+      { text: '一次发酵，期间每 30 分钟折叠一次', minutes: 120, kind: 'ferment' },
+      { text: '预整形后松弛', minutes: 20, kind: 'rest' },
+      { text: '整形放入发酵篮，二次发酵', minutes: 60, kind: 'ferment' },
+      { text: '烤箱连铸铁锅预热到 250°C', minutes: 45, kind: 'bake' },
+      { text: '割包入锅，盖盖烤', minutes: 20, kind: 'bake' },
+      { text: '开盖降到 230°C 继续烤至深棕色', minutes: 20, kind: 'bake' },
+      { text: '出炉放凉再切', minutes: 60, kind: 'rest' },
+    ],
+    notes: '面团状态比时间更重要：一次发酵到体积约 1.5 倍、表面有气泡就可以了。',
+  },
+  {
+    name: '牛奶吐司',
+    shape: 'toast',
+    yield: '450g 吐司模 1 个',
+    ingredients: [
+      { name: '高筋面粉', amount: 300, unit: 'g' },
+      { name: '牛奶', amount: 200, unit: 'g' },
+      { name: '细砂糖', amount: 30, unit: 'g' },
+      { name: '盐', amount: 4, unit: 'g' },
+      { name: '即发干酵母', amount: 4, unit: 'g' },
+      { name: '黄油', amount: 25, unit: 'g', note: '软化' },
+    ],
+    steps: [
+      { text: '除黄油外所有材料揉成团', minutes: 8, kind: 'knead' },
+      { text: '加入黄油揉到能拉出薄膜', minutes: 12, kind: 'knead' },
+      { text: '一次发酵到 2 倍大', minutes: 60, kind: 'ferment' },
+      { text: '分割成 3 份，滚圆松弛', minutes: 15, kind: 'rest' },
+      { text: '擀卷整形入模，二次发酵到模具 8 分满', minutes: 50, kind: 'ferment' },
+      { text: '180°C 烤', minutes: 35, kind: 'bake' },
+    ],
+    notes: '',
+  },
+];

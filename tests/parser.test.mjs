@@ -1,0 +1,88 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  parseDuration, parseIngredient, parseRecipeText, guessStepKind, formatMinutes, parseNumber,
+} from '../js/parser.js';
+
+test('parseDuration: 中文与英文时长', () => {
+  assert.equal(parseDuration('一次发酵 1.5小时'), 90);
+  assert.equal(parseDuration('静置30分钟'), 30);
+  assert.equal(parseDuration('冷藏 1小时30分钟'), 90);
+  assert.equal(parseDuration('Bake for 25 min'), 25);
+  assert.equal(parseDuration('bulk ferment 2 hours'), 120);
+  assert.equal(parseDuration('1h30m'), 90);
+  assert.equal(parseDuration('半小时'), 30);
+  assert.equal(parseDuration('揉 90秒'), 1.5);
+});
+
+test('parseDuration: 不把温度和用量当成时间', () => {
+  assert.equal(parseDuration('烤箱预热 230°C'), null);
+  assert.equal(parseDuration('水 250ml'), null);
+  assert.equal(parseDuration('三分之一的面团'), null);
+});
+
+test('parseIngredient: 常见写法', () => {
+  assert.deepEqual(parseIngredient('高筋面粉 250g'), { name: '高筋面粉', amount: 250, unit: 'g', note: '' });
+  assert.deepEqual(parseIngredient('- 水 180 ml'), { name: '水', amount: 180, unit: 'ml', note: '' });
+  assert.deepEqual(parseIngredient('黄油 30g（软化）'), { name: '黄油', amount: 30, unit: 'g', note: '软化' });
+  assert.deepEqual(parseIngredient('500g T65面粉'), { name: 'T65面粉', amount: 500, unit: 'g', note: '' });
+  assert.deepEqual(parseIngredient('酵母 1小勺'), { name: '酵母', amount: 1, unit: '小勺', note: '' });
+  assert.deepEqual(parseIngredient('1/2 cup milk'), { name: 'milk', amount: 0.5, unit: 'cup', note: '' });
+  assert.deepEqual(parseIngredient('2 eggs'), { name: 'eggs', amount: 2, unit: '', note: '' });
+  assert.deepEqual(parseIngredient('盐 适量'), { name: '盐', amount: null, unit: '适量', note: '' });
+  assert.equal(parseIngredient('鸡蛋 2个').amount, 2);
+});
+
+test('parseRecipeText: 带分区的完整食谱', () => {
+  const r = parseRecipeText(`法式乡村面包
+
+材料：
+高筋面粉 400g
+全麦粉 100g
+水 350g
+盐 10g
+酵母 3g
+
+步骤：
+1. 混合面粉和水，静置30分钟
+2. 加盐和酵母，揉面10分钟
+3. 一次发酵 2小时
+4. 整形后二次发酵 45分钟
+5. 230°C 烤 35 分钟
+
+备注：水量可以根据面粉调整`);
+  assert.equal(r.name, '法式乡村面包');
+  assert.equal(r.ingredients.length, 5);
+  assert.equal(r.ingredients[2].name, '水');
+  assert.equal(r.steps.length, 5);
+  assert.deepEqual(r.steps.map((s) => s.minutes), [30, 10, 120, 45, 35]);
+  assert.equal(r.steps[2].kind, 'ferment');
+  assert.equal(r.steps[4].kind, 'bake');
+  assert.match(r.notes, /水量/);
+});
+
+test('parseRecipeText: 没有分区标题时自动判断', () => {
+  const r = parseRecipeText(`Focaccia
+500g bread flour
+400 ml water
+10 g salt
+Mix everything and rest 20 min
+Bulk ferment 2 hours with folds
+Bake 25 min at 220C`);
+  assert.equal(r.name, 'Focaccia');
+  assert.equal(r.ingredients.length, 3);
+  assert.equal(r.steps.length, 3);
+  assert.equal(r.steps[1].minutes, 120);
+});
+
+test('parseRecipeText: 一行多个材料', () => {
+  const r = parseRecipeText(`贝果\n材料\n面粉 250g、水 140g、盐 4g`);
+  assert.equal(r.ingredients.length, 3);
+});
+
+test('辅助函数', () => {
+  assert.equal(guessStepKind('冷藏一夜'), 'chill');
+  assert.equal(formatMinutes(90), '1小时30分钟');
+  assert.equal(formatMinutes(1.5), '1分钟30秒');
+  assert.equal(parseNumber('½'), 0.5);
+});
