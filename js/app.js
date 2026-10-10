@@ -4,7 +4,7 @@ import {
   exportAll, importAll, guessShape, setPrice, randomPrice, getPrice,
 } from './store.js';
 import { parseRecipeText, formatAmount, formatMinutes, guessStepKind } from './parser.js';
-import { rateStar, shape, icon, storefront, storefrontSign, ovenScene, stageScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES, SHAPE_NAMES_EN } from './sketch.js';
+import { rateStar, hanko, shape, icon, storefront, storefrontSign, ovenScene, stageScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES, SHAPE_NAMES_EN } from './sketch.js';
 import {
   remainingMs, formatClock, createTimer, pauseTimer, resumeTimer, addMinutes,
   unlockAudio, playChime, playLevelUp, startRinging, stopRinging, askNotifyPermission, notify, keepAwake,
@@ -406,8 +406,8 @@ async function viewRecipes() {
     <a class="btn sm" href="#/import" data-act="new-import">${icon('paste')} ${L('导入', 'Import')}</a>
     <a class="btn sm primary" href="#/edit/new" data-act="new-blank">${icon('plus')} ${L('手写', 'Write')}</a></div>
   <input class="search" type="search" placeholder="${L('找配方 / 找材料…', 'Find a recipe or ingredient…')}" value="${esc(state.filter)}" data-act-input="filter">
-  ${list.length || !q ? `<div class="rack">${rows.map((row) => `<div class="rack-row">${row.join('')}</div>`).join('')}</div>`
-    : `<div class="empty">${emptyShelf()}<div>${L(`没找到「${esc(state.filter)}」`, `Nothing matches “${esc(state.filter)}”`)}</div></div>`}`;
+  <div id="rack-results">${list.length || !q ? `<div class="rack">${rows.map((row) => `<div class="rack-row">${row.join('')}</div>`).join('')}</div>`
+    : `<div class="empty">${emptyShelf()}<div>${L(`没找到「${esc(state.filter)}」`, `Nothing matches “${esc(state.filter)}”`)}</div></div>`}</div>`;
 }
 
 async function viewRecipe(id) {
@@ -1223,7 +1223,7 @@ async function viewLog(id) {
     <div class="wday">${weekday(d.getDay())}</div>
     ${shape(b.shape)}
     <div class="name">${esc(b.recipeName)}</div>
-    <div class="photo">${url ? `<img src="${url}" alt="">` : `<div class="ph-empty">${shape(b.shape)}</div>`}<span class="hanko">${L('出炉', 'Baked')}</span></div>
+    <div class="photo">${url ? `<img src="${url}" alt="">` : `<div class="ph-empty">${shape(b.shape)}</div>`}${hanko(L('出炉', 'Baked'))}</div>
     <div class="meta">${L(`${fmtTime(b.finishedAt)} 出炉 · 用时 ${fmtDur(b.finishedAt - b.startedAt)}`, `Out at ${fmtTime(b.finishedAt)} · took ${fmtDur(b.finishedAt - b.startedAt)}`)}${b.scale !== 1 ? ` · ×${b.scale}` : ''}${b.backfilled ? ` · ${L('补记', 'added later')}` : ''}
       <button class="link-btn edit-time" data-act="edit-bake-time" data-id="${b.id}">${icon('pencil')} ${L('改日期', 'Change date')}</button></div>
     ${ratingRow(b.rating, 'log-rate', b.id)}
@@ -1782,14 +1782,8 @@ document.addEventListener('input', (e) => {
     if (el.dataset.bf === 'date') f.touched = true;
   } else if (el.dataset.f != null) { const s = routeSession(); if (s) { finishDraft(s.id)[el.dataset.f] = el.value; persistSessions(400); } }
   else if (el.dataset.actInput === 'filter') {
-    state.filter = el.value;
-    clearTimeout(filterTimer);
-    filterTimer = setTimeout(async () => {
-      const pos = el.selectionStart;
-      await rerender();
-      const box = document.querySelector('[data-act-input="filter"]');
-      box?.focus(); box?.setSelectionRange(pos, pos);
-    }, 250);
+    if (e.isComposing) return; // 拼音还没选字，别动输入框，选完字会有 compositionend
+    filterRack(el.value);
   } else if (el.dataset.l != null) {
     clearTimeout(noteTimer);
     noteTimer = setTimeout(async () => {
@@ -1801,6 +1795,24 @@ document.addEventListener('input', (e) => {
 });
 let filterTimer = null;
 let noteTimer = null;
+
+// 配方架搜索：只换下面的结果，输入框本身不重画——不然中文输入法打到一半就被打断、字被截掉
+function filterRack(value) {
+  state.filter = value;
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(async () => {
+    const html = await viewRecipes();
+    const box = document.getElementById('rack-results');
+    if (!box || !location.hash.match(/^#\/recipes/)) return;
+    const tpl = document.createElement('template');
+    tpl.innerHTML = html;
+    const next = tpl.content.getElementById('rack-results');
+    if (next) box.replaceWith(next);
+  }, 200);
+}
+document.addEventListener('compositionend', (e) => {
+  if (e.target.dataset?.actInput === 'filter') filterRack(e.target.value);
+});
 
 // 在烘焙页里改了配方并且编辑框失焦时，马上存一下
 document.addEventListener('focusout', (e) => {

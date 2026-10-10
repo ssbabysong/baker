@@ -896,6 +896,27 @@ export function rateStar(on, cls = '') {
     : wrap(`<path d="${STAR}" stroke-width="2"/>`, '0 0 40 40', `rate-star ${cls}`);
 }
 
+// 出炉印章：和其他图一样的画法——手抖的圈 + 蜡笔颗粒的朱红色块（像盖得不太匀的印泥），不是规整的双线圆
+const wobble = (cx, cy, r, amp, seed) => {
+  const pts = [];
+  for (let i = 0; i < 60; i++) {
+    const a = (i / 60) * Math.PI * 2;
+    const rr = r + Math.sin(a * 3 + seed) * amp + Math.cos(a * 5 + seed * 2) * amp * 0.5;
+    pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]);
+  }
+  return `M${pts.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(' L')} Z`;
+};
+const HANKO_RING = `${wobble(32, 32, 28, 0.7, 1)} ${wobble(32, 32, 23.5, 0.6, 3)}`;
+export function hanko(text, cls = '') {
+  const small = text.length > 2;
+  return wrap(`
+    <path class="f-pink" d="${wobble(32, 32, 24, 0.5, 2)}" stroke="none" opacity=".35" filter="url(#crayon)"/>
+    <path class="f-shu hanko-ink" d="${HANKO_RING}" fill-rule="evenodd" stroke="none" filter="url(#crayon)"/>
+    <path d="${wobble(32, 32, 29.2, 0.5, 5)}" stroke-width="1.3" opacity=".55"/>
+    <text x="32" y="${small ? 36 : 38}" text-anchor="middle" class="sk-text hanko-text" font-size="${small ? 12 : 16}" stroke="none">${text}</text>
+  `, '0 0 64 64', `hanko ${cls}`, 1.6);
+}
+
 // 空状态：空空的木架子
 export function emptyShelf(cls = '') {
   return wrap(`

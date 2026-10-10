@@ -565,12 +565,8 @@ button.photo-drop { width: 100%; font: inherit; padding: 0; }
 .diary > svg.shape { width: 56px; height: 56px; margin: 14px auto 0; display: block; }
 .diary .name { font-size: 22px; margin: 2px 0 16px; letter-spacing: .04em; }
 .diary .photo { border-radius: 18px; overflow: hidden; background: var(--paper-2); position: relative; }
-.hanko {
-  position: absolute; right: 14px; bottom: 14px; width: 58px; height: 58px; border-radius: 50%;
-  border: 2.5px solid var(--shu); color: var(--shu); display: flex; align-items: center; justify-content: center;
-  font-family: var(--title); font-size: 17px; line-height: 1; letter-spacing: .05em; transform: rotate(-14deg);
-  background: rgba(255, 252, 245, .55); box-shadow: inset 0 0 0 3px rgba(255, 252, 245, .4), inset 0 0 0 4.5px var(--shu);
-}
+.hanko { position: absolute; right: 12px; bottom: 12px; width: 64px; height: 64px; color: var(--shu); transform: rotate(-12deg); }
+.hanko .hanko-text { fill: var(--shu); letter-spacing: .05em; }
 .diary .photo img { width: 100%; aspect-ratio: 1; object-fit: cover; }
 .diary .photo .ph-empty { aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; }
 .diary .photo .ph-empty svg { width: 34%; }
