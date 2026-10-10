@@ -29,6 +29,7 @@
   --sky: #9dbad8;
   --sky-soft: #e4ecf4;
   --leaf: #8a9a5b;           /* 抹茶 */
+  --brown: #9a5f2e;          /* 面包皮棕：重要的数字 */
   --leaf-ink: #fffcf5;
   --blush: #eb9c86;
   --danger: #c4513a;
@@ -53,7 +54,7 @@
     --ink: #efe6d8; --ink-soft: #9b9083; --line: #d8ccb9; --doodle: #e2cfb6;
     --crust: #cf9a4c; --crust-soft: #4a3a24; --wood: #8a6a48; --tile: #5d636b;
     --ai: #6d8cbc; --ai-soft: #2c3646; --shu: #e07a62; --sky: #6f93b5; --sky-soft: #2e3b47;
-    --leaf: #9aab6a; --leaf-ink: #1f1d19; --blush: #c97c69;
+    --leaf: #9aab6a; --leaf-ink: #1f1d19; --blush: #c97c69; --brown: #d9a06a;
     --glass: rgba(42, 37, 32, .55); --glass-edge: rgba(255, 255, 255, .14); --glass-shade: rgba(0, 0, 0, .45); --lens: rgba(255, 255, 255, .1);
     color-scheme: dark;
   }
@@ -63,7 +64,7 @@
   --ink: #efe6d8; --ink-soft: #9b9083; --line: #d8ccb9; --doodle: #e2cfb6;
   --crust: #cf9a4c; --crust-soft: #4a3a24; --wood: #8a6a48; --tile: #5d636b;
   --ai: #6d8cbc; --ai-soft: #2c3646; --shu: #e07a62; --sky: #6f93b5; --sky-soft: #2e3b47;
-  --leaf: #9aab6a; --leaf-ink: #1f1d19; --blush: #c97c69;
+  --leaf: #9aab6a; --leaf-ink: #1f1d19; --blush: #c97c69; --brown: #d9a06a;
     --glass: rgba(42, 37, 32, .55); --glass-edge: rgba(255, 255, 255, .14); --glass-shade: rgba(0, 0, 0, .45); --lens: rgba(255, 255, 255, .1);
   color-scheme: dark;
 }
@@ -221,8 +222,8 @@ a.card { display: block; text-decoration: none; }
 .roadmap li.now { background: var(--crust-soft); }
 .roadmap li.next .storefront { opacity: .45; filter: grayscale(.7); }
 .roadmap .here { color: var(--shu); }
-/* 升级路线里的次数：用清楚的打字机数字，大一号、深一点 */
-.roadmap .need { font-family: 'Courier Prime', 'Courier New', monospace; font-weight: 700; font-size: 16px; color: var(--ink); padding: 0 2px; }
+/* 升级路线和首页里的次数：用清楚的打字机数字，大一号、面包皮棕色 */
+.need { font-family: 'Courier Prime', 'Courier New', monospace; font-weight: 700; font-size: 16px; color: var(--brown); padding: 0 2px; }
 .celebrate > .storefront { max-width: 260px; margin: 0 auto 6px; }
 .shop-meta { text-align: center; margin-top: 4px; }
 .shop-meta .lv { display: inline-block; padding: 1px 12px; border-radius: 999px; font-size: 14px; background: var(--card); box-shadow: var(--shadow); }

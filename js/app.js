@@ -268,7 +268,7 @@ async function viewShop() {
     <button class="lv" data-act="roadmap" aria-label="查看升级路线">Lv.${lv.lv} ${lv.name} ›</button>
     <span class="small muted"> · 营业第 <span class="mono">${days}</span> 天</span>
     ${lv.next ? `<div class="progress" title="再出炉 ${lv.next.at - bakes.length} 次升级"><i style="width:${Math.round(lv.progress * 100)}%"></i></div>
-      <button class="link-btn" data-act="roadmap">再出炉 ${lv.next.at - bakes.length} 次 → ${lv.next.name} · 升级路线</button>` : '<button class="link-btn" data-act="roadmap">已经是最高等级 · 升级路线</button>'}
+      <div class="small muted">再出炉 <b class="need">${lv.next.at - bakes.length}</b> 次 → ${lv.next.name}</div>` : '<div class="small muted">已经是最高等级啦</div>'}
   </div>
 
   <div class="stats">
