@@ -1,0 +1,133 @@
+<!doctype html>
+<!-- 小店升级路线的宣传图，用 app 自己的简笔画店面拼出来：
+     levels.html?kind=all&lang=zh        → 一张总图，8 个等级一字排开（1920×1080 @2x = 3840×2160）
+     levels.html?kind=one&lv=5&lang=zh   → 单个等级的大图（1024×1024 @2x = 2048×2048） -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../css/style.css">
+<style>
+  html, body { margin: 0; overflow: hidden; background: #f7f2e8; color: #4a3a2e; }
+  body { position: relative; }
+  body::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .55;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .2 0 0 0 .055 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  .abs { position: absolute; }
+  .float svg { width: 100%; height: 100%; display: block; }
+  .ground { position: absolute; height: 30px; }
+  .shop { position: absolute; }
+  .shop .storefront { max-width: none; width: 100%; }
+  .shop .storefront .sign { font-size: var(--sign, 30px); cursor: default; }
+  h1 { position: absolute; left: 0; right: 0; text-align: center; margin: 0; font-weight: 400; }
+  h1 span { padding: 0 14px; background: linear-gradient(transparent 60%, #f3dcb6 60%, #f3dcb6 92%, transparent 92%); }
+  .sub { position: absolute; left: 0; right: 0; text-align: center; color: #8a7a6a; letter-spacing: .06em; }
+  .label { position: absolute; text-align: center; transform: translateX(-50%); white-space: nowrap; }
+  .label .lv { vertical-align: middle; }
+  .label .nm { vertical-align: middle; }
+  .lv { display: inline-block; font-family: var(--mono); font-weight: 700; border: 2.5px solid #4a3a2e; border-radius: 999px; padding: 2px 14px; background: #fffcf5; }
+  .nm { display: block; font-family: var(--title); margin-top: 8px; }
+  .at { display: block; font-family: var(--mono); color: #8a7a6a; margin-top: 2px; }
+  .arrow { position: absolute; font-family: var(--mono); color: #c4a27f; }
+  .desc { position: absolute; left: 0; right: 0; text-align: center; color: #6b5a4b; }
+  .brand { position: absolute; display: flex; align-items: center; gap: 14px; font-family: var(--title); color: #6b5a4b; }
+  .brand svg { width: 56px; height: 56px; }
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="rough" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="crayon" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3" result="grain"/>
+    <feColorMatrix in="grain" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  2.6 0 0 0 -0.55" result="mask"/>
+    <feComposite in="SourceGraphic" in2="mask" operator="in" result="grainy"/>
+    <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="5" result="wob"/>
+    <feDisplacementMap in="grainy" in2="wob" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+<div id="stage"></div>
+<script type="module">
+import { storefront, storefrontSign, shape, houseLogo } from '../../js/sketch.js';
+const q = new URLSearchParams(location.search);
+const kind = q.get('kind') || 'all';
+const lang = q.get('lang') || 'zh';
+const zh = lang === 'zh';
+const stage = document.getElementById('stage');
+const shopName = zh ? '晴天面包铺' : 'Sunny Day Bakery';
+// 和 js/app.js 里的 LEVELS 一致
+const LEVELS = [
+  { at: 0, name: ['周末小推车', 'Weekend Cart'], desc: ['在家开烤，推着小车分给邻居尝尝', 'Baking at home and wheeling a cart round to the neighbors'] },
+  { at: 1, name: ['私房小铺', 'Tiny Window Shop'], desc: ['有了一间小小的铺子，开了一扇售卖窗', 'A tiny shop of your own, with one little sales window'] },
+  { at: 5, name: ['熟客小店', "Regulars' Corner"], desc: ['熟客常来，门口摆了红毡长凳和红伞，坐下来就能吃个面包', 'Regulars drop by; a red bench and parasol out front for a quick bite'] },
+  { at: 12, name: ['街角面包店', 'Corner Bakery'], desc: ['搬到街角，门面变宽，多了一扇大橱窗，门口停着送面包的自行车', 'On the corner now: a wider front, a big display window and a delivery bike'] },
+  { at: 25, name: ['排队小店', 'Line Out the Door'], desc: ['换成复古小店：红白条纹布篷、拱形橱窗，门口开始排队', 'A retro shop with a striped awning and arched windows, and a line outside'] },
+  { at: 45, name: ['两层小楼', 'Two-Story Bakery'], desc: ['加盖了带拱窗的二楼，屋顶立起一个大碱水面包', 'A second floor with arched windows and a giant pretzel on the roof'] },
+  { at: 70, name: ['露台面包店', 'Terrace Bakery'], desc: ['盖了两层的新店，楼下落地窗，旁边开了露台', 'A new two-story shop with a glass front and a terrace next door'] },
+  { at: 100, name: ['旗舰面包店', 'Flagship Bakery'], desc: ['三层的旗舰店，屋顶也开了空中露台，成了街区的地标', 'Three floors and a rooftop terrace: a neighborhood landmark'] },
+];
+const T = (pair) => pair[zh ? 0 : 1];
+const atText = (n) => n === 0 ? (zh ? '开店' : 'Start') : (zh ? `出炉 ${n} 次` : `${n} bakes`);
+
+// 店面 + 招牌上的店名；k = 每个 viewBox 单位多少像素（同一张图里 k 一样，大的店就真的更大）
+function shop(level, cx, bottom, k, sign) {
+  const g = storefrontSign(level);
+  const w = g.vbW * k;
+  const st = `left:${(g.x / g.vbW * 100).toFixed(2)}%;width:${(g.w / g.vbW * 100).toFixed(2)}%;top:${(g.y / g.vbH * 100).toFixed(2)}%;height:${(g.h / g.vbH * 100).toFixed(2)}%`;
+  return { html: `<div class="shop" style="left:${cx - w / 2}px;bottom:${bottom}px;width:${w}px;--sign:${sign}px"><div class="storefront">${storefront(level)}<span class="sign" style="${st}">${shopName}</span></div></div>`, w, h: g.vbH * k };
+}
+const floatBread = (s, x, y, size, rot) => `<div class="abs float" style="left:${x}px;top:${y}px;width:${size}px;height:${size}px;transform:rotate(${rot}deg)">${shape(s)}</div>`;
+const cloud = (x, y, w) => `<svg class="abs sk" style="left:${x}px;top:${y}px;width:${w}px" viewBox="0 0 120 50" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M14 40 C4 40 4 26 16 26 C16 14 34 10 40 20 C44 8 66 8 70 22 C80 14 98 20 94 32 C106 32 108 42 98 42 Z" fill="#fffcf5"/></svg>`;
+const ground = (x, y, w) => `<svg class="ground sk" style="left:${x}px;top:${y}px;width:${w}px" viewBox="0 0 1000 20" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+  <path d="M0 8 C120 6 240 10 360 8 S600 6 720 9 S900 7 1000 8"/></svg>`;
+const brand = (x, y, size) => `<div class="brand" style="left:${x}px;top:${y}px;font-size:${size}px">${houseLogo()}<span>${zh ? '面包物语' : 'Bakery Days'}</span></div>`;
+
+if (kind === 'all') {
+  const W = 1920, H = 1080;
+  document.body.style.width = W + 'px'; document.body.style.height = H + 'px';
+  // 两排，每排 4 家店，同一个比例尺（越往后店越大）；每排按店的实际宽度居中排开，店和店之间画个小箭头
+  const k = 1.2, gap = 96;
+  const rows = [[1, 2, 3, 4], [5, 6, 7, 8]];
+  const groundY = [450, 975];
+  let html = `
+    <h1 style="top:34px;font-size:${zh ? 66 : 60}px;letter-spacing:${zh ? '.08em' : '.01em'}"><span>${zh ? '从小推车，到街角的地标' : 'From a little cart to a landmark'}</span></h1>
+    <div class="sub" style="top:138px;font-size:${zh ? 28 : 26}px">${zh ? '每出炉一次面包，你的小店就长大一点' : 'Every batch you bake grows your little shop'}</div>
+    ${cloud(1690, 40, 170)}${cloud(250, 150, 120)}
+    ${floatBread('croissant', 1560, 150, 64, -14)}${floatBread('pretzel', 1780, 560, 70, 12)}${floatBread('toast', 80, 600, 60, 8)}
+    ${brand(48, 40, 24)}`;
+  rows.forEach((row, ri) => {
+    const ws = row.map((lv) => storefrontSign(lv).vbW * k);
+    let x = (W - (ws.reduce((a, b) => a + b, 0) + gap * (row.length - 1))) / 2;
+    html += ground(70, groundY[ri] - 4, W - 140);
+    row.forEach((lv, ci) => {
+      const cx = x + ws[ci] / 2;
+      const L = LEVELS[lv - 1];
+      html += shop(lv, cx, H - groundY[ri], k, 15).html + `<div class="label" style="left:${cx}px;top:${groundY[ri] + 16}px">
+        <span class="lv" style="font-size:17px">Lv.${lv}</span> <span class="nm" style="display:inline;font-size:25px;margin-left:6px">${T(L.name)}</span><span class="at" style="font-size:15px;margin-top:4px">${atText(L.at)}</span></div>`;
+      if (ci < row.length - 1) html += `<div class="arrow" style="left:${x + ws[ci] + gap / 2 - 14}px;top:${groundY[ri] - 54}px;font-size:30px">→</div>`;
+      x += ws[ci] + gap;
+    });
+  });
+  stage.innerHTML = html;
+} else {
+  const lv = Math.min(8, Math.max(1, Number(q.get('lv')) || 1));
+  const L = LEVELS[lv - 1];
+  const W = 1024, H = 1024;
+  document.body.style.width = W + 'px'; document.body.style.height = H + 'px';
+  // 店放大到占满中间；推车和小铺比较矮，按高度和宽度里更紧的那个来放
+  const g = storefrontSign(lv);
+  const k = Math.min(620 / g.vbW, 540 / g.vbH);
+  const groundY = 760;
+  const s = shop(lv, W / 2, H - groundY, k, Math.round(13 * k));
+  stage.innerHTML = `
+    ${cloud(90, 150, 140)}${cloud(790, 140, 150)}
+    ${floatBread(['croissant', 'toast', 'anpan', 'melonpan', 'pretzel', 'chocobun', 'bagel', 'baguette'][lv - 1], 130, 300, 70, -12)}
+    ${floatBread(['bagel', 'chocobun', 'croissant', 'toast', 'baguette', 'melonpan', 'anpan', 'pretzel'][lv - 1], 830, 310, 66, 10)}
+    <div class="label" style="left:${W / 2}px;top:52px"><span class="lv" style="font-size:30px;padding:3px 22px">Lv.${lv}</span></div>
+    ${ground(70, groundY - 4, W - 140)}
+    ${s.html}
+    <h1 style="top:${groundY + 34}px;font-size:${zh ? 60 : 54}px;letter-spacing:${zh ? '.08em' : '.01em'}"><span>${T(L.name)}</span></h1>
+    <div class="desc" style="top:${groundY + 124}px;font-size:${zh ? 26 : 23}px;padding:0 90px">${T(L.desc)}</div>
+    <div class="abs" style="right:44px;top:56px;font-family:var(--mono);color:#8a7a6a;font-size:22px">${atText(L.at)}</div>
+    ${brand(44, 44, 22)}`;
+}
+document.fonts.ready.then(() => { document.body.dataset.ready = '1'; });
+</script></body></html>
