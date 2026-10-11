@@ -95,11 +95,11 @@ const LEVELS = [
   { at: 70, name: ['露台面包店', 'Terrace Bakery'], desc: ['盖了两层的新店，楼下落地窗，旁边开了露台', 'A new two-story shop with a glass front and a terrace next door'] },
   { at: 100, name: ['旗舰面包店', 'Flagship Bakery'], desc: ['三层的旗舰店，屋顶也开了空中露台，成了街区的地标', 'Three floors and a rooftop terrace: a neighborhood landmark'] },
   // 隐藏款：没解锁之前只露一个剪影和「???」
-  { at: 200, hidden: true, name: ['石窑工坊', 'Stone Oven Workshop'], desc: ['砖砌的面包工坊，石窑里柴火烧得正旺，烟囱一直在冒烟', 'A brick workshop with a wood-fired stone oven and a chimney that never stops'] },
-  { at: 300, hidden: true, name: ['钟楼面包店', 'Clock Tower Bakery'], desc: ['店中间立起一座钟楼，指针停在七点——每天第一炉出炉的时间', 'A clock tower rises from the shop, stopped at seven: first batch of the day'] },
-  { at: 400, hidden: true, name: ['面包列车', 'Bakery Express'], desc: ['小蒸汽火车拉着一节咖啡车厢，车窗里摆满面包，开到哪卖到哪', 'A little steam engine pulling a café car full of bread, selling as it goes'] },
-  { at: 500, hidden: true, name: ['风车磨坊', 'Windmill Bakery'], desc: ['风车自己磨面粉，风帆慢慢转，脚下一间小面包屋，旁边一片麦子', 'A windmill grinding its own flour, a little bakehouse at its foot and wheat all around'] },
-  { at: 1000, hidden: true, name: ['面包城堡', 'Bread Castle'], desc: ['顶上一只大吐司、两座菠萝包圆顶塔楼，面包王国的城堡', 'A giant loaf on the keep and melon-bun domes on the towers: the castle of the bread kingdom'] },
+  { at: 200, hidden: true, name: ['百年老铺', 'Century Bakery'], desc: ['三层的欧洲老面包店：墨绿色木门面、条纹布篷、铸铁挂牌，二三楼挂着百叶窗', 'A three-story old-world bakery: forest-green woodwork, a striped awning and a wrought-iron sign'] },
+  { at: 300, hidden: true, name: ['玻璃花房', 'Glasshouse Bakery'], desc: ['维多利亚式的玻璃温室，拱顶上一座小灯亭，里面挂着吊灯和绿植', 'A Victorian glasshouse with a lantern on top, pendant lights and climbing plants inside'] },
+  { at: 400, hidden: true, name: ['灯塔面包屋', 'Lighthouse Bakery'], desc: ['海边一座亮着灯的白色灯塔，旁边一间藏青屋顶的面包屋，门口停着小帆船', 'A lit lighthouse by the sea, a navy-roofed bakehouse beside it and a little sailboat out front'] },
+  { at: 500, hidden: true, name: ['巴黎甜品沙龙', 'Paris Pâtisserie'], desc: ['奥斯曼风格的石头楼，孟莎屋顶、铸铁小阳台，拱形橱窗里摆着蛋糕架', 'A Haussmann building with a mansard roof, iron balconies and cake stands in the arched windows'] },
+  { at: 1000, hidden: true, name: ['大饭店烘焙坊', 'Grand Hotel Bakery'], desc: ['老派大饭店：铜绿圆顶、柱廊和红地毯台阶，整条街最气派的一家', 'A grand old hotel: a copper dome, a columned portico and a red carpet up the steps'] },
 ];
 const lvName = (i) => L(...LEVELS[i].name);
 const lvDesc = (i) => L(...LEVELS[i].desc);

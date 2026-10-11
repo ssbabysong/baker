@@ -737,8 +737,5 @@ dialog h3 { margin: 0 0 8px; font-size: 21px; }
 .house-logo { width: 46px; height: 46px; color: var(--doodle); opacity: .85; }
 .house-logo .pretzel-in { stroke: var(--crust); }
 
-/* 隐藏款 Lv12 风车：风帆慢慢转 */
-.store .blade { fill: var(--card); }
-.store .sails { transform-box: view-box; transform-origin: 140px 104px; animation: sails 18s linear infinite; }
-@keyframes sails { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .store .sails { animation: none; } }
+/* 隐藏款：灯罩里暖黄的光 */
+.store .glow { fill: #f6d27a; }
