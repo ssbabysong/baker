@@ -1437,7 +1437,71 @@ function aliceTeapot() {
     ${mascotAt(4, G - 33)}
   `, `0 0 ${W} ${G + 12}`, 'store', 1.5);
 }
-export const JP_DRAFTS = { alice: [aliceTeapot, 380, 312], kamakura: [kamakuraShop, 380, 312], hokkaido: [hokkaidoBarn, 380, 312], shitamachi: [shitamachiShop, 380, 312], showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
+// 兔子仙境：粉色鱼鳞瓦的童话小木屋，屋顶竖着一对兔耳朵，圆顶门上开着心形小窗；旁边接一间玻璃花房，里面开满花；
+// 门前玫瑰拱门，花园里一张下午茶桌（三层点心架、茶壶、茶杯），白兔穿着小马甲举着怀表，屋檐之间挂一串三角旗
+function bunnyCottage() {
+  const W = 360, G = 300;
+  const roof = 'M60 150 L135 84 L210 150 Z';
+  const shingles = Array.from({ length: 4 }, (_, r) => { const y = 108 + r * 13, half = 24 + r * 15; let d = `M${135 - half} ${y}`; const n = Math.round(half * 2 / 10); for (let i = 0; i < n; i++) d += ` q${(half / n).toFixed(1)} 5 ${(half * 2 / n).toFixed(1)} 0`; return d; }).join(' ');
+  const ear = (x, rot) => `<g transform="rotate(${rot} ${x} 94)"><path d="M${x - 7} 94 C${x - 10} 60 ${x - 4} 46 ${x} 46 C${x + 4} 46 ${x + 10} 60 ${x + 7} 94 Z"/><path d="M${x - 3} 90 C${x - 5} 66 ${x - 2} 56 ${x} 56 C${x + 2} 56 ${x + 5} 66 ${x + 3} 90 Z" stroke-width=".8"/></g>`;
+  const earFill = (x, rot) => `<g transform="rotate(${rot} ${x} 94)">${crayon([['paper', `M${x - 7} 94 C${x - 10} 60 ${x - 4} 46 ${x} 46 C${x + 4} 46 ${x + 10} 60 ${x + 7} 94 Z`], ['pink', `M${x - 3} 90 C${x - 5} 66 ${x - 2} 56 ${x} 56 C${x + 2} 56 ${x + 5} 66 ${x + 3} 90 Z`]])}</g>`;
+  const timber = 'M74 150 V300 M196 150 V300 M74 196 H196 M74 160 L96 196 M196 160 L174 196';
+  const win = pane(86, 206, 36, 32, 2, 2);
+  const heartWin = 'M135 132 c-4 -6 -12 -2 0 8 c12 -10 4 -14 0 -8 Z';
+  const door = `M140 ${G} V244 Q140 222 160 222 Q180 222 180 244 V${G} Z`;
+  const glassH = 'M204 300 V178 Q252 122 300 178 V300 Z';
+  const gx = (x0, x1, step) => { let d = ''; for (let x = x0 + step; x < x1; x += step) d += `M${x} ${x < 245 ? 176 - (x - 210) * 0.9 : 176 - (280 - x) * 0.9} V300 `; return d; };
+  const flowersIn = bush([[214, 288, 9], [230, 280, 12], [250, 284, 11], [270, 280, 12], [288, 288, 9], [222, 262, 9], [252, 258, 10], [282, 262, 9]]);
+  const blooms = [[212, 282, 'pink'], [226, 272, 'custard'], [240, 278, 'pink'], [252, 270, 'shu'], [264, 276, 'custard'], [276, 272, 'pink'], [290, 282, 'shu'], [220, 254, 'shu'], [246, 250, 'pink'], [258, 254, 'custard'], [284, 256, 'pink']];
+  const arch = 'M14 300 V236 Q38 204 62 236 V300';
+  const archRoses = bush([[16, 240, 6], [22, 226, 7], [34, 216, 7], [48, 218, 7], [58, 230, 6], [62, 246, 5], [14, 258, 5]]);
+  const roseDots = dots([[18, 236], [26, 222], [40, 214], [52, 222], [60, 238], [14, 252]], 2.6);
+  const bunting = 'M196 156 Q248 178 304 164';
+  const flags = [210, 230, 250, 270, 290].map((x, i) => { const y = 158 + Math.sin((x - 196) / 108 * Math.PI) * 14; return `M${x - 5} ${y} L${x + 5} ${y + 1} L${x} ${y + 11} Z`; });
+  const cakeStand = 'M320 288 V236 M308 270 h24 M312 254 h16 M315 240 h10';
+  const treats = 'M310 270 q3 -6 6 0 Z M318 270 q3 -6 6 0 Z M326 270 q3 -6 6 0 Z M313 254 q3 -5 6 0 Z M321 254 q3 -5 6 0 Z M316 240 q4 -6 8 0 Z';
+  const teapot = 'M290 270 q0 -10 9 -10 q9 0 9 10 Z';
+  const rabbit = (x) => ({ fills: [['paper', `M${x - 7} ${G} q-3 -18 7 -22 q10 4 7 22 Z M${x - 6} ${G - 22} a7 7 0 1 0 12 0 a7 7 0 1 0 -12 0 Z M${x - 5} ${G - 27} q-4 -18 1 -20 q4 4 2 19 Z M${x + 2} ${G - 28} q1 -18 6 -18 q3 6 -3 18 Z`], ['shu', `M${x - 6} ${G - 18} h12 v8 h-12 Z`], ['custard', `M${x + 7} ${G - 13} a4 4 0 1 0 .1 0 Z`]],
+    lines: `<path d="M${x - 7} ${G} q-3 -18 7 -22 q10 4 7 22 M${x - 6} ${G - 22} a7 7 0 1 0 12 0 a7 7 0 1 0 -12 0 M${x - 5} ${G - 27} q-4 -18 1 -20 q4 4 2 19 M${x + 2} ${G - 28} q1 -18 6 -18 q3 6 -3 18" stroke-width="1"/>
+      <path d="M${x - 6} ${G - 18} h12 v8 h-12 Z" stroke-width=".8"/><path d="M${x + 7} ${G - 13} a4 4 0 1 0 .1 0 M${x + 7} ${G - 17} v-3" stroke-width=".8"/><path d="M${x - 2} ${G - 23} h0.1 M${x + 3} ${G - 23} h0.1" stroke-width="1.8"/>` });
+  const rb = rabbit(58);
+  const groundFlowers = dots([[90, 296], [100, 293], [110, 297], [196, 296], [204, 292], [342, 296], [352, 293]], 2.4);
+  return wrap(`
+    ${earFill(116, -12)}${earFill(154, 12)}${ear(116, -12)}${ear(154, 12)}
+    ${crayon([
+      ['pink', roof],
+      ['tile', 'M176 104 h12 v-22 h-12 Z'],
+      ['paper', `M74 150 H196 V${G} H74 Z`],
+      ['wood', 'M90 158 H180 V176 H90 Z'],
+      ['skysoft', `${win.fill} ${glassH}`],
+      ['pink', heartWin],
+      ['leaf', door],
+    ])}
+    <path d="M4 ${G} Q${W / 2} ${G + 2} ${W - 4} ${G - 1}"/>
+    <path d="M176 104 V82 H188 V92" stroke-width="1.2"/><path d="M182 78 q-6 -6 0 -10 q6 -6 0 -10" stroke-width="1" opacity=".5"/><path d="M186 56 c-2 -3 -6 -1 0 4 c6 -5 2 -7 0 -4 Z" stroke-width=".8" opacity=".6"/>
+    <path d="${roof}"/><path d="${shingles}" stroke-width=".6" opacity=".55"/>
+    <path d="${heartWin}" stroke-width="1"/>
+    <path d="M74 150 V${G} M196 150 V${G}"/><path d="${timber}" stroke-width="1" opacity=".7"/>
+    <path d="M90 158 H180 V176 H90 Z"/>
+    ${win.lines}<path d="M82 238 H126 V246 H82 Z" stroke-width="1"/>${blob(bush([[88, 236, 5], [100, 234, 6], [112, 236, 5], [122, 235, 4]]), 'leaf', 1.3)}${crayon([['pink', dots([[90, 232], [104, 230], [118, 232]], 2.2)]], 0, 0)}
+    <path d="${door}"/><path d="M160 236 c-3 -4 -8 0 0 6 c8 -6 3 -10 0 -6 Z" class="glow" stroke-width=".8"/><path d="M172 266 a2 2 0 1 0 .1 0" stroke-width="1.4"/>
+    <path d="M136 ${G} h48" stroke-width="1.4"/>${lamp(132, 226)}
+    <path d="${glassH}"/><clipPath id="bun-glass"><path d="${glassH}"/></clipPath><g clip-path="url(#bun-glass)"><path d="${Array.from({ length: 7 }, (_, i) => `M${216 + i * 12} 120 V300`).join(' ')} M204 216 H300 M204 254 H300 M204 178 Q252 150 300 178" stroke-width=".6"/></g><path d="M252 150 v-10" stroke-width="1.2"/><path d="M249 137 a3 3 0 1 0 6 0 a3 3 0 1 0 -6 0" class="glow"/>
+    ${blob(flowersIn, 'leaf', 1.6)}${crayon(blooms.map(([x, y, c]) => [c, dots([[x, y]], 3)]), 0, 0)}
+    <path d="M228 176 v16 M252 160 v20 M276 176 v16" stroke-width=".7"/>${blob(bush([[228, 196, 6], [252, 184, 6], [276, 196, 6]]), 'leaf', 1.2)}
+    <path d="${bunting}" stroke-width=".8"/>${crayon([['pink', flags[0] + flags[2] + flags[4]], ['custard', flags[1] + flags[3]]])}<path d="${flags.join(' ')}" stroke-width=".7"/>
+    <path d="${arch}" stroke-width="2.4"/>${blob(archRoses, 'leaf', 1.6)}${crayon([['pink', roseDots]], 0, 0)}
+    ${crayon([['paper', 'M292 272 H350 L346 282 H296 Z'], ['pink', `${teapot} M336 272 h8 v-6 h-8 Z`], ['custard', treats]])}
+    <path d="M292 272 H350 L346 282 H296 Z" stroke-width="1"/><path d="M296 282 q3 3 6 0 q3 3 6 0 q3 3 6 0 q3 3 6 0 q3 3 6 0 q3 3 6 0 q3 3 6 0 q3 3 6 0" stroke-width=".6"/><path d="M300 282 V${G} M342 282 V${G}" stroke-width="1"/>
+    <path d="${cakeStand}" stroke-width="1"/><path d="${treats}" stroke-width=".7"/>
+    <path d="${teapot}" stroke-width="1"/><path d="M308 266 q6 -2 6 -8 M290 266 q-5 0 -5 4 M297 260 h4" stroke-width=".9"/><path d="M336 272 h8 v-6 h-8 Z M344 268 q3 0 3 2" stroke-width=".8"/>
+    <path d="M354 ${G} l2 -14 h6 M356 ${G - 14} v-10 M286 ${G} l-2 -14 h-6" stroke-width="1"/>
+    ${crayon(rb.fills)}${rb.lines}
+    ${crayon([['pink', groundFlowers]], 0, 0)}
+    ${mascotAt(14, G - 33)}
+  `, `0 0 ${W} ${G + 12}`, 'store', 1.5);
+}
+export const JP_DRAFTS = { bunny: [bunnyCottage, 360, 312], alice: [aliceTeapot, 380, 312], kamakura: [kamakuraShop, 380, 312], hokkaido: [hokkaidoBarn, 380, 312], shitamachi: [shitamachiShop, 380, 312], showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
 
 // 隐藏款的尺寸和招牌位置（招牌上的店名由 HTML 叠上去）
 const HIDDEN = {
