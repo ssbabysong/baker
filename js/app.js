@@ -96,11 +96,11 @@ const LEVELS = [
   { at: 100, name: ['旗舰面包店', 'Flagship Bakery'], desc: ['三层的旗舰店，屋顶也开了空中露台，成了街区的地标', 'Three floors and a rooftop terrace: a neighborhood landmark'] },
   // 隐藏款：没解锁之前只露一个剪影和「???」
   { at: 200, hidden: true, name: ['百年老铺', 'Century Bakery'], desc: ['三层的欧洲老面包店：墨绿色木门面、条纹布篷、铸铁挂牌，二三楼挂着百叶窗', 'A three-story old-world bakery: forest-green woodwork, a striped awning and a wrought-iron sign'] },
-  { at: 300, hidden: true, name: ['玻璃花房', 'Glasshouse Café'], desc: ['花园里的玻璃咖啡馆：尖顶玻璃厅里挤满绿植和花，门前一小片花园和小圆桌', 'A glass café in a garden, full of plants and flowers, with little tables out front'] },
-  { at: 400, hidden: true, name: ['森林小木屋', 'Forest Cabin'], desc: ['林子里的圆木小屋，石头烟囱冒着烟，红色圆门、窗台花箱，门口堆着柴', 'A log cabin in the woods: a smoking stone chimney, a red round door and flower boxes'] },
-  { at: 500, hidden: true, name: ['北欧花园小屋', 'Nordic Garden House'], desc: ['红墙白边的北欧小屋，山墙上一扇三角窗，门前花园、长椅和树下的秋千', 'A red Nordic cottage with white trim, a garden bench and a swing under the tree'] },
+  { at: 300, hidden: true, name: ['伦敦茶室', 'London Tea Room'], desc: ['乔治风格的三层砖楼，黑色木门面配金色招牌，两扇弧形凸窗里摆着蛋糕架，门口挂着花篮', 'A Georgian brick townhouse: a black shopfront, a gold sign, cake stands in two bow windows and hanging baskets'] },
+  { at: 400, hidden: true, name: ['台南老街红砖店', 'Tainan Brick Shophouse'], desc: ['两层红砖街屋，一楼三个拱的骑楼下挂着灯笼，二楼长窗配绿百叶，屋顶一道山头', 'A red-brick shophouse with a three-arch arcade, lanterns, green shutters and an ornate parapet'] },
+  { at: 500, hidden: true, name: ['上海石库门老铺', 'Shanghai Shikumen'], desc: ['青砖墙、红砖腰线，正中石头门框和黑漆双门，两边条纹雨篷的橱窗，二楼铸铁小阳台', 'Grey brick with red bands, a stone gateway with black lacquered doors, striped awnings and iron balconies'] },
   { at: 700, hidden: true, name: ['京都町家老店', 'Kyoto Machiya'], desc: ['两层的京都町家：木格子、藏青暖帘、红灯笼，二楼挂着大木招牌，旁边一棵红枫', 'A two-story Kyoto townhouse: wooden lattice, an indigo noren, red lanterns and a maple'] },
-  { at: 1000, hidden: true, name: ['老街钟楼转角店', 'Clock Tower Corner'], desc: ['老城转角的三层楼，正中一座带尖顶和大钟的塔，金色招牌、门口一盏老路灯', 'A three-story corner shop with a clock tower and spire, a gold sign and an old street lamp'] },
+  { at: 1000, hidden: true, name: ['维也纳咖啡馆', 'Vienna Café'], desc: ['四层的老派大楼，窗上交替的三角和弧形窗楣，一楼深色木门面、金色大招牌，窗里亮着水晶吊灯', 'A grand four-story building: carved window crowns, a dark wood café front, a gold sign and chandeliers aglow'] },
 ];
 const lvName = (i) => L(...LEVELS[i].name);
 const lvDesc = (i) => L(...LEVELS[i].desc);
