@@ -105,6 +105,7 @@ img { max-width: 100%; display: block; }
 .f-soft { fill: var(--crust-soft); }
 .f-sky { fill: var(--sky); }
 .f-skysoft { fill: var(--sky-soft); }
+.f-sea { fill: var(--sea, var(--sky-soft)); }
 .f-leaf { fill: var(--leaf); }
 .f-wood { fill: var(--wood); }
 .f-tile { fill: var(--tile); }

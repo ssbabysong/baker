@@ -1199,7 +1199,183 @@ function ginzaParlor() {
     ${mascotAt(4, G - 33)}
   `, `0 0 ${W} ${G + 12}`, 'store', 1.5);
 }
-export const JP_DRAFTS = { showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
+// ---------- 日式隐藏款草稿 2：元素更多的场景 ----------
+const gull = (x, y, k = 1) => `<path d="M${x - 6 * k} ${y} q${3 * k} ${-4 * k} ${6 * k} 0 q${3 * k} ${-4 * k} ${6 * k} 0" stroke-width="1"/>`;
+const cat = (x, g, c = 'choco') => ({ fills: [[c, `M${x - 7} ${g} q-1 -12 7 -12 q8 0 7 12 Z M${x - 5} ${g - 12} l1 -6 l3 4 h2 l3 -4 l1 6 Z`]], lines: `<path d="M${x - 7} ${g} q-1 -12 7 -12 q8 0 7 12 Z M${x - 5} ${g - 12} l1 -6 l3 4 h2 l3 -4 l1 6" stroke-width="1"/><path d="M${x + 7} ${g - 2} q8 0 6 -10" stroke-width="1"/>` });
+const bike = (x, g, basket = true) => ({
+  fills: basket ? [['wood', `M${x + 14} ${g - 22} h12 v7 h-12 Z`], ['crust', `M${x + 15} ${g - 22} q3 -6 6 0 Z M${x + 20} ${g - 22} q3 -5 5 0 Z`]] : [],
+  lines: `<path d="M${x - 9} ${g - 9} a9 9 0 1 0 .1 0 M${x + 21} ${g - 9} a9 9 0 1 0 .1 0" stroke-width="1.1"/>
+    <path d="M${x - 9} ${g - 9} L${x + 3} ${g - 22} H${x + 16} L${x + 21} ${g - 9} M${x + 3} ${g - 22} L${x + 8} ${g - 9} L${x - 9} ${g - 9} M${x + 8} ${g - 9} L${x + 16} ${g - 22} M${x + 1} ${g - 26} h6 M${x + 16} ${g - 22} l1 -6 h4" stroke-width="1"/>
+    ${basket ? `<path d="M${x + 14} ${g - 22} h12 v7 h-12 Z" stroke-width=".9"/>` : ''}`,
+});
+const snowflakes = (pts) => pts.map(([x, y]) => `M${x - 2.5} ${y} h5 M${x} ${y - 2.5} v5 M${x - 1.8} ${y - 1.8} l3.6 3.6 M${x - 1.8} ${y + 1.8} l3.6 -3.6`).join(' ');
+
+// 镰仓海边的小面包店：背后是海和江之岛，江之电从坡下开过；白色木板小屋配蓝白条纹棚、绣球花、靠在墙边的冲浪板、车篮装着面包的自行车，屋顶上一只猫，天上几只海鸥
+function kamakuraShop() {
+  const W = 380, G = 300, SEA = 168;
+  let waves = ''; for (let x = 6; x < 374; x += 18) if (x + 18 < 118 || x > 250) waves += `M${x} ${SEA + 10 + (x % 36 ? 0 : 8)} q4.5 -4 9 0 q4.5 4 9 0 `;
+  const enoshima = `M268 ${SEA} Q282 ${SEA - 18} 298 ${SEA - 20} Q312 ${SEA - 22} 326 ${SEA - 10} Q336 ${SEA - 4} 344 ${SEA} Z`;
+  const tram = 'M10 186 H96 Q102 186 102 192 V214 H10 Z';
+  const tramWins = [16, 34, 52, 70].map((x) => `M${x} 190 h13 v10 h-13 Z`).join(' ');
+  const boards = Array.from({ length: 16 }, (_, i) => `M${124 + i * 9} 146 V${G}`).join(' ');
+  let awn = 'M118 210'; for (let i = 0; i < 9; i++) awn += ' q8 7 16 0';
+  const stripes = Array.from({ length: 5 }, (_, i) => `M${118 + i * 32} 198 h16 v12 h-16 Z`).join(' ');
+  const win = pane(130, 222, 58, 46, 3, 2), door = pane(208, 220, 32, 80, 1, 3), upw = pane(164, 156, 46, 30, 2, 2);
+  const ajisaiB = bush([[124, 290, 9], [138, 286, 10], [152, 292, 8], [286, 290, 9], [298, 292, 8]]);
+  const ajisaiDots = dots([[118, 286], [126, 282], [134, 284], [142, 280], [148, 288], [282, 286], [290, 282], [298, 288]], 2.4);
+  const bk = bike(334, G); const kitty = cat(206, 136);
+  return wrap(`
+    ${crayon([
+      ['sea', `M0 ${SEA} H${W} V${SEA + 30} H0 Z`], ['soft', `M250 ${SEA + 30} Q310 ${SEA + 24} ${W} ${SEA + 32} V${G} H250 Z`],
+      ['leaf', enoshima],
+      ['soft', `M0 216 H112 V${G} H0 Z`],
+      ['leaf', tram], ['paper', 'M10 200 H102 V206 H10 Z'], ['skysoft', tramWins],
+      ['tile', 'M108 148 L178 112 L258 148 Z'],
+      ['paper', `M118 146 H250 V${G} H118 Z`],
+      ['skysoft', `${win.fill} ${door.fill} ${upw.fill}`],
+      ['ai', stripes], ['paper', stripes.replace(/M(\d+) 198/g, (m, x) => `M${+x + 16} 198`)],
+      ['paper', 'M120 184 H248 V197 H120 Z'],
+      ['crust', `${loafRow(136, 246, 3, 16)} ${loafRow(136, 268, 3, 16)}`],
+      ['sky', 'M100 300 L94 236 Q98 222 106 236 L110 300 Z'],
+      ['choco', 'M252 ${G} V262 H274 V${G} Z'.replace(/\$\{G\}/g, G)],
+      ...bk.fills, ...kitty.fills,
+    ])}
+    <path d="M4 ${G} Q${W / 2} ${G + 2} ${W - 4} ${G - 1}"/>
+    <path d="M0 ${SEA} H${W}" stroke-width="1.2"/><path d="M250 ${SEA + 30} Q310 ${SEA + 24} ${W} ${SEA + 32}" stroke-width="1"/><path d="M300 236 q4 -3 8 0 M340 252 q4 -3 8 0 M286 270 q4 -3 8 0" stroke-width=".7" opacity=".6"/><path d="${waves}" stroke-width=".7" opacity=".6"/>
+    <path d="${enoshima}"/><path d="M304 ${SEA - 21} L305 ${SEA - 42} H309 L310 ${SEA - 21} M300 ${SEA - 42} h14 M302 ${SEA - 46} h10 l-2 4 h-6 Z M307 ${SEA - 46} v-5" stroke-width="1"/>
+    <path d="M30 ${SEA - 4} L30 ${SEA - 20} L40 ${SEA - 4} Z M24 ${SEA - 2} h20 l-3 4 h-14 Z" stroke-width=".9"/>
+    ${gull(70, 60)}${gull(96, 76, .8)}${gull(330, 54)}${gull(352, 70, .7)}
+    <path d="M0 216 H112 V${G}" stroke-width="1.1"/>${bricks(0, 112, 216, G, 10)}${blob(bush([[8, 232, 8], [24, 226, 9], [40, 232, 7], [70, 228, 8], [90, 232, 7]]), 'leaf', 1.6)}
+    <path d="${tram}"/><path d="${tramWins}" stroke-width=".8"/><path d="M10 200 H102 M10 206 H102" stroke-width=".7"/><path d="M28 184 L40 172 H60 M44 172 l6 -6" stroke-width=".9"/><path d="M22 214 a4 4 0 1 0 .1 0 M86 214 a4 4 0 1 0 .1 0" stroke-width=".9"/>
+    <path d="M108 148 L178 112 L258 148 Z"/><path d="M124 140 L178 116 L240 140" stroke-width=".6" opacity=".5"/>
+    <path d="M118 146 V${G} M250 146 V${G}"/><path d="${boards}" stroke-width=".45" opacity=".35"/>
+    ${upw.lines}<path d="M158 188 H216" stroke-width="1.4"/><path d="M166 188 q8 -8 16 0 q8 -8 16 0" stroke-width=".8"/>${blob(bush([[170, 190, 6], [186, 190, 6], [202, 190, 6]]), 'leaf', 1.4)}
+    <path d="M120 184 H248 V197 H120 Z" stroke-width="1"/>
+    <path d="M118 198 H262 V210" stroke-width="1"/><path d="M118 198 V210"/><path d="${awn}"/>
+    ${win.lines}<path d="${loafRow(136, 246, 3, 16)} ${loafRow(136, 268, 3, 16)}" stroke-width="1"/>
+    ${door.lines}<path d="M234 262 v6" stroke-width="1.6"/>
+    <path d="M100 300 L94 236 Q98 222 106 236 L110 300 Z"/><path d="M100 236 V296" stroke-width=".7"/>
+    ${blob(ajisaiB, 'leaf', 1.8)}${crayon([['sky', ajisaiDots], ['pink', dots([[130, 288], [294, 290]], 2.4)]], 0, 0)}
+    <path d="M252 ${G} V262 H274 V${G} M254 270 H272 M254 282 H272" stroke-width="1"/><text x="263" y="278" font-size="5.5" text-anchor="middle" stroke="none" class="sk-text ink-fill">PAN</text>
+    ${bk.lines}${kitty.lines}
+    ${lamp(196, 212)}
+    ${mascotAt(40, G - 33)}
+  `, `0 0 ${W} ${G + 12}`, 'store', 1.5);
+}
+
+// 北海道雪地牧场面包房：雪山脚下的红色谷仓面包房，复斜屋顶积着厚雪、檐下挂着冰柱，旁边一座圆顶筒仓；
+// 雪松、雪人、装满面包的雪橇、牛奶罐、积雪的木栅栏，烟囱冒烟，天上飘雪
+function hokkaidoBarn() {
+  const W = 380, G = 300;
+  const mtn = 'M0 150 L60 92 L104 128 L160 70 L220 132 L270 96 L330 140 L380 118 V170 H0 Z';
+  const mtnSnow = 'M48 104 L60 92 L72 102 L64 100 L58 106 Z M146 84 L160 70 L176 86 L166 82 L158 90 Z M258 106 L270 96 L282 106 L272 104 Z';
+  const barn = 'M120 170 L130 132 L190 104 L250 132 L260 170 V300 H120 Z';
+  const snowRoof = 'M116 172 Q118 160 128 132 Q160 116 190 100 Q222 116 252 132 Q262 160 264 172 Q258 166 254 140 Q222 124 190 110 Q158 124 126 140 Q122 166 116 172 Z';
+  const icicles = Array.from({ length: 14 }, (_, i) => `M${124 + i * 10} 171 l1.5 ${5 + (i % 3) * 3} l1.5 ${-(5 + (i % 3) * 3)} Z`).join(' ');
+  const planks = Array.from({ length: 13 }, (_, i) => `M${128 + i * 10} 172 V${G}`).join(' ');
+  const xdoor = 'M162 300 V232 H218 V300 M162 232 L218 300 M218 232 L162 300';
+  const silo = 'M270 300 V150 Q270 128 292 128 Q314 128 314 150 V300 Z';
+  const pine = (x, h) => `M${x} ${G - h} L${x - 20} ${G - h * .45} H${x - 9} L${x - 24} ${G - 14} H${x + 24} L${x + 9} ${G - h * .45} H${x + 20} Z`;
+  const pineSnow = (x, h) => `M${x} ${G - h} L${x - 10} ${G - h * .72} Q${x} ${G - h * .78} ${x + 10} ${G - h * .72} Z M${x - 18} ${G - h * .46} Q${x} ${G - h * .52} ${x + 18} ${G - h * .46} L${x + 14} ${G - h * .42} Q${x} ${G - h * .48} ${x - 14} ${G - h * .42} Z`;
+  const flakes = snowflakes([[30, 40], [80, 24], [122, 56], [210, 40], [250, 66], [300, 30], [350, 60], [20, 190], [100, 226], [340, 196], [236, 84], [150, 30]]);
+  const fence = Array.from({ length: 6 }, (_, i) => `M${326 + i * 9} ${G} V${G - 26}`).join(' ') + ` M322 ${G - 20} H376 M322 ${G - 10} H376`;
+  const fenceSnow = Array.from({ length: 6 }, (_, i) => `M${323 + i * 9} ${G - 26} q3 -4 6 0 Z`).join(' ');
+  const win = (x) => pane(x, 184, 26, 28, 2, 2);
+  const w1 = win(134), w2 = win(220);
+  return wrap(`
+    ${crayon([
+      ['sea', mtn], ['paper', mtnSnow],
+      ['leaf', `${pine(62, 120)} ${pine(352, 110)}`],
+      ['paper', `M0 ${G} Q40 ${G - 12} 90 ${G - 6} Q110 ${G - 2} 120 ${G} Z M260 ${G} Q300 ${G - 10} 380 ${G - 4} V${G} Z`],
+      ['paper', 'M104 284 a10 10 0 1 0 .1 0 Z M106 266 a7 7 0 1 0 .1 0 Z'],
+      ['wood', `M228 ${G - 4} H262 L266 ${G - 10} M228 ${G - 4} L226 ${G - 10}`], ['crust', `${loafRow(232, G - 10, 2, 13)}`],
+      ['tile', `M240 ${G - 12} h10 v-14 h-10 Z`],
+    ])}
+    <path d="M4 ${G} Q${W / 2} ${G + 2} ${W - 4} ${G - 1}"/>
+    <path d="${mtn.replace(' V170 H0 Z', '')}" stroke-width="1.1"/><path d="${mtnSnow}" stroke-width=".7"/>
+    <path d="${pine(62, 120)} ${pine(352, 110)}"/>${crayon([['paper', `${pineSnow(62, 120)} ${pineSnow(352, 110)}`]], 0, 0)}
+    <path d="${barn} ${silo} M136 104 H150 V128 H136 Z" class="f-paper" stroke="none"/>${crayon([['shu', barn], ['tile', silo], ['tile', 'M136 104 H150 V128 H136 Z']])}
+
+    ${crayon([['paper', snowRoof], ['paper', 'M150 140 H230 V158 H150 Z'], ['custard', `${w1.fill} ${w2.fill} M182 112 h16 v16 h-16 Z`], ['wood', 'M162 232 H218 V300 H162 Z'], ['paper', 'M268 150 Q268 124 292 124 Q316 124 316 150 Q304 144 292 144 Q280 144 268 150 Z']])}
+    <path d="M136 128 V104 H150 V120" stroke-width="1.2"/>${smoke(143, 100)}
+    <path d="${barn}"/><path d="${planks}" stroke-width=".45" opacity=".4"/><path d="${snowRoof}" stroke-width="1"/>
+    ${crayon([['paper', icicles]], 0, 0)}<path d="${icicles}" stroke-width=".6"/>
+    <path d="M182 112 h16 v16 h-16 Z M190 112 v16 M182 120 h16" stroke-width=".9"/>
+    <path d="M150 140 H230 V158 H150 Z"/>
+    ${w1.lines}${w2.lines}<path d="M130 212 H164 M216 212 H250" stroke-width="1.4"/><path d="M134 184 q13 -6 26 0 M220 184 q13 -6 26 0" stroke-width="2" stroke="#fffcf5"/>
+    <path d="${xdoor}" stroke-width="1.2"/><path d="M190 232 V300" stroke-width="1"/>
+    <path d="${silo}"/><path d="M268 150 Q268 124 292 124 Q316 124 316 150" stroke-width="1"/><path d="M270 180 H314 M270 220 H314 M270 260 H314" stroke-width=".7" opacity=".6"/>
+    <path d="${fence}" stroke-width="1"/>${crayon([['paper', fenceSnow]], 0, 0)}
+    <path d="M0 ${G} Q40 ${G - 12} 90 ${G - 6} Q110 ${G - 2} 120 ${G} M260 ${G} Q300 ${G - 10} 380 ${G - 4}" stroke-width="1"/>
+    <path d="M104 284 a10 10 0 1 0 .1 0 M106 266 a7 7 0 1 0 .1 0" stroke-width="1.1"/><path d="M103 271 h1 M109 271 h1" stroke-width="1.4"/><path d="M106 274 l5 1.5" stroke="#e8955a" stroke-width="1.6"/><path d="M99 262 h14 M102 262 v-6 h8 v6" stroke-width="1"/><path d="M98 284 l-10 -6 M114 284 l10 -6" stroke-width="1"/><path d="M101 270 q5 4 10 0" stroke-width="0" />
+    <path d="M228 ${G - 4} H262 L266 ${G - 10} M228 ${G - 4} L226 ${G - 10} M230 ${G} H264 Q270 ${G} 270 ${G - 6}" stroke-width="1.1"/><path d="${loafRow(232, G - 10, 2, 13)}" stroke-width=".9"/>
+    <path d="M240 ${G - 12} h10 v-14 h-10 Z M242 ${G - 26} h6 v-3 h-6 Z" stroke-width="1"/>
+    <path d="${flakes}" stroke-width=".8" opacity=".7"/>
+    ${mascotAt(4, G - 33)}
+  `, `0 0 ${W} ${G + 12}`, 'store', 1.5);
+}
+
+// 东京下町商店街老铺：头顶一道写着「商店街」的拱门招牌和一串灯笼，左边电线杆上缠着电线；
+// 正中是两层木造老铺，铁皮雨棚下一排玻璃柜摆着面包和手写价签，两边露出隔壁的菜摊和红色的烟草铺，门口自动贩卖机、自行车、一排盆栽和一只猫
+function shitamachiShop() {
+  const W = 380, G = 300;
+  const arch = 'M20 40 Q190 0 360 40 V58 Q190 18 20 58 Z';
+  const lanternsLine = 'M20 78 Q190 60 360 78';
+  const lant = [50, 90, 130, 170, 210, 250, 290, 330].map((x, i) => { const y = 78 - Math.sin((x - 20) / 340 * Math.PI) * 14; return [x, y]; });
+  const lantFill = lant.map(([x, y]) => `M${x - 5} ${y + 2} Q${x - 7} ${y + 8} ${x - 5} ${y + 14} H${x + 5} Q${x + 7} ${y + 8} ${x + 5} ${y + 2} Z`).join(' ');
+  const pole = 'M26 300 V70 M14 92 H40 M16 104 H38';
+  const wires = 'M26 92 Q120 100 380 90 M26 98 Q140 108 380 98 M26 104 Q90 112 200 106';
+  const main = 'M110 110 H270 V300 H110 Z';
+  const ups = [126, 172, 218].map((x) => pane(x, 120, 34, 32, 2, 2));
+  const tin = 'M100 176 L280 176 L274 196 H106 Z';
+  const tinRibs = Array.from({ length: 18 }, (_, i) => `M${108 + i * 9.6} 177 L${109 + i * 9.4} 195`).join(' ');
+  const case1 = pane(116, 216, 52, 40, 1, 2), case2 = pane(212, 216, 52, 40, 1, 2);
+  const tags = [[120, 234], [150, 234], [216, 234], [246, 234], [120, 254], [216, 254]].map(([x, y]) => `M${x} ${y} h10 v-6 h-10 Z`).join(' ');
+  const veg = bush([[20, 238, 6], [32, 236, 7], [46, 238, 6], [60, 236, 6]]);
+  const pots = [118, 134, 250, 266].map((x) => `M${x - 6} 300 L${x - 7} 290 H${x + 7} L${x + 6} 300 Z`).join(' ');
+  const potLeaf = bush([[118, 284, 7], [134, 282, 8], [250, 282, 8], [266, 284, 7]]);
+  const vend = pane(282, 236, 26, 30, 3, 2);
+  const kitty = cat(160, 300, 'paper'); const bk = bike(334, G, false);
+  return wrap(`
+    ${crayon([
+      ['shu', arch],
+      ['shu', lantFill],
+      ['leaf', 'M4 220 L20 204 H90 L104 220 Z'], ['wood', 'M10 222 H96 V244 H10 Z'],
+      ['soft', 'M0 110 H104 V300 H0 Z'.replace('M0 110', 'M0 110')],
+      ['sky', 'M276 120 H380 V300 H276 Z'], ['paper', 'M286 132 H370 V150 H286 Z'],
+      ['wood', main],
+      ['skysoft', ups.map((u) => u.fill).join(' ')],
+      ['paper', 'M128 156 H252 V172 H128 Z'],
+      ['tile', tin],
+      ['ai', 'M172 200 H208 V236 H172 Z'], ['soft', `M174 ${G} V238 H206 V${G} Z`],
+      ['skysoft', `${case1.fill} ${case2.fill}`],
+      ['crust', `${loafRow(120, 234, 3, 15)} ${loafRow(216, 234, 3, 15)} ${loafRow(120, 254, 3, 15)} ${loafRow(216, 254, 3, 15)}`],
+      ['paper', tags],
+      ['wood', pots],
+      ['shu', 'M280 226 H310 V300 H280 Z'], ['skysoft', vend.fill],
+      ['custard', 'M6 150 h18 v24 h-18 Z'], ['ai', 'M78 150 h18 v24 h-18 Z'],
+      ...kitty.fills,
+    ])}
+    <path d="M4 ${G} Q${W / 2} ${G + 2} ${W - 4} ${G - 1}"/>
+    <path d="M0 110 H104 V300 M0 140 H104" stroke-width="1"/><path d="M6 150 h18 v24 h-18 Z M78 150 h18 v24 h-18 Z" stroke-width=".9"/>
+    <path d="M4 220 L20 204 H90 L104 220 Z M10 222 H96 V244 H10 Z M14 244 V300 M92 244 V300" stroke-width="1"/>${blob(veg, 'leaf', 1.6)}${crayon([['shu', dots([[26, 232], [52, 232]], 3)], ['custard', dots([[38, 230]], 3)]], 0, 0)}
+    <path d="M276 120 H380 M276 120 V300" stroke-width="1"/><path d="M286 132 H370 V150 H286 Z" stroke-width="1"/><text x="328" y="145" font-size="10" text-anchor="middle" stroke="none" class="sk-text" fill="currentColor">たばこ</text>
+    <path d="${main}"/><path d="M106 110 H274" stroke-width="1.8"/>
+    ${ups.map((u) => u.lines).join('')}<path d="M128 156 H252 V172 H128 Z"/>
+    <path d="${tin}"/><path d="${tinRibs}" stroke-width=".5" opacity=".5"/>
+    <path d="M172 200 H208 V236 H172 Z M184 200 V236 M196 200 V236" stroke-width="1"/><path d="M168 198 H212" stroke-width="1.6"/>
+    <path d="M112 212 H172 V262 H112 Z M208 212 H268 V262 H208 Z" stroke-width="1"/>${case1.lines}${case2.lines}<path d="${loafRow(120, 234, 3, 15)} ${loafRow(216, 234, 3, 15)} ${loafRow(120, 254, 3, 15)} ${loafRow(216, 254, 3, 15)}" stroke-width=".9"/><path d="${tags}" stroke-width=".6"/>
+    <path d="M174 ${G} V238 H206 V${G} M190 238 V${G}" stroke-width="1"/><path d="M186 268 v6 M194 268 v6" stroke-width="1.6"/>
+    <path d="${pots}" stroke-width="1"/>${blob(potLeaf, 'leaf', 1.6)}
+    <path d="M280 226 H310 V300 H280 Z"/>${vend.lines}<path d="M284 274 h22 v8 h-22 Z M300 290 h6" stroke-width=".8"/>
+    ${kitty.lines}${bk.lines}
+    <path d="${pole}" stroke-width="2.4"/><path d="${wires}" stroke-width=".8"/>
+    <path d="${arch}"/><text x="190" y="40" font-size="13" text-anchor="middle" stroke="none" class="sk-text ink-fill">下 町 銀 座 商 店 街</text>
+    <path d="${lanternsLine}" stroke-width=".8"/><path d="${lantFill}" stroke-width=".9"/>
+    ${mascotAt(40, G - 33)}
+  `, `0 0 ${W} ${G + 12}`, 'store', 1.5);
+}
+export const JP_DRAFTS = { kamakura: [kamakuraShop, 380, 312], hokkaido: [hokkaidoBarn, 380, 312], shitamachi: [shitamachiShop, 380, 312], showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
 
 // 隐藏款的尺寸和招牌位置（招牌上的店名由 HTML 叠上去）
 const HIDDEN = {
