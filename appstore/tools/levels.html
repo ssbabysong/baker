@@ -1,7 +1,8 @@
 <!doctype html>
 <!-- 小店升级路线的宣传图，用 app 自己的简笔画店面拼出来：
      levels.html?kind=all&lang=zh        → 一张总图，8 个等级一字排开（1920×1080 @2x = 3840×2160）
-     levels.html?kind=one&lv=5&lang=zh   → 单个等级的大图（1024×1024 @2x = 2048×2048） -->
+     levels.html?kind=one&lv=5&lang=zh   → 单个等级的大图（1024×1024 @2x = 2048×2048）
+     levels.html?kind=xhs&lang=zh        → 小红书竖图 3:4，四排每排两家店（1242×1656 @2x = 2484×3312） -->
 <html><head><meta charset="utf-8">
 <link rel="stylesheet" href="../../css/style.css">
 <style>
@@ -102,6 +103,36 @@ if (kind === 'all') {
       const L = LEVELS[lv - 1];
       html += shop(lv, cx, H - groundY[ri], k, 15).html + `<div class="label" style="left:${cx}px;top:${groundY[ri] + 16}px">
         <span class="lv" style="font-size:17px">Lv.${lv}</span> <span class="nm" style="display:inline;font-size:25px;margin-left:6px">${T(L.name)}</span><span class="at" style="font-size:15px;margin-top:4px">${atText(L.at)}</span></div>`;
+      if (ci < row.length - 1) html += `<div class="arrow" style="left:${x + ws[ci] + gap / 2 - 14}px;top:${groundY[ri] - 54}px;font-size:30px">→</div>`;
+      x += ws[ci] + gap;
+    });
+  });
+  stage.innerHTML = html;
+} else if (kind === 'xhs') {
+  const W = 1242, H = 1656;
+  document.body.style.width = W + 'px'; document.body.style.height = H + 'px';
+  // 竖着往下走：越往下店越大；每排两家，按实际宽度居中
+  const k = 1.05, gap = 110;
+  const rows = [[1, 2], [3, 4], [5, 6], [7, 8]];
+  // 每排的地平线：上一排的字下面留出这一排最高那家店的高度
+  const groundY = [];
+  let y = 236;
+  for (const row of rows) { y += Math.max(...row.map((lv) => storefrontSign(lv).vbH * k)); groundY.push(y); y += 84; }
+  let html = `
+    <h1 style="top:56px;font-size:${zh ? 68 : 58}px;letter-spacing:${zh ? '.08em' : '.01em'}"><span>${zh ? '从小推车，到街角的地标' : 'From a little cart to a landmark'}</span></h1>
+    <div class="sub" style="top:164px;font-size:${zh ? 29 : 26}px">${zh ? '每出炉一次面包，你的小店就长大一点' : 'Every batch you bake grows your little shop'}</div>
+    ${cloud(90, 290, 130)}${cloud(1020, 300, 120)}
+    ${floatBread('croissant', 1100, 560, 60, -14)}${floatBread('pretzel', 70, 600, 62, 12)}${floatBread('toast', 1130, 900, 54, 8)}${floatBread('bagel', 60, 960, 54, -8)}
+    ${brand(W / 2 - 110, H - 80, 24)}`;
+  rows.forEach((row, ri) => {
+    const ws = row.map((lv) => storefrontSign(lv).vbW * k);
+    let x = (W - (ws.reduce((a, b) => a + b, 0) + gap * (row.length - 1))) / 2;
+    html += ground(50, groundY[ri] - 4, W - 100);
+    row.forEach((lv, ci) => {
+      const cx = x + ws[ci] / 2;
+      const L = LEVELS[lv - 1];
+      html += shop(lv, cx, H - groundY[ri], k, 14).html + `<div class="label" style="left:${cx}px;top:${groundY[ri] + 12}px">
+        <span class="lv" style="font-size:16px">Lv.${lv}</span> <span class="nm" style="display:inline;font-size:24px;margin-left:6px">${T(L.name)}</span><span class="at" style="font-size:14px;margin-top:2px">${atText(L.at)}</span></div>`;
       if (ci < row.length - 1) html += `<div class="arrow" style="left:${x + ws[ci] + gap / 2 - 14}px;top:${groundY[ri] - 54}px;font-size:30px">→</div>`;
       x += ws[ci] + gap;
     });
