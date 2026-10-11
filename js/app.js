@@ -94,6 +94,12 @@ const LEVELS = [
   { at: 45, name: ['两层小楼', 'Two-Story Bakery'], desc: ['加盖了带拱窗的二楼，屋顶立起一个大碱水面包', 'A second floor with arched windows and a giant pretzel on the roof'] },
   { at: 70, name: ['露台面包店', 'Terrace Bakery'], desc: ['盖了两层的新店，楼下落地窗，旁边开了露台', 'A new two-story shop with a glass front and a terrace next door'] },
   { at: 100, name: ['旗舰面包店', 'Flagship Bakery'], desc: ['三层的旗舰店，屋顶也开了空中露台，成了街区的地标', 'Three floors and a rooftop terrace: a neighborhood landmark'] },
+  // 隐藏款：没解锁之前只露一个剪影和「???」
+  { at: 200, hidden: true, name: ['石窑工坊', 'Stone Oven Workshop'], desc: ['砖砌的面包工坊，石窑里柴火烧得正旺，烟囱一直在冒烟', 'A brick workshop with a wood-fired stone oven and a chimney that never stops'] },
+  { at: 300, hidden: true, name: ['钟楼面包店', 'Clock Tower Bakery'], desc: ['店中间立起一座钟楼，指针停在七点——每天第一炉出炉的时间', 'A clock tower rises from the shop, stopped at seven: first batch of the day'] },
+  { at: 400, hidden: true, name: ['面包列车', 'Bakery Express'], desc: ['小蒸汽火车拉着一节咖啡车厢，车窗里摆满面包，开到哪卖到哪', 'A little steam engine pulling a café car full of bread, selling as it goes'] },
+  { at: 500, hidden: true, name: ['风车磨坊', 'Windmill Bakery'], desc: ['风车自己磨面粉，风帆慢慢转，脚下一间小面包屋，旁边一片麦子', 'A windmill grinding its own flour, a little bakehouse at its foot and wheat all around'] },
+  { at: 1000, hidden: true, name: ['面包城堡', 'Bread Castle'], desc: ['顶上一只大吐司、两座菠萝包圆顶塔楼，面包王国的城堡', 'A giant loaf on the keep and melon-bun domes on the towers: the castle of the bread kingdom'] },
 ];
 const lvName = (i) => L(...LEVELS[i].name);
 const lvDesc = (i) => L(...LEVELS[i].desc);
@@ -101,7 +107,9 @@ function levelOf(n) {
   let i = 0;
   while (i + 1 < LEVELS.length && n >= LEVELS[i + 1].at) i++;
   const next = LEVELS[i + 1];
-  return { lv: i + 1, name: lvName(i), next: next ? { at: next.at, name: lvName(i + 1) } : null, progress: next ? (n - LEVELS[i].at) / (next.at - LEVELS[i].at) : 1 };
+  // 下一级是隐藏款：名字先不告诉
+  const nextName = next && (next.hidden ? L('隐藏款', 'a secret shop') : lvName(i + 1));
+  return { lv: i + 1, name: lvName(i), hidden: !!LEVELS[i].hidden, next: next ? { at: next.at, name: nextName, hidden: !!next.hidden } : null, progress: next ? (n - LEVELS[i].at) / (next.at - LEVELS[i].at) : 1 };
 }
 
 // 门店插画 + 叠在招牌上的店名
@@ -122,9 +130,11 @@ async function showRoadmap() {
     <p class="small muted">${L(`每出炉一次就离下一级近一点。现在累计出炉 <b class="need">${n}</b> 次。`, `Every bake gets you closer. Baked so far: <b class="need">${n}</b>.`)} ${L('点已解锁的店面可以看大图。', 'Tap an unlocked shop to see it big.')}</p>
     <ol>${LEVELS.map((lvl, i) => {
       const st = i + 1 < cur.lv ? 'past' : i + 1 === cur.lv ? 'now' : 'next';
-      return `<li class="${st}" ${st !== 'next' ? `data-act="level-view" data-lv="${i + 1}" role="button"` : ''}>${shopFront(i + 1, '', true)}
-        <div class="t"><b>Lv.${i + 1} ${lvName(i)}</b>
-          <span class="small muted">${lvDesc(i)}</span>
+      const secret = lvl.hidden && st === 'next'; // 还没解锁的隐藏款：剪影 + 问号
+      const divider = lvl.hidden && !LEVELS[i - 1].hidden ? `<li class="secret-head">${L('— 隐藏款 —', '— Secret shops —')}</li>` : '';
+      return `${divider}<li class="${st} ${secret ? 'secret' : ''}" ${st !== 'next' ? `data-act="level-view" data-lv="${i + 1}" role="button"` : ''}>${shopFront(i + 1, '', true)}
+        <div class="t"><b>Lv.${i + 1} ${secret ? '???' : lvName(i)}</b>
+          <span class="small muted">${secret ? L('继续出炉，解锁之后才知道是什么', 'Keep baking to find out what it is') : lvDesc(i)}</span>
           <span class="small ${st === 'now' ? 'here' : 'muted'}">${st === 'now' ? L('你在这里', 'You are here') : st === 'past' ? L('已达成', 'Done')
             : L(`出炉 <b class="need">${lvl.at}</b> 次解锁`, `Unlocks at <b class="need">${lvl.at}</b> bakes`)}</span></div></li>`;
     }).join('')}</ol>
@@ -1010,7 +1020,7 @@ async function celebrate(count, shapeName) {
   if (up) playLevelUp(); else playChime();
   const left = b.next ? b.next.at - count : 0;
   await dialog(`<div class="celebrate">${up ? shopFront(b.lv, state.shop.name, true) : `<div class="duo">${shape(shapeName)}${mascot('yay')}</div>`}
-    <h3>${up ? L(`小店升级啦！Lv.${b.lv} ${b.name}`, `Level up! Lv.${b.lv} ${b.name}`) : L(`第 ${count} 炉出炉！`, `Batch #${count} is out!`)}</h3>
+    <h3>${up ? (b.hidden ? L(`解锁隐藏款！Lv.${b.lv} ${b.name}`, `Secret shop unlocked! Lv.${b.lv} ${b.name}`) : L(`小店升级啦！Lv.${b.lv} ${b.name}`, `Level up! Lv.${b.lv} ${b.name}`)) : L(`第 ${count} 炉出炉！`, `Batch #${count} is out!`)}</h3>
     ${up ? `<p class="small muted" style="margin-top:-4px">${lvDesc(b.lv - 1)}</p>` : ''}
     <p class="muted">${b.next ? L(`再出炉 ${left} 次，就能升级成「${b.next.name}」`, `${left} more to become “${b.next.name}”`) : L('已经是最高等级的小店了', 'Your shop is at the top level')}</p>
     <button class="btn primary" data-dlg="ok">${L('好耶', 'Yay')}</button></div>`);

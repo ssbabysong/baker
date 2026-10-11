@@ -255,6 +255,9 @@ a.card { display: block; text-decoration: none; }
 .level-big h3 { margin: 4px 0 2px; }
 .level-big .row { gap: 10px; margin-top: 12px; }
 .roadmap li.next .storefront { opacity: .45; filter: grayscale(.7); }
+/* 还没解锁的隐藏款：只看得到一个剪影 */
+.roadmap li.secret .storefront { opacity: .22; filter: brightness(0); }
+.roadmap li.secret-head { justify-content: center; padding: 6px 0 0; font-family: var(--title); color: var(--ink-soft); letter-spacing: .1em; }
 .roadmap .here { color: var(--shu); }
 /* 升级路线和首页里的次数：用清楚的打字机数字，大一号、面包皮棕色 */
 /* 和下面统计数字同一套字体（Courier 常规体），只是换成棕色 */
@@ -733,3 +736,9 @@ dialog h3 { margin: 0 0 8px; font-size: 21px; }
 .home-foot { display: flex; justify-content: center; margin: 40px 0 0; }
 .house-logo { width: 46px; height: 46px; color: var(--doodle); opacity: .85; }
 .house-logo .pretzel-in { stroke: var(--crust); }
+
+/* 隐藏款 Lv12 风车：风帆慢慢转 */
+.store .blade { fill: var(--card); }
+.store .sails { transform-box: view-box; transform-origin: 140px 104px; animation: sails 18s linear infinite; }
+@keyframes sails { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .store .sails { animation: none; } }

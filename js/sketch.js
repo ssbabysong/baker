@@ -254,7 +254,7 @@ const tiles = (x0, x1, y, w) => {
   return d;
 };
 
-// 门店插画随店铺等级变化（一共 8 级），房子的建筑风格也跟着变：
+// 门店插画随店铺等级变化（8 级 + 5 个隐藏款，见文件后面的 HIDDEN），房子的建筑风格也跟着变：
 // Lv1–2 木造：周末小推车 → 私房小铺（单间小铺）
 // Lv3–4 和风町屋：熟客小店（灯笼、长椅和猫、红毡长凳和红伞）→ 街角面包店（门面往右扩、第二扇大橱窗、一对灯笼、窗台香草、自行车）
 // Lv5–6 昭和复古：排队小店（红白条纹布篷、拱形橱窗、马赛克瓷砖、搪瓷招牌、门口排队）→ 两层小楼（拱窗二楼、屋顶大碱水面包）
@@ -268,6 +268,8 @@ const PRETZEL = 'M18 43 C22 36 28 30 32 26 C36 22 40 16 46 16 C54 16 58 24 56 34
 const pretzelAt = (tx, ty, k) => `<g transform="translate(${tx} ${ty}) scale(${k})"><path d="${PRETZEL}" stroke-width="9"/><path class="rope" d="${PRETZEL}" stroke-width="5"/></g>`;
 
 export function storefrontSign(level = 3) {
+  const h = HIDDEN[level];
+  if (h) return { ...h.sign, vbW: h.W, vbH: h.H };
   const vbW = widthOf(level);
   if (level <= 1) return { x: 72, y: 40, w: 96, h: 18, vbW, vbH: 190 };
   if (level === 2) return { x: 76, y: 80, w: 88, h: 16, vbW, vbH: 190 };
@@ -746,8 +748,222 @@ function grownShop(level, cls) {
   `, `0 0 ${W} ${190 + dy}`, `store ${cls}`, 1.5);
 }
 
+
+// ---------- 隐藏款（Lv9–13）：出炉 200 / 300 / 400 / 500 / 1000 次才解锁 ----------
+// 每一款都是单独画的一栋，不再沿用前面的楼层叠加；地平线在 H - 12，店长站在左下角
+const mascotAt = (x, y) => `<g transform="translate(${x} ${y}) scale(0.6)" stroke-width="2.5">${mascotBody('wave')}</g>`;
+const smoke = (x, y) => `<path d="M${x} ${y} q-6 -6 0 -12 q6 -6 0 -12 q-5 -5 1 -10" stroke-width="1.3" opacity=".55"/><path d="M${x + 8} ${y - 6} q-4 -5 1 -9 q5 -4 1 -9" stroke-width="1.1" opacity=".4"/>`;
+const flag = (x, y, c) => ({ fills: [[c, `M${x} ${y} L${x + 16} ${y + 5} L${x} ${y + 10} Z`]], lines: `<path d="M${x} ${y + 22} V${y - 2}"/><path d="M${x} ${y} L${x + 16} ${y + 5} L${x} ${y + 10} Z"/>` });
+const bricks = (x0, x1, y0, y1, step = 9) => {
+  let out = '';
+  for (let y = y0 + step, r = 0; y < y1; y += step, r++) {
+    out += `<path d="M${x0} ${y} H${x1}" stroke-width=".6" opacity=".4"/>`;
+    for (let x = x0 + (r % 2 ? 9 : 18); x < x1; x += 18) out += `<path d="M${x} ${y - step} v${step}" stroke-width=".6" opacity=".4"/>`;
+  }
+  return out;
+};
+const loafRow = (x, y, n, gap = 15) => Array.from({ length: n }, (_, i) => `M${x + i * gap} ${y} c0 -7 4 -10 6 -10 c2 0 6 3 6 10 Z`).join(' ');
+
+// Lv9 石窑工坊：砖砌的面包工坊，正中一口拱形石窑里烧着柴火，高烟囱冒烟，门口堆着面粉袋、靠着木铲
+function workshop() {
+  const W = 300, G = 238;
+  return wrap(`
+    ${crayon([
+      ['tile', 'M28 92 L150 38 L272 92 Z'],
+      ['shu', 'M198 30 H220 V66 H198 Z'],
+      ['soft', `M44 92 H256 V${G} H44 Z`],
+      ['wood', 'M96 100 H204 V122 H96 Z'],
+      ['tile', `M100 ${G} V176 C100 150 120 136 150 136 C180 136 200 150 200 176 V${G} Z`],
+      ['choco', `M114 ${G} V184 C114 164 130 154 150 154 C170 154 186 164 186 184 V${G} Z`],
+      ['custard', `M124 ${G - 4} C126 214 136 206 140 196 C144 210 150 200 152 190 C156 204 164 210 166 ${G - 4} Z`],
+      ['shu', `M134 ${G - 4} C136 222 142 216 144 208 C148 218 154 214 156 ${G - 4} Z`],
+      ['paper', 'M56 140 H90 V188 H56 Z'],
+      ['crust', `${loafRow(60, 160, 2)} ${loafRow(60, 184, 2)}`],
+      ['wood', `M212 170 H240 V${G} H212 Z`],
+      ['paper', `M252 ${G} V214 Q252 206 262 206 Q272 206 272 214 V${G} Z M266 ${G} V220 Q266 212 276 212 Q286 212 286 220 V${G} Z`],
+    ])}
+    <path d="M4 ${G} Q${W / 2} ${G + 2} ${W - 4} ${G - 1}"/>
+    <path d="M28 92 L150 38 L272 92 Z"/><path d="M60 78 L150 40 L240 78" stroke-width=".8" opacity=".45"/>
+    <path d="M198 66 V30 H220 V56"/><path d="M194 30 H224"/>${bricks(198, 220, 30, 66, 7)}${smoke(209, 26)}
+    <path d="M44 92 V${G}"/><path d="M256 92 V${G}"/>${bricks(44, 256, 124, 136)}${bricks(44, 96, 190, G)}${bricks(204, 212, 136, 170)}
+    <path d="M96 100 H204 V122 H96 Z"/><path d="M110 100 L114 94 M190 100 L186 94"/>
+    <path d="M100 ${G} V176 C100 150 120 136 150 136 C180 136 200 150 200 176 V${G}"/>
+    <path d="M150 136 v8 M124 142 l3 6 M176 142 l-3 6 M106 160 l6 2 M194 160 l-6 2" stroke-width="1.2"/>
+    <path d="M114 ${G} V184 C114 164 130 154 150 154 C170 154 186 164 186 184 V${G}"/>
+    <path d="M124 ${G - 4} C126 214 136 206 140 196 C144 210 150 200 152 190 C156 204 164 210 166 ${G - 4}" stroke-width="1.2"/>
+    <path d="M122 ${G - 2} L178 ${G - 8} M124 ${G - 8} L176 ${G - 2}" stroke-width="2"/>
+    <path d="M56 140 H90 V188 H56 Z"/><path d="M56 164 H90" stroke-width="1"/><path d="${loafRow(60, 160, 2)} ${loafRow(60, 184, 2)}" stroke-width="1.1"/>
+    <path d="M212 ${G} V170 H240 V${G}"/><path d="M226 170 V${G}" stroke-width=".8"/><path d="M220 206 v6 M232 206 v6" stroke-width="1.6"/>
+    <path d="M252 ${G} V214 Q252 206 262 206 Q272 206 272 214 V${G}"/><path d="M266 ${G} V220 Q266 212 276 212 Q286 212 286 220 V${G}"/>
+    <path d="M256 206 q6 -4 12 0 M270 212 q6 -4 12 0" stroke-width="1"/>
+    <text x="262" y="226" font-size="8" text-anchor="middle" stroke="none" class="sk-text ink-fill">粉</text>
+    <path d="M292 ${G} L276 170" stroke-width="2"/><path d="M276 170 c-6 -4 -6 -16 2 -18 c8 -2 10 10 4 18 Z"/>
+    ${mascotAt(8, G - 33)}
+  `, `0 0 ${W} ${G + 12}`, 'store', 1.5);
+}
+
+// Lv10 钟楼面包店：欧式两层店面，正中一座钟楼（指针停在七点：早上第一炉出炉的时间），尖顶上插着小旗
+function clockTower() {
+  const W = 320, G = 288;
+  const ticks = Array.from({ length: 12 }, (_, i) => { const a = i / 12 * Math.PI * 2; return `<path d="M${(160 + Math.sin(a) * 17).toFixed(1)} ${(104 - Math.cos(a) * 17).toFixed(1)} L${(160 + Math.sin(a) * 20).toFixed(1)} ${(104 - Math.cos(a) * 20).toFixed(1)}" stroke-width="1"/>`; }).join('');
+  const awning = (x) => { let d = `M${x} 196`; for (let i = 0; i < 4; i++) d += ` q7.5 6 15 0`; return d; };
+  const stripes = (x) => [0, 2].map((i) => `M${x + i * 15} 186 H${x + i * 15 + 15} V196 H${x + i * 15} Z`).join(' ');
+  const f = flag(160, 4, 'shu');
+  return wrap(`
+    ${crayon([
+      ['ai', 'M120 64 L160 14 L200 64 Z'],
+      ['paper', `M126 64 H194 V${G} H126 Z M30 150 H290 V${G} H30 Z`],
+      ['tile', 'M22 150 L34 138 H286 L298 150 Z'],
+      ['card', 'M160 82 a22 22 0 1 0 .1 0 Z'],
+      ['shu', `${stripes(40)} ${stripes(220)}`],
+      ['paper', `M40 186 H100 V196 H40 Z M220 186 H280 V196 H220 Z`],
+      ['skysoft', 'M40 206 H100 V256 H40 Z M220 206 H280 V256 H220 Z'],
+      ['crust', `${loafRow(44, 230, 4)} ${loafRow(44, 254, 4)} ${loafRow(224, 230, 4)} ${loafRow(224, 254, 4)}`],
+      ['wood', `M146 ${G} V232 Q146 218 160 218 Q174 218 174 232 V${G} Z M104 184 H216 V204 H104 Z`],
+      ['skysoft', 'M48 160 q0 -8 8 -8 q8 0 8 8 V176 H48 Z M80 160 q0 -8 8 -8 q8 0 8 8 V176 H80 Z M224 160 q0 -8 8 -8 q8 0 8 8 V176 H224 Z M256 160 q0 -8 8 -8 q8 0 8 8 V176 H256 Z'],
+      ...f.fills,
+    ])}
+    <path d="M4 ${G} Q${W / 2} ${G + 2} ${W - 4} ${G - 1}"/>
+    ${f.lines}
+    <path d="M120 64 L160 14 L200 64 Z"/><path d="M140 64 L160 14 L180 64" stroke-width=".8" opacity=".5"/>
+    <path d="M126 64 V138"/><path d="M194 64 V138"/><path d="M122 64 H198"/>
+    <path d="M160 82 a22 22 0 1 0 .1 0"/>${ticks}<path d="M160 104 L160 90 M160 104 L152 113" stroke-width="2"/>
+    <path d="M150 128 h20" stroke-width="1"/><path d="M152 128 v8 M168 128 v8" stroke-width="1"/>
+    <path d="M22 150 L34 138 H286 L298 150 Z"/><path d="M30 150 V${G}"/><path d="M290 150 V${G}"/>
+    <path d="M48 160 q0 -8 8 -8 q8 0 8 8 V176 H48 Z"/><path d="M80 160 q0 -8 8 -8 q8 0 8 8 V176 H80 Z"/><path d="M224 160 q0 -8 8 -8 q8 0 8 8 V176 H224 Z"/><path d="M256 160 q0 -8 8 -8 q8 0 8 8 V176 H256 Z"/>
+    <path d="M56 152 V176 M88 152 V176 M232 152 V176 M264 152 V176" stroke-width=".8"/>
+    <path d="M104 184 H216 V204 H104 Z"/>
+    <path d="M40 196 V186 H100 V196"/><path d="${awning(40)}"/><path d="M220 196 V186 H280 V196"/><path d="${awning(220)}"/>
+    <path d="M42 206 H109 V256 H42 Z"/><path d="M42 232 H109" stroke-width=".9"/><path d="${loafRow(44, 230, 4)} ${loafRow(44, 254, 4)} ${loafRow(224, 230, 4)} ${loafRow(224, 254, 4)}" stroke-width="1"/><path d="M211 206 H278 V256 H211 Z"/><path d="M211 232 H278" stroke-width=".9"/>
+    <path d="M146 ${G} V232 Q146 218 160 218 Q174 218 174 232 V${G}"/><path d="M160 218 V${G}" stroke-width=".9"/><path d="M155 254 v6 M165 254 v6" stroke-width="1.6"/>
+    <path d="M36 ${G} V262 H104 V${G} M216 ${G} V262 H284 V${G}" stroke-width="1"/>
+    ${mascotAt(4, G - 33)}
+  `, `0 0 ${W} ${G + 12}`, 'store', 1.5);
+}
+
+// Lv11 面包列车：一节咖啡车厢挂在小蒸汽火车头后面，车窗里摆满面包，车顶立着招牌，铁轨在脚下
+function bakeryTrain() {
+  const W = 380, G = 198;
+  const ties = Array.from({ length: 19 }, (_, i) => `<path d="M${10 + i * 20} ${G - 2} v6" stroke-width="2"/>`).join('');
+  const wheel = (x, r = 10) => `<path d="M${x} ${G - 6 - r * 2} a${r} ${r} 0 1 0 .1 0"/><path d="M${x} ${G - 6 - r} m-2 0 h4" stroke-width="2"/>`;
+  return wrap(`
+    ${crayon([
+      ['crust', 'M42 100 Q42 88 56 88 H232 Q246 88 246 100 Z'],
+      ['paper', 'M46 100 H242 V170 H46 Z'],
+      ['wood', 'M70 66 H218 V86 H70 Z'],
+      ['skysoft', 'M58 110 H98 V140 H58 Z M106 110 H146 V140 H106 Z M154 110 H194 V140 H154 Z'],
+      ['crust', `${loafRow(62, 140, 3, 12)} ${loafRow(110, 140, 3, 12)} ${loafRow(158, 140, 3, 12)}`],
+      ['wood', 'M206 110 H232 V170 H206 Z'],
+      ['shu', 'M46 150 H242 V158 H46 Z'],
+      ['ai', 'M282 112 H350 Q362 112 362 126 V170 H282 Z'],
+      ['shu', 'M252 92 H290 V170 H252 Z'],
+      ['tile', 'M248 86 H294 V94 H248 Z M318 84 H334 V112 H318 Z'],
+      ['custard', 'M262 102 H280 V120 H262 Z'],
+    ])}
+    <path d="M4 ${G} H${W - 4}"/><path d="M4 ${G + 4} H${W - 4}" stroke-width="1"/>${ties}
+    <path d="M70 66 H218 V86 H70 Z"/><path d="M84 86 V88 M204 86 V88"/>
+    <path d="M42 100 Q42 88 56 88 H232 Q246 88 246 100 Z"/><path d="M46 100 H242 V170 H46 Z"/>
+    <path d="M58 110 H98 V140 H58 Z"/><path d="M106 110 H146 V140 H106 Z"/><path d="M154 110 H194 V140 H154 Z"/>
+    <path d="${loafRow(62, 140, 3, 12)} ${loafRow(110, 140, 3, 12)} ${loafRow(158, 140, 3, 12)}" stroke-width="1"/>
+    <path d="M206 110 H232 V170 H206 Z"/><path d="M219 110 V170" stroke-width=".8"/><path d="M226 138 v6" stroke-width="1.6"/>
+    <path d="M46 150 H242 M46 158 H242" stroke-width="1"/>
+    <path d="M60 170 V178 H228 V170"/>${wheel(76)}${wheel(108)}${wheel(180)}${wheel(212)}
+    <path d="M242 160 H252" stroke-width="2"/>
+    <path d="M248 86 H294 V94 H248 Z"/><path d="M252 94 V170 H290 V94"/><path d="M262 102 H280 V120 H262 Z"/>
+    <path d="M282 112 H350 Q362 112 362 126 V170 H282"/><path d="M300 112 V170 M330 112 V170" stroke-width=".8" opacity=".6"/>
+    <path d="M318 112 V84 H334 V112"/><path d="M314 84 H338"/>${smoke(326, 80)}
+    <path d="M362 150 L374 170 H362"/><path d="M362 134 h6" stroke-width="2"/>
+    ${wheel(270)}${wheel(306, 13)}${wheel(342, 13)}<path d="M270 ${G - 16} L342 ${G - 19}" stroke-width="2"/>
+    ${mascotAt(4, G - 33)}
+  `, `0 0 ${W} ${G + 12}`, 'store', 1.5);
+}
+
+// Lv12 风车磨坊：自己磨面粉的风车，四片风帆慢慢转；风车脚下接出一间面包小屋，旁边一片麦子
+function windmill() {
+  const W = 320, G = 308, hx = 140, hy = 104;
+  const blade = (deg) => `<g transform="rotate(${deg} ${hx} ${hy})"><path d="M${hx - 3} ${hy - 8} V${hy - 92} H${hx + 15} V${hy - 18} Z" class="blade"/><path d="M${hx - 3} ${hy - 8} V${hy - 92} H${hx + 15} V${hy - 18} Z"/>
+    <path d="M${hx + 3} ${hy - 12} V${hy - 92} M${hx + 9} ${hy - 15} V${hy - 92}" stroke-width=".7"/>${[30, 46, 62, 78].map((d) => `<path d="M${hx - 3} ${hy - d} H${hx + 15}" stroke-width=".7"/>`).join('')}</g>`;
+  const wheat = Array.from({ length: 3 }, (_, i) => { const x = 54 + i * 12; return `<path d="M${x} ${G} q-2 -22 2 -40" stroke-width="1.1"/><path d="M${x + 2} ${G - 40} q-5 4 -3 12 M${x + 2} ${G - 40} q5 4 3 12 M${x + 1} ${G - 32} q-5 4 -3 10 M${x + 1} ${G - 32} q5 4 3 10" stroke-width="1"/>`; }).join('');
+  return wrap(`
+    ${crayon([
+      ['paper', `M92 ${G} L112 110 H168 L188 ${G} Z`],
+      ['shu', 'M104 112 C104 92 120 80 140 80 C160 80 176 92 176 112 Z'],
+      ['wood', `M126 ${G} V262 Q126 248 140 248 Q154 248 154 262 V${G} Z M122 196 H158 V212 H122 Z`],
+      ['skysoft', 'M132 140 q0 -8 8 -8 q8 0 8 8 V158 H132 Z'],
+      ['tile', 'M172 236 L190 214 H292 L310 236 Z'],
+      ['soft', `M180 236 H302 V${G} H180 Z`],
+      ['wood', 'M184 244 H298 V262 H184 Z'],
+      ['skysoft', 'M196 272 H236 V296 H196 Z'],
+      ['crust', `${loafRow(200, 296, 3, 11)}`],
+      ['wood', `M262 ${G} V274 H286 V${G} Z`],
+            ['custard', Array.from({ length: 3 }, (_, i) => { const x = 56 + i * 12; return `M${x} ${G - 40} q-5 4 -3 12 q3 0 3 -12 q5 4 3 12 q-3 0 -3 -12 Z`; }).join(' ')],
+    ])}
+    <path d="M4 ${G} Q${W / 2} ${G + 2} ${W - 4} ${G - 1}"/>
+    <path d="M92 ${G} L112 110 M168 110 L188 ${G}"/><path d="M104 112 C104 92 120 80 140 80 C160 80 176 92 176 112 Z"/><path d="M110 112 H170"/>
+    <path d="M100 220 L180 220 M96 264 L184 264" stroke-width=".8" opacity=".5"/>
+    <path d="M132 140 q0 -8 8 -8 q8 0 8 8 V158 H132 Z"/><path d="M140 132 V158" stroke-width=".8"/>
+    <path d="M122 196 H158 V212 H122 Z"/><text x="140" y="208" font-size="9" text-anchor="middle" stroke="none" class="sk-text ink-fill">磨坊</text>
+    <path d="M126 ${G} V262 Q126 248 140 248 Q154 248 154 262 V${G}"/><path d="M146 280 v6" stroke-width="1.6"/>
+    <g class="sails">${[15, 105, 195, 285].map(blade).join('')}<path d="M${hx} ${hy - 6} a6 6 0 1 0 .1 0"/></g>
+    <path d="M172 236 L190 214 H292 L310 236 Z"/><path d="M180 236 V${G} M302 236 V${G}"/>
+    <path d="M184 244 H298 V262 H184 Z"/>
+    <path d="M196 272 H236 V296 H196 Z"/><path d="${loafRow(200, 296, 3, 11)}" stroke-width="1"/>
+    <path d="M262 ${G} V274 H286 V${G}"/><path d="M280 288 v5" stroke-width="1.6"/>
+    ${wheat}
+    ${mascotAt(4, G - 33)}
+  `, `0 0 ${W} ${G + 12}`, 'store', 1.5);
+}
+
+// Lv13 面包城堡：街区尽头的城堡——主楼顶上是一只大吐司，两座塔楼戴着菠萝包圆顶，城门上挂着招牌，到处插着小旗
+function breadCastle() {
+  const W = 360, G = 318;
+  const cren = (x0, x1, y) => { let d = `M${x0} ${y}`; for (let x = x0; x < x1; x += 12) d += ` V${y - 8} H${x + 6} V${y} H${Math.min(x + 12, x1)}`; return d; };
+  const melonDome = (cx, y) => `M${cx - 34} ${y} C${cx - 34} ${y - 30} ${cx - 16} ${y - 44} ${cx} ${y - 44} C${cx + 16} ${y - 44} ${cx + 34} ${y - 30} ${cx + 34} ${y} Z`;
+  const grid = (cx, y) => `<path d="M${cx - 22} ${y - 6} L${cx + 6} ${y - 40} M${cx - 6} ${y - 2} L${cx + 22} ${y - 34} M${cx - 26} ${y - 22} L${cx - 2} ${y - 2} M${cx - 10} ${y - 40} L${cx + 22} ${y - 8}" stroke-width=".8" opacity=".6"/>`;
+  const f1 = flag(66, 60, 'shu'), f2 = flag(294, 60, 'ai'), f3 = flag(180, 10, 'shu');
+  const slit = (x, y) => `M${x} ${y + 16} V${y + 4} q4 -6 8 0 V${y + 16} Z`;
+  return wrap(`
+    ${crayon([
+      ['crust', 'M134 102 V70 C122 70 118 56 126 46 C134 36 150 38 156 44 C164 34 196 34 204 44 C210 38 226 36 234 46 C242 56 238 70 226 70 V102 Z'],
+      ['soft', 'M142 98 V74 C134 72 132 62 138 56 C144 50 154 52 158 58 C166 48 194 48 202 58 C206 52 216 50 222 56 C228 62 226 72 218 74 V98 Z'],
+      ['paper', `M120 110 H240 V${G} H120 Z M32 132 H100 V${G} H32 Z M260 132 H328 V${G} H260 Z`],
+      ['crust', `${melonDome(66, 126)} ${melonDome(294, 126)}`],
+      ['tile', `M104 300 H120 V${G} H104 Z M240 300 H256 V${G} H240 Z`],
+      ['wood', `M154 ${G} V266 Q154 244 180 244 Q206 244 206 266 V${G} Z M116 216 H244 V236 H116 Z`],
+      ['ai', 'M132 130 H148 V178 L140 172 L132 178 Z M212 130 H228 V178 L220 172 L212 178 Z'],
+      ['skysoft', `${slit(62, 160)} ${slit(62, 220)} ${slit(290, 160)} ${slit(290, 220)} ${slit(176, 150)}`],
+      ...f1.fills, ...f2.fills, ...f3.fills,
+    ])}
+    <path d="M4 ${G} Q${W / 2} ${G + 2} ${W - 4} ${G - 1}"/>
+    ${f1.lines}${f2.lines}${f3.lines}
+    <path d="M134 102 V70 C122 70 118 56 126 46 C134 36 150 38 156 44 C164 34 196 34 204 44 C210 38 226 36 234 46 C242 56 238 70 226 70 V102"/>
+    <path d="M142 98 V74 C134 72 132 62 138 56 C144 50 154 52 158 58 C166 48 194 48 202 58 C206 52 216 50 222 56 C228 62 226 72 218 74 V98" stroke-width=".9" opacity=".7"/>
+    <path d="${cren(120, 240, 110)}"/><path d="M120 110 V${G} M240 110 V${G}"/><path d="M128 102 H232"/>
+    <path d="${melonDome(66, 126)}"/>${grid(66, 126)}<path d="${melonDome(294, 126)}"/>${grid(294, 126)}
+    <path d="${cren(30, 102, 134)}"/><path d="M32 134 V${G} M100 134 V${G}"/><path d="${cren(258, 330, 134)}"/><path d="M260 134 V${G} M328 134 V${G}"/>
+    <path d="${slit(62, 160)}"/><path d="${slit(62, 220)}"/><path d="${slit(290, 160)}"/><path d="${slit(290, 220)}"/><path d="${slit(176, 150)}"/>
+    <path d="M132 130 H148 V178 L140 172 L132 178 Z"/><path d="M212 130 H228 V178 L220 172 L212 178 Z"/>
+    <path d="M116 216 H244 V236 H116 Z"/>
+    <path d="M154 ${G} V266 Q154 244 180 244 Q206 244 206 266 V${G}"/>
+    <path d="M164 ${G} V256 M180 ${G} V246 M196 ${G} V256 M156 270 H204 M155 290 H205" stroke-width="1"/>
+    <path d="M104 300 H120 M240 300 H256"/><path d="M104 300 V${G} M256 300 V${G}"/>
+    ${mascotAt(4, G - 33)}
+  `, `0 0 ${W} ${G + 12}`, 'store', 1.5);
+}
+
+// 隐藏款的尺寸和招牌位置（招牌上的店名由 HTML 叠上去）
+const HIDDEN = {
+  9: { draw: workshop, W: 300, H: 250, sign: { x: 96, y: 100, w: 108, h: 22 } },
+  10: { draw: clockTower, W: 320, H: 300, sign: { x: 104, y: 184, w: 112, h: 20 } },
+  11: { draw: bakeryTrain, W: 380, H: 210, sign: { x: 70, y: 66, w: 148, h: 20 } },
+  12: { draw: windmill, W: 320, H: 320, sign: { x: 184, y: 244, w: 114, h: 18 } },
+  13: { draw: breadCastle, W: 360, H: 330, sign: { x: 116, y: 216, w: 128, h: 20 } },
+};
+export const MAX_LEVEL = 13;
+
 export function storefront(level = 3, cls = '') {
   const tag = (svg) => svg.replace('class="sk store', `class="sk store ${cls}`);
+  if (HIDDEN[level]) return tag(HIDDEN[level].draw());
   if (level <= 1) return tag(stallCart());
   if (level === 2) return tag(tinyShop());
   if (level <= 4) return machiya(level, cls);
