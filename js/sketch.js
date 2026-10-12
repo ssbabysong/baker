@@ -254,7 +254,7 @@ const tiles = (x0, x1, y, w) => {
   return d;
 };
 
-// 门店插画随店铺等级变化（8 级 + 8 个隐藏款，见文件后面的 HIDDEN），房子的建筑风格也跟着变：
+// 门店插画随店铺等级变化（8 级 + 4 个隐藏款，见文件后面的 HIDDEN），房子的建筑风格也跟着变：
 // Lv1–2 木造：周末小推车 → 私房小铺（单间小铺）
 // Lv3–4 和风町屋：熟客小店（灯笼、长椅和猫、红毡长凳和红伞）→ 街角面包店（门面往右扩、第二扇大橱窗、一对灯笼、窗台香草、自行车）
 // Lv5–6 昭和复古：排队小店（红白条纹布篷、拱形橱窗、马赛克瓷砖、搪瓷招牌、门口排队）→ 两层小楼（拱窗二楼、屋顶大碱水面包）
@@ -1930,20 +1930,17 @@ function patisserie() {
   `, `-40 0 ${W + 150} ${G + 12}`, 'store', 1.5);
 }
 
-export const JP_DRAFTS = { paris: [patisserie, 450, 352], oldshop: [oldBakery, 406, 288], kyoto: [kyotoMachiya, 424, 280], choco: [chocoFactory, 580, 332], bunny2: [bunnyWonderland, 432, 330], bunny: [bunnyCottage, 360, 312], alice: [aliceTeapot, 380, 312], kamakura: [kamakuraShop, 380, 312], hokkaido: [hokkaidoBarn, 380, 312], shitamachi: [shitamachiShop, 380, 312], showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
+export const JP_DRAFTS = { london: [londonTearoom, 320, 280], tainan: [tainanShophouse, 330, 280], shanghai: [shanghaiShikumen, 320, 290], vienna: [viennaCafe, 360, 342], paris: [patisserie, 450, 352], oldshop: [oldBakery, 406, 288], kyoto: [kyotoMachiya, 424, 280], choco: [chocoFactory, 580, 332], bunny2: [bunnyWonderland, 432, 330], bunny: [bunnyCottage, 360, 312], alice: [aliceTeapot, 380, 312], kamakura: [kamakuraShop, 380, 312], hokkaido: [hokkaidoBarn, 380, 312], shitamachi: [shitamachiShop, 380, 312], showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
 
 // 隐藏款的尺寸和招牌位置（招牌上的店名由 HTML 叠上去）
+// color：店名的颜色，和招牌底色搭配
 const HIDDEN = {
-  9: { draw: oldBakery, W: 406, H: 288, sign: { x: 118, y: 168, w: 162, h: 16 } },
-  10: { draw: londonTearoom, W: 320, H: 280, sign: { x: 58, y: 160, w: 204, h: 20 } },
-  11: { draw: tainanShophouse, W: 330, H: 280, sign: { x: 100, y: 60, w: 130, h: 20 } },
-  12: { draw: shanghaiShikumen, W: 320, H: 290, sign: { x: 84, y: 150, w: 152, h: 16 } },
-  13: { draw: kamakuraShop, W: 386, H: 312, sign: { x: 122, y: 182, w: 124, h: 14 } },
-  14: { draw: kyotoMachiya, W: 424, H: 280, sign: { x: 150, y: 96, w: 136, h: 28 } },
-  15: { draw: patisserie, W: 450, H: 352, sign: { x: 128, y: 246, w: 164, h: 16 } },
-  16: { draw: viennaCafe, W: 360, H: 342, sign: { x: 96, y: 234, w: 168, h: 20 } },
+  9: { draw: oldBakery, W: 406, H: 288, sign: { x: 118, y: 168, w: 162, h: 16, color: '#3f5b34' } },
+  10: { draw: kamakuraShop, W: 386, H: 312, sign: { x: 122, y: 182, w: 124, h: 14, color: '#34558f' } },
+  11: { draw: kyotoMachiya, W: 424, H: 280, sign: { x: 150, y: 96, w: 136, h: 28, color: '#3b2516' } },
+  12: { draw: patisserie, W: 450, H: 352, sign: { x: 128, y: 246, w: 164, h: 16, color: '#2c3e6e' } },
 };
-export const MAX_LEVEL = 16;
+export const MAX_LEVEL = 12;
 
 export function storefront(level = 3, cls = '') {
   const tag = (svg) => svg.replace('class="sk store', `class="sk store ${cls}`);

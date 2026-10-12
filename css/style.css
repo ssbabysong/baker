@@ -230,7 +230,7 @@ a.card { display: block; text-decoration: none; }
 .tile svg { width: 44px; height: 44px; }
 
 /* ---------- 首页：店面 ---------- */
-.storefront { position: relative; margin: 0 auto; max-width: 440px; }
+.storefront { position: relative; margin: 0 auto; max-width: 440px; container-type: inline-size; }
 .storefront svg { width: 100%; height: auto; display: block; }
 .storefront .sign {
   position: absolute;

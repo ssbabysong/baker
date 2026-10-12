@@ -96,13 +96,9 @@ const LEVELS = [
   { at: 100, name: ['旗舰面包店', 'Flagship Bakery'], desc: ['三层的旗舰店，屋顶也开了空中露台，成了街区的地标', 'Three floors and a rooftop terrace: a neighborhood landmark'] },
   // 隐藏款：没解锁之前只露一个剪影和「???」
   { at: 200, hidden: true, name: ['百年老铺', 'Century Bakery'], desc: ['三层的欧洲老面包店：墨绿色木门面、条纹布篷、铸铁挂牌，二三楼挂着百叶窗', 'A three-story old-world bakery: forest-green woodwork, a striped awning and a wrought-iron sign'] },
-  { at: 300, hidden: true, name: ['伦敦茶室', 'London Tea Room'], desc: ['乔治风格的三层砖楼，黑色木门面配金色招牌，两扇弧形凸窗里摆着蛋糕架，门口挂着花篮', 'A Georgian brick townhouse: a black shopfront, a gold sign, cake stands in two bow windows and hanging baskets'] },
-  { at: 400, hidden: true, name: ['台南老街红砖店', 'Tainan Brick Shophouse'], desc: ['两层红砖街屋，一楼三个拱的骑楼下挂着灯笼，二楼长窗配绿百叶，屋顶一道山头', 'A red-brick shophouse with a three-arch arcade, lanterns, green shutters and an ornate parapet'] },
-  { at: 500, hidden: true, name: ['上海石库门老铺', 'Shanghai Shikumen'], desc: ['青砖墙、红砖腰线，正中石头门框和黑漆双门，两边条纹雨篷的橱窗，二楼铸铁小阳台', 'Grey brick with red bands, a stone gateway with black lacquered doors, striped awnings and iron balconies'] },
   { at: 600, hidden: true, name: ['镰仓海边面包店', 'Kamakura Seaside'], desc: ['海边的白色木板小屋：鱼鳞瓦屋顶、蓝白条纹雨棚，门口一丛丛紫阳花，石墙后面开过江之电，远处是灯塔、江之岛和消波块', 'A white clapboard house by the sea: fish-scale roof, blue-and-white awning, hydrangeas by the door, the Enoden tram behind the wall, a lighthouse, Enoshima and tetrapods beyond'] },
   { at: 700, hidden: true, name: ['京都町家老店', 'Kyoto Machiya'], desc: ['两层的京都町家：木格子、藏青暖帘、红灯笼，二楼挂着大木招牌，旁边一棵红枫', 'A two-story Kyoto townhouse: wooden lattice, an indigo noren, red lanterns and a maple'] },
   { at: 800, hidden: true, name: ['巴黎甜品沙龙', 'Paris Pâtisserie'], desc: ['奥斯曼风格的大楼：孟莎屋顶和石栏杆、圆形老虎窗、通长铸铁阳台，一楼四根柱子三个拱门，街边莫里斯广告柱和路灯，远处一座埃菲尔铁塔', 'A Haussmann building: mansard roof with a stone balustrade, round dormers, a long iron balcony, four columns and three arches below, a Morris column and street lamp, the Eiffel Tower in the distance'] },
-  { at: 1000, hidden: true, name: ['维也纳咖啡馆', 'Vienna Café'], desc: ['四层的老派大楼，窗上交替的三角和弧形窗楣，一楼深色木门面、金色大招牌，窗里亮着水晶吊灯', 'A grand four-story building: carved window crowns, a dark wood café front, a gold sign and chandeliers aglow'] },
 ];
 const lvName = (i) => L(...LEVELS[i].name);
 const lvDesc = (i) => L(...LEVELS[i].desc);
@@ -118,7 +114,12 @@ function levelOf(n) {
 // 门店插画 + 叠在招牌上的店名
 function shopFront(level, name = '', small = false) {
   const g = storefrontSign(level);
-  const style = `left:${(g.x / g.vbW * 100).toFixed(2)}%;width:${(g.w / g.vbW * 100).toFixed(2)}%;top:${(g.y / g.vbH * 100).toFixed(2)}%;height:${(g.h / g.vbH * 100).toFixed(2)}%`;
+  let style = `left:${(g.x / g.vbW * 100).toFixed(2)}%;width:${(g.w / g.vbW * 100).toFixed(2)}%;top:${(g.y / g.vbH * 100).toFixed(2)}%;height:${(g.h / g.vbH * 100).toFixed(2)}%`;
+  // 隐藏款的画面元素多、招牌小：字号按招牌在画里的大小算（cqw = 店面宽度的百分之一），店名长了再缩一点，颜色配招牌
+  if (g.color) {
+    const fs = Math.min(g.h * 0.86, g.w / (Math.max(4, [...name].length) * 1.2));
+    style += `;color:${g.color};letter-spacing:.06em;font-size:${(fs / g.vbW * 100).toFixed(2)}cqw`;
+  }
   return `<div class="storefront ${small ? 'mini' : ''}">${storefront(level)}${name ? (small
     ? `<span class="sign" style="${style}">${esc(name)}</span>`
     : `<button class="sign" style="${style}" data-act="rename-shop" title="${L('点一下改店名', 'Tap to rename')}">${esc(name)}</button>`) : ''}</div>`;
