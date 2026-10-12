@@ -254,7 +254,7 @@ const tiles = (x0, x1, y, w) => {
   return d;
 };
 
-// 门店插画随店铺等级变化（8 级 + 5 个隐藏款，见文件后面的 HIDDEN），房子的建筑风格也跟着变：
+// 门店插画随店铺等级变化（8 级 + 8 个隐藏款，见文件后面的 HIDDEN），房子的建筑风格也跟着变：
 // Lv1–2 木造：周末小推车 → 私房小铺（单间小铺）
 // Lv3–4 和风町屋：熟客小店（灯笼、长椅和猫、红毡长凳和红伞）→ 街角面包店（门面往右扩、第二扇大橱窗、一对灯笼、窗台香草、自行车）
 // Lv5–6 昭和复古：排队小店（红白条纹布篷、拱形橱窗、马赛克瓷砖、搪瓷招牌、门口排队）→ 两层小楼（拱窗二楼、屋顶大碱水面包）
@@ -1357,7 +1357,7 @@ function kamakuraShop() {
   const boards = Array.from({ length: 14 }, (_, i) => `M${127 + i * 9} 146 V${G}`).join(' ');
   let awn = 'M118 210'; for (let i = 0; i < 8; i++) awn += ' q8.25 7 16.5 0';
   const stripes = Array.from({ length: 4 }, (_, i) => `M${118 + i * 33} 198 h16.5 v12 q-8.25 7 -16.5 0 Z`).join(' ');
-  const win = pane(130, 222, 58, 46, 3, 2), door = pane(208, 220, 32, 80, 1, 3), upw = pane(164, 156, 46, 30, 2, 2);
+  const win = pane(130, 222, 58, 46, 3, 2), door = pane(208, 220, 32, 80, 1, 3), upw = pane(164, 153, 46, 24, 2, 2);
   const bed = bush([[128, 292, 8], [142, 289, 9], [156, 292, 8], [176, 293, 6]]);
   const bed2 = bush([[256, 292, 7], [268, 290, 8]]);
   const bk = bike(306, G); const kitty = cat(206, 136);
@@ -1427,7 +1427,7 @@ function kamakuraShop() {
     ${blob(bush([[44, 225, 8], [62, 227, 8], [82, 225, 8], [98, 227, 7]]), 'leaf', 1.4)}${ajisai([[40, 219, 7.5, 'b'], [56, 221, 7, 'p'], [72, 218, 7.5, 'b'], [88, 220, 7, 'p'], [102, 222, 6.5, 'b']])}
 
     <path d="${house} ${roof}" class="f-paper" stroke="none"/>
-    ${crayon([['tile', roof], ['paper', house], ['skysoft', `${win.fill} ${door.fill} ${upw.fill}`], ['ai', stripes], ['paper', stripes.replace(/M(\d+) 198/g, (m, x) => `M${+x + 16.5} 198`)], ['paper', 'M120 184 H248 V197 H120 Z'], ['crust', `${loafRow(136, 246, 3, 16)} ${loafRow(136, 268, 3, 16)}`], ...kitty.fills])}
+    ${crayon([['tile', roof], ['paper', house], ['skysoft', `${win.fill} ${door.fill} ${upw.fill}`], ['ai', stripes], ['paper', stripes.replace(/M(\d+) 198/g, (m, x) => `M${+x + 16.5} 198`)], ['paper', 'M120 181 H248 V197 H120 Z'], ['crust', `${loafRow(136, 246, 3, 16)} ${loafRow(136, 268, 3, 16)}`], ...kitty.fills])}
     <clipPath id="kmk-roof"><path d="${roof}"/></clipPath><path d="${roof}"/><path d="${shingles}" clip-path="url(#kmk-roof)" stroke-width=".6" opacity=".55"/>
     ${crayon([['paper', 'M102 151 L178 107 L264 151 H258 L178 110.5 L108 151 Z'], ['skysoft', roofWin], ['tile', chim], ['shu', 'M136 112 H150 V108 H136 Z']])}
     <path d="M102 151 L178 107 L264 151 H258 L178 110.5 L108 151 Z" stroke-width="1.3"/>
@@ -1435,8 +1435,8 @@ function kamakuraShop() {
     <path d="${chim} M136 112 H150 V108 H136 Z" stroke-width="1"/>${smoke(143, 104)}
     <path d="M178 107 V92" stroke-width="1.1"/><path d="M170 96 L186 96 M184 94 l3 2 l-3 2" stroke-width=".9"/><path d="M172 94 q3 -4 6 0 q3 -4 6 0" stroke-width="1"/>
     <path d="M118 146 V${G} M250 146 V${G}"/><path d="${boards}" stroke-width=".45" opacity=".3"/>
-    ${upw.lines}${curtains(164, 156, 46, 30)}<path d="M158 188 H216" stroke-width="1.4"/>
-    <path d="M120 184 H248 V197 H120 Z" stroke-width="1"/>
+    ${upw.lines}${curtains(164, 153, 46, 24)}<path d="M158 179 H216" stroke-width="1.4"/>
+    <path d="M120 181 H248 V197 H120 Z" stroke-width="1"/>
     <path d="M118 198 H250 V210" stroke-width="1"/><path d="M118 198 V210"/><path d="${awn}"/>
     ${win.lines}<path d="${loafRow(136, 246, 3, 16)} ${loafRow(136, 268, 3, 16)}" stroke-width="1"/>${goldText(159, 230.5, 'パンとコーヒー', 5.4).replace('class="gold-text"', 'class="gold-text sk-text"')}
     <path d="M126 268 H192" stroke-width="1.4"/>
@@ -1938,10 +1938,12 @@ const HIDDEN = {
   10: { draw: londonTearoom, W: 320, H: 280, sign: { x: 58, y: 160, w: 204, h: 20 } },
   11: { draw: tainanShophouse, W: 330, H: 280, sign: { x: 100, y: 60, w: 130, h: 20 } },
   12: { draw: shanghaiShikumen, W: 320, H: 290, sign: { x: 84, y: 150, w: 152, h: 16 } },
-  13: { draw: kyotoMachiya, W: 424, H: 280, sign: { x: 150, y: 96, w: 136, h: 28 } },
-  14: { draw: viennaCafe, W: 360, H: 342, sign: { x: 96, y: 234, w: 168, h: 20 } },
+  13: { draw: kamakuraShop, W: 386, H: 312, sign: { x: 122, y: 182, w: 124, h: 14 } },
+  14: { draw: kyotoMachiya, W: 424, H: 280, sign: { x: 150, y: 96, w: 136, h: 28 } },
+  15: { draw: patisserie, W: 450, H: 352, sign: { x: 128, y: 246, w: 164, h: 16 } },
+  16: { draw: viennaCafe, W: 360, H: 342, sign: { x: 96, y: 234, w: 168, h: 20 } },
 };
-export const MAX_LEVEL = 14;
+export const MAX_LEVEL = 16;
 
 export function storefront(level = 3, cls = '') {
   const tag = (svg) => svg.replace('class="sk store', `class="sk store ${cls}`);
