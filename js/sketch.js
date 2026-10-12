@@ -1646,7 +1646,49 @@ function chocoFactory() {
     ${mascotAt(22, G - 33)}
   `, `-100 0 ${W + 160} ${G + 12}`, 'store', 1.5);
 }
-export const JP_DRAFTS = { choco: [chocoFactory, 580, 332], bunny2: [bunnyWonderland, 432, 330], bunny: [bunnyCottage, 360, 312], alice: [aliceTeapot, 380, 312], kamakura: [kamakuraShop, 380, 312], hokkaido: [hokkaidoBarn, 380, 312], shitamachi: [shitamachiShop, 380, 312], showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
+// Lv12 巴黎甜品沙龙：奥斯曼风格的石头楼——灰蓝色孟莎屋顶和老虎窗、铸铁小阳台，一楼是藏青门面、拱形橱窗里的蛋糕架
+function patisserie() {
+  const W = 320, G = 318;
+  const dormers = [80, 146, 212].map((x) => `M${x} 86 V64 Q${x + 14} 48 ${x + 28} 64 V86`).join(' ');
+  const floors = [96, 148].flatMap((y) => [62, 132, 202].map((x) => pane(x, y, 34, 40, 2, 2)));
+  const rail = (x, y) => `<path d="M${x - 6} ${y} H${x + 40} M${x - 6} ${y + 10} H${x + 40}" stroke-width="1"/><path d="${Array.from({ length: 8 }, (_, i) => `M${x - 2 + i * 6} ${y} v10`).join(' ')}" stroke-width=".7"/><path d="${Array.from({ length: 4 }, (_, i) => `M${x + 2 + i * 10} ${y + 5} a2.5 2.5 0 1 0 .1 0`).join(' ')}" stroke-width=".6"/>`;
+  const w1 = pane(56, 246, 70, 60, 3, 2, true), w2 = pane(194, 246, 70, 60, 3, 2, true), door = pane(140, 246, 40, 72, 2, 3, true);
+  const cake = (x, y) => `M${x - 9} ${y} h18 v-7 h-18 Z M${x - 6} ${y - 7} h12 v-6 h-12 Z`;
+  const cakes = [cake(76, 290), cake(106, 290), cake(214, 290), cake(244, 290)].join(' ');
+  const stands = 'M66 306 h20 M71 306 v-16 M96 306 h20 M106 306 v-16 M204 306 h20 M214 306 v-16 M234 306 h20 M244 306 v-16';
+  const t2 = topiary(292, G);
+  const ex = collect(t2);
+  return wrap(`
+    ${crayon([
+      ['tile', 'M40 90 L56 40 H264 L280 90 Z'],
+      ['paper', `${dormers.replace(/V86/g, 'V86 Z')}`],
+      ['skysoft', [80, 146, 212].map((x) => `M${x + 6} 84 V68 Q${x + 14} 58 ${x + 22} 68 V84 Z`).join(' ')],
+      ['soft', `M44 90 H276 V${G} H44 Z`],
+      ['skysoft', floors.map((f) => f.fill).join(' ')],
+      ['ai', `M44 206 H276 V${G} H44 Z`],
+      ['paper', 'M74 212 H246 V232 H74 Z'],
+      ['skysoft', `${w1.fill} ${w2.fill} ${door.fill}`],
+      ['pink', cakes],
+      ['custard', 'M66 214 h4 v16 h-4 Z M250 214 h4 v16 h-4 Z'],
+      ...ex.fills,
+    ])}
+    <path d="M4 ${G} Q${W / 2} ${G + 2} ${W - 4} ${G - 1}"/>
+    <path d="M40 90 L56 40 H264 L280 90 Z"/><path d="M52 52 H268" stroke-width=".8" opacity=".5"/><path d="M56 40 V30 H68 V40 M250 40 V28 H262 V40" stroke-width="1"/>
+    <path d="${dormers}"/>${[80, 146, 212].map((x) => `<path d="M${x + 6} 84 V68 Q${x + 14} 58 ${x + 22} 68 V84 Z" stroke-width=".9"/>`).join('')}
+    <path d="M38 90 H282 M38 96 H282" stroke-width="1.2"/><path d="M44 96 V206 M276 96 V206"/>
+    <path d="M44 120 H276 M44 172 H276 M44 196 H276" stroke-width=".5" opacity=".35"/>
+    ${floors.map((f) => f.lines).join('')}${[62, 132, 202].map((x) => rail(x, 132) + rail(x, 184)).join('')}
+    <path d="M40 200 H280 V206 H40 Z"/>
+    <path d="M44 206 V${G} M276 206 V${G}"/><path d="M74 212 H246 V232 H74 Z"/><path d="M66 214 h4 v16 h-4 Z M250 214 h4 v16 h-4 Z" stroke-width=".8"/>
+    ${w1.lines}${w2.lines}${door.lines}<path d="M172 286 v8" stroke-width="1.6"/>
+    <path d="${cakes}" stroke-width="1"/><path d="${stands}" stroke-width="1"/>
+    ${lamp(48, 240)}${lamp(272, 240)}
+    ${ex.lines}
+    ${mascotAt(4, G - 33)}
+  `, `0 0 ${W} ${G + 12}`, 'store', 1.5);
+}
+
+export const JP_DRAFTS = { paris: [patisserie, 320, 330], oldshop: [oldBakery, 320, 270], kyoto: [kyotoMachiya, 360, 280], choco: [chocoFactory, 580, 332], bunny2: [bunnyWonderland, 432, 330], bunny: [bunnyCottage, 360, 312], alice: [aliceTeapot, 380, 312], kamakura: [kamakuraShop, 380, 312], hokkaido: [hokkaidoBarn, 380, 312], shitamachi: [shitamachiShop, 380, 312], showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
 
 // 隐藏款的尺寸和招牌位置（招牌上的店名由 HTML 叠上去）
 const HIDDEN = {
