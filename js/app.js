@@ -326,7 +326,9 @@ async function viewShop() {
   const [recipes, bakes] = await Promise.all([listRecipes(), listBakes()]);
   const shop = state.shop;
   const lv = levelOf(bakes.length);
-  const days = Math.floor((Date.now() - shop.openedAt) / DAY) + 1;
+  // 营业天数从开店那天或者最早的一炉（补记的老记录可能比装 App 还早）算起
+  const opened = bakes.reduce((m, b) => Math.min(m, b.finishedAt || m), shop.openedAt);
+  const days = Math.floor((Date.now() - opened) / DAY) + 1;
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
   const thisMonth = bakes.filter((b) => b.finishedAt >= monthStart.getTime()).length;
   const today = bakes.filter((b) => isToday(b.finishedAt)).length;
