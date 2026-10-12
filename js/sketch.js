@@ -778,6 +778,37 @@ const topiary = (x, g) => ({ fills: [['leaf', `M${x - 9} ${g - 22} a9 9 0 1 0 18
   lines: `<path d="M${x - 9} ${g - 22} a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0"/><path d="M${x} ${g - 13} v3" stroke-width="1"/><path d="M${x - 7} ${g} L${x - 8} ${g - 10} H${x + 8} L${x + 7} ${g}"/>` });
 const collect = (...parts) => ({ fills: parts.flatMap((p) => p.fills || []), lines: parts.map((p) => p.lines || '').join('') });
 
+
+// ---------- 橱窗里的面包和甜点（底边 y，中心 x） ----------
+const bakes = {
+  baguette: (x, y) => ({ c: 'crust', d: `M${x - 9} ${y} q-2 -4 2 -6 l14 -6 q4 -1 4 2 q1 3 -3 5 l-14 6 q-2 1 -3 -1 Z`, l: `M${x - 4} ${y - 5} l3 2 M${x + 1} ${y - 7} l3 2 M${x + 6} ${y - 9} l3 2` }),
+  croissant: (x, y) => ({ c: 'crust', d: `M${x - 9} ${y} q1 -9 9 -9 q8 0 9 9 q-3 -2 -5 -1 q-1 -5 -4 -5 q-3 0 -4 5 q-2 -1 -5 1 Z`, l: `M${x - 4} ${y - 1} q0 -4 2 -6 M${x + 4} ${y - 1} q0 -4 -2 -6` }),
+  boule: (x, y) => ({ c: 'crust', d: `M${x - 8} ${y} a8 7 0 0 1 16 0 Z`, l: `M${x - 3} ${y - 6} l6 4 M${x + 3} ${y - 6} l-6 4` }),
+  braid: (x, y) => ({ c: 'crust', d: `M${x - 10} ${y} q0 -6 4 -6 q2 -3 6 -2 q4 -2 6 1 q4 0 4 7 Z`, l: `M${x - 5} ${y} q1 -4 3 -5 M${x + 1} ${y} q1 -5 3 -6 M${x + 6} ${y} q1 -4 2 -5` }),
+  roll: (x, y) => ({ c: 'crust', d: `M${x - 5} ${y} a5 5 0 0 1 10 0 Z`, l: `M${x - 2} ${y - 3} h4` }),
+  cake: (x, y) => ({ c: 'pink', d: `M${x - 9} ${y} h18 v-11 h-18 Z`, l: `M${x - 9} ${y - 4} h18 M${x - 9} ${y - 8} h18 M${x - 9} ${y - 11} q2.25 2 4.5 0 q2.25 2 4.5 0 q2.25 2 4.5 0 q2.25 2 4.5 0`, extra: ['shu', dots([[x - 4, y - 13], [x + 3, y - 13]], 1.6)] }),
+  tart: (x, y) => ({ c: 'custard', d: `M${x - 8} ${y} l2 -5 h12 l2 5 Z`, l: `M${x - 6} ${y - 5} q1 2 2 0 q1 2 2 0 q1 2 2 0 q1 2 2 0 q1 2 2 0 q1 2 2 0`, extra: ['shu', dots([[x - 3, y - 6], [x + 1, y - 7], [x + 4, y - 6]], 1.3)] }),
+  macarons: (x, y) => ({ c: 'pink', d: `M${x - 6} ${y} a6 2.4 0 0 1 12 0 a6 2.4 0 0 1 -12 0 Z M${x - 6} ${y - 5} a6 2.4 0 0 1 12 0 a6 2.4 0 0 1 -12 0 Z M${x - 6} ${y - 10} a6 2.4 0 0 1 12 0 a6 2.4 0 0 1 -12 0 Z`, l: '', extra: ['leaf', `M${x - 6} ${y - 5} a6 2.4 0 0 1 12 0 a6 2.4 0 0 1 -12 0 Z`] }),
+  cupcake: (x, y) => ({ c: 'wood', d: `M${x - 5} ${y} l-1 -6 h12 l-1 6 Z`, l: `M${x - 2} ${y} v-6 M${x + 2} ${y} v-6`, extra: ['pink', `M${x - 7} ${y - 6} q0 -7 7 -8 q7 1 7 8 Z`] }),
+  eclair: (x, y) => ({ c: 'custard', d: `M${x - 9} ${y} q-2 -5 3 -5 h12 q5 0 3 5 Z`, l: '', extra: ['choco', `M${x - 8} ${y - 4} q0 -2 3 -2 h10 q3 0 3 2 Z`] }),
+};
+const display = (list, y) => {
+  const items = list.map(([k, x]) => bakes[k](x, y));
+  return `${crayon(items.map((it) => [it.c, it.d]))}${crayon(items.filter((it) => it.extra).map((it) => it.extra))}<path d="${items.map((it) => it.d).join(' ')}" stroke-width=".8"/><path d="${items.map((it) => it.l).join(' ')}" stroke-width=".6"/>`;
+};
+// 窗里的人：坐着的半身、桌子、杯子；kind: 'cup' 端着咖啡 / 'book' 看书 / 'chat' 两个人聊天
+const windowScene = (x, y, w, h, kind, coat = 'sky') => {
+  const ty = y + h - 7, cx = x + w / 2;
+  const person = (px, c, flip = 1) => ({ f: [[c, `M${px - 5} ${ty} q0 -8 5 -9 q5 1 5 9 Z`], ['soft', `M${px - 3.5} ${ty - 12} a3.5 3.5 0 1 0 7 0 a3.5 3.5 0 1 0 -7 0 Z`]],
+    l: `M${px - 5} ${ty} q0 -8 5 -9 q5 1 5 9 M${px - 3.5} ${ty - 12} a3.5 3.5 0 1 0 7 0 a3.5 3.5 0 1 0 -7 0 M${px - 3.5} ${ty - 14} q3.5 -4 7 0` });
+  let ps = [], extra = '';
+  if (kind === 'chat') { ps = [person(cx - 9, coat), person(cx + 9, 'pink')]; extra = `M${cx - 3} ${ty - 1} h2.5 v-2.5 h-2.5 Z M${cx + 1} ${ty - 1} h2.5 v-2.5 h-2.5 Z`; }
+  else if (kind === 'book') { ps = [person(cx - 4, coat)]; extra = `M${cx + 1} ${ty - 6} l4 -3 l4 3 M${cx + 5} ${ty - 9} v3`; }
+  else { ps = [person(cx - 5, coat)]; extra = `M${cx + 3} ${ty - 1} h3 v-3 h-3 Z M${cx + 6} ${ty - 3} q1.5 0 1.5 1.2`; }
+  const lampL = `M${cx} ${y + 1} v5 M${cx - 4} ${y + 9} q4 -6 8 0 Z`;
+  return `${crayon(ps.flatMap((p) => p.f))}${crayon([['custard', `M${cx - 4} ${y + 9} q4 -6 8 0 Z`]], 0, 0)}<path d="${ps.map((p) => p.l).join(' ')}" stroke-width=".7"/><path d="M${x + 3} ${ty} H${x + w - 3} M${cx - 8} ${ty} v6 M${cx + 8} ${ty} v6 ${extra} ${lampL}" stroke-width=".7"/>`;
+};
+const plantLampWin = (x, y, w, h) => { const cx = x + w / 2, by = y + h - 2; return `${crayon([['wood', `M${cx - 4} ${by} l-1 -6 h10 l-1 6 Z`], ['custard', `M${cx - 4} ${y + 9} q4 -6 8 0 Z`]], 0, 0)}${blob(bush([[cx, by - 11, 5], [cx - 4, by - 8, 3.5], [cx + 4, by - 8, 3.5]]), 'leaf', 1)}<path d="M${cx - 4} ${by} l-1 -6 h10 l-1 6 Z M${cx} ${y + 1} v5 M${cx - 4} ${y + 9} q4 -6 8 0 Z" stroke-width=".7"/>`; };
 // ---------- 隐藏款的细节小件 ----------
 // 窗里一对束起来的窗帘 + 顶上一道荷叶边
 const curtains = (x, y, w, h) => `<path d="M${x + 1} ${y + 1} q${w * .22} ${h * .35} ${w * .06} ${h * .62} M${x + w - 1} ${y + 1} q${-w * .22} ${h * .35} ${-w * .06} ${h * .62}" stroke-width=".7"/><path d="M${x} ${y + 3} ${Array.from({ length: Math.max(2, Math.round(w / 6)) }, () => `q${(w / Math.max(2, Math.round(w / 6)) / 2).toFixed(1)} 3 ${(w / Math.max(2, Math.round(w / 6))).toFixed(1)} 0`).join(' ')}" stroke-width=".6"/>`;
@@ -823,17 +854,24 @@ function oldBakery() {
       ['paper', 'M84 150 H246 V166 H84 Z'],
       ['crust', stripes], ['paper', stripes.replace(/M(\d+) 168/g, (m, x) => `M${+x + 14} 168`)],
       ['skysoft', `${win1.fill} ${win2.fill} ${door.fill}`],
-      ['crust', `${loafRow(58, 214, 5)} ${loafRow(204, 214, 5)} ${loafRow(58, 240, 5)} ${loafRow(204, 240, 5)}`],
       ['custard', 'M150 178 a15 8 0 0 1 30 0 Z'],
       ...ex.fills,
     ])}
     <path d="M4 ${G} Q${W / 2} ${G + 2} ${W - 4} ${G - 1}"/>
-    <path d="M70 30 V14 H86 V30 M244 30 V10 H260 V30" stroke-width="1.2"/><path d="M68 14 H88 M242 10 H262" stroke-width="1.6"/><path d="M74 14 v-4 h3 v4 M80 14 v-5 h3 v5 M248 10 v-4 h3 v4 M254 10 v-5 h3 v5" stroke-width=".8"/>${smoke(252, 6)}
+    <path d="M70 30 V14 H86 V30 M244 30 V10 H260 V30" stroke-width="1.2"/><path d="M165 0 V-14" stroke-width="1"/>${crayon([['shu', 'M165 -14 L177 -10 L165 -6 Z']])}<path d="M165 -14 L177 -10 L165 -6 Z" stroke-width=".8"/><path d="M68 14 H88 M242 10 H262" stroke-width="1.6"/><path d="M74 14 v-4 h3 v4 M80 14 v-5 h3 v5 M248 10 v-4 h3 v4 M254 10 v-5 h3 v5" stroke-width=".8"/>${smoke(252, 6)}
     ${stoneCourses(40, 290, 40, 140, 8)}
+    ${crayon([['soft', 'M120 26 L165 2 L210 26 Z'], ['paper', 'M155 18 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0 Z'], ['custard', 'M34 26 h8 v-6 h-8 Z M288 26 h8 v-6 h-8 Z']])}
+    <path d="M118 26 L165 0 L212 26" stroke-width="1.4"/><path d="M126 24 L165 4 L204 24" stroke-width=".7"/><path d="M155 18 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0"/><path d="M165 18 V11 M165 18 L170 21" stroke-width="1.1"/><path d="${Array.from({ length: 12 }, (_, i) => { const a = i / 12 * Math.PI * 2; return `M${(165 + Math.sin(a) * 8).toFixed(1)} ${(18 - Math.cos(a) * 8).toFixed(1)} l${(Math.sin(a) * 1.4).toFixed(1)} ${(-Math.cos(a) * 1.4).toFixed(1)}`; }).join(' ')}" stroke-width=".6"/>
+    <path d="M165 0 v-0" /><path d="M150 26 v-0" />
+    <path d="${Array.from({ length: 27 }, (_, i) => `M${40 + i * 9.4} 26 v-5 q2 -3 0 -5`).join(' ')}" stroke-width=".6" opacity=".7"/><path d="M38 21 H118 M212 21 H292" stroke-width=".7"/>
+    <path d="M34 26 h8 v-6 h-8 Z M288 26 h8 v-6 h-8 Z M36 20 q2 -6 4 0 M290 20 q2 -6 4 0" stroke-width=".9"/>
+    <path d="${Array.from({ length: 30 }, (_, i) => `M${36 + i * 8.5} 40 v3`).join(' ')}" stroke-width=".7"/>
     <path d="M34 30 H296 V40 H34 Z"/><path d="M40 26 H290" stroke-width="1"/>${[60, 100, 140, 180, 220, 260].map((x) => `<path d="M${x} 40 v4" stroke-width="1"/>`).join('')}
     <path d="M40 40 V146 M290 40 V146"/>
     ${ups.map((u) => u.lines).join('')}<path d="${shutters}" stroke-width="1"/><path d="${[64, 140, 216].map((x) => `M${x - 6} 56 v26 M${x + 46} 56 v26 M${x - 6} 104 v26 M${x + 46} 104 v26`).join(' ')}" stroke-width=".6" opacity=".6"/>
     <path d="M60 92 H108 M136 92 H184 M212 92 H260" stroke-width="1.6"/>
+    ${windowScene(64, 52, 40, 34, 'cup', 'sky')}${plantLampWin(140, 52, 40, 34)}${windowScene(216, 52, 40, 34, 'book', 'leaf')}
+    ${windowScene(64, 100, 40, 34, 'chat', 'crust')}${windowScene(140, 100, 40, 34, 'cup', 'shu')}${plantLampWin(216, 100, 40, 34)}
     ${[64, 140, 216].map((x) => curtains(x, 52, 40, 34) + curtains(x, 100, 40, 34)).join('')}
     ${[64, 140, 216].map((x, i) => flowerBox(x - 2, 88, 44, ['pink', 'custard', 'shu'][i])).join('')}
     ${goldText(165, 145, '· SINCE 1925 ·', 5)}
@@ -841,7 +879,10 @@ function oldBakery() {
     <path d="M44 146 V${G} M286 146 V${G}"/><path d="M84 150 H246 V166 H84 Z"/><path d="M80 146 V170 H250 V146" stroke-width="1"/>
     <path d="M50 168 H134 V176 M196 168 H280 V176" stroke-width="1"/><path d="${awn}"/><path d="${awn2}"/>
     ${win1.lines}${win2.lines}${goldText(92, 198, 'BOULANGERIE', 6)}${goldText(238, 198, 'PÂTISSERIE', 6)}
-    <path d="${loafRow(58, 214, 5)} ${loafRow(204, 214, 5)} ${loafRow(58, 240, 5)} ${loafRow(204, 240, 5)}" stroke-width="1"/>
+    ${display([['baguette', 66], ['croissant', 84], ['boule', 102], ['braid', 120]], 214)}
+    ${display([['roll', 62], ['croissant', 76], ['boule', 92], ['roll', 106], ['baguette', 120]], 240)}
+    <g transform="translate(-4 0)">${display([['cake', 214], ['tart', 236], ['macarons', 254], ['cupcake', 272]], 214)}</g>
+    ${display([['eclair', 212], ['macarons', 228], ['tart', 246], ['cupcake', 264]], 240)}
     <path d="M144 ${G} V178 a21 12 0 0 1 42 0 V${G}"/><path d="M150 178 a15 8 0 0 1 30 0" stroke-width="1"/>${door.lines}<path d="M148 236 H182 V${G - 4} H148 Z" stroke-width="1"/><path d="M176 222 v6" stroke-width="2"/>${crayon([['paper', 'M156 200 h18 v8 h-18 Z']])}<path d="M160 196 L165 192 L170 196 M156 200 h18 v8 h-18 Z" stroke-width=".7"/><text x="165" y="206" font-size="4.6" text-anchor="middle" stroke="none" fill="currentColor" font-family="Courier Prime, monospace">OPEN</text><path d="M156 246 h18" stroke="#c9913a" stroke-width="1.6"/>
     <path d="M138 176 V${G} M192 176 V${G}" stroke-width="1"/>
     ${lamp(138, 182)}${lamp(192, 182)}
@@ -851,7 +892,7 @@ function oldBakery() {
     ${queue([[318, 'sky'], [336, 'crust'], [354, 'leaf']], G)}
     ${crayon([['wood', `M290 ${G} L292 ${G - 12} H306 L308 ${G} Z`]])}<path d="M290 ${G} L292 ${G - 12} H306 L308 ${G} Z" stroke-width="1"/>${blob(bush([[299, G - 18, 8], [293, G - 14, 5], [305, G - 14, 5]]), 'leaf', 1.4)}
     ${mascotAt(4, G - 33).replace('translate(4', 'translate(-30')}
-  `, `-34 0 ${W + 34} ${G + 12}`, 'store', 1.5);
+  `, `-34 -18 ${W + 34} ${G + 30}`, 'store', 1.5);
 }
 
 // 一簇叶子 / 花：几个圆鼓鼓的叶团，points = [[x, y, r], ...]
@@ -1749,11 +1790,11 @@ function patisserie() {
   `, `-34 0 ${W + 34} ${G + 12}`, 'store', 1.5);
 }
 
-export const JP_DRAFTS = { paris: [patisserie, 414, 330], oldshop: [oldBakery, 406, 270], kyoto: [kyotoMachiya, 360, 280], choco: [chocoFactory, 580, 332], bunny2: [bunnyWonderland, 432, 330], bunny: [bunnyCottage, 360, 312], alice: [aliceTeapot, 380, 312], kamakura: [kamakuraShop, 380, 312], hokkaido: [hokkaidoBarn, 380, 312], shitamachi: [shitamachiShop, 380, 312], showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
+export const JP_DRAFTS = { paris: [patisserie, 414, 330], oldshop: [oldBakery, 406, 288], kyoto: [kyotoMachiya, 360, 280], choco: [chocoFactory, 580, 332], bunny2: [bunnyWonderland, 432, 330], bunny: [bunnyCottage, 360, 312], alice: [aliceTeapot, 380, 312], kamakura: [kamakuraShop, 380, 312], hokkaido: [hokkaidoBarn, 380, 312], shitamachi: [shitamachiShop, 380, 312], showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
 
 // 隐藏款的尺寸和招牌位置（招牌上的店名由 HTML 叠上去）
 const HIDDEN = {
-  9: { draw: oldBakery, W: 406, H: 270, sign: { x: 118, y: 150, w: 162, h: 16 } },
+  9: { draw: oldBakery, W: 406, H: 288, sign: { x: 118, y: 168, w: 162, h: 16 } },
   10: { draw: londonTearoom, W: 320, H: 280, sign: { x: 58, y: 160, w: 204, h: 20 } },
   11: { draw: tainanShophouse, W: 330, H: 280, sign: { x: 100, y: 60, w: 130, h: 20 } },
   12: { draw: shanghaiShikumen, W: 320, H: 290, sign: { x: 84, y: 150, w: 152, h: 16 } },
