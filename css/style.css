@@ -105,6 +105,7 @@ img { max-width: 100%; display: block; }
 .f-soft { fill: var(--crust-soft); }
 .f-sky { fill: var(--sky); }
 .f-skysoft { fill: var(--sky-soft); }
+.f-sea { fill: var(--sea, var(--sky-soft)); }
 .f-leaf { fill: var(--leaf); }
 .f-wood { fill: var(--wood); }
 .f-tile { fill: var(--tile); }
@@ -114,6 +115,8 @@ img { max-width: 100%; display: block; }
 .f-choco { fill: var(--choco); }
 .f-pink { fill: #efb3ad; }
 .f-custard { fill: #f1c55a; }
+.f-ajisai { fill: #a58bd0; }
+.f-ajiblue { fill: #7fa3dc; }
 .sp1 { stroke: #d9604c; } .sp2 { stroke: #5f86c0; } .sp3 { stroke: #7d9150; }
 .herb { stroke: #6e8a45; }
 .spot { stroke: #a0642c; }
@@ -259,6 +262,9 @@ dialog[open]:has(> .roadmap) { display: flex; flex-direction: column; overflow: 
 .level-big h3 { margin: 4px 0 2px; }
 .level-big .row { gap: 10px; margin-top: 12px; }
 .roadmap li.next .storefront { opacity: .45; filter: grayscale(.7); }
+/* 还没解锁的隐藏款：只看得到一个剪影 */
+.roadmap li.secret .storefront { opacity: .22; filter: brightness(0); }
+.roadmap li.secret-head { justify-content: center; padding: 6px 0 0; font-family: var(--title); color: var(--ink-soft); letter-spacing: .1em; }
 .roadmap .here { color: var(--shu); }
 /* 升级路线和首页里的次数：用清楚的打字机数字，大一号、面包皮棕色 */
 /* 和下面统计数字同一套字体（Courier 常规体），只是换成棕色 */
@@ -892,3 +898,5 @@ html.laptop .bake > .col-b > h2:first-child { margin-top: 4px; }
 @keyframes flag-wave { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-2.4deg); } 60% { transform: rotate(1.2deg); } }
 @keyframes bulb-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 
+/* 隐藏款：灯罩里暖黄的光 */
+.store .glow { fill: #f6d27a; }
