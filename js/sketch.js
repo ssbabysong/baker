@@ -1799,15 +1799,34 @@ function patisserie() {
   const wl = archWin(66, 118), wr = archWin(222, 274), dr = archWin(144, 196);
   const archKeys = [92, 170, 248].map((x) => `M${x - 3} ${x === 170 ? 270 : 274} h6 l-1 6 h-4 Z`).join(' ');
   // 街景
-  const eiffel = 'M-22 340 L-8 200 L-4 140 L-2 100 L0 80 L2 100 L4 140 L8 200 L22 340 M-14 270 H14 M-7 200 H7 M-3 140 H3 M-10 270 Q0 250 10 270 M-16 340 Q0 300 16 340';
+  // 远处的埃菲尔铁塔：外轮廓、脚下大拱、两层平台、每段交叉的钢架、塔顶小屋和天线
+  const eiffel = 'M-24 340 Q-14 292 -10 240 L-6 170 L-2.4 100 H2.4 L6 170 L10 240 Q14 292 24 340 H15 Q0 282 -15 340 Z';
+  const eiffelLines = [
+    'M-16 236 H16 V242 H-16 Z M-8 165 H8 V170 H-8 Z M-3.4 96 H3.4 V100 H-3.4 Z M0 96 V82 M-1.6 90 H1.6',
+    'M-14 242 v-3 M-10 242 v-3 M-6 242 v-3 M-2 242 v-3 M2 242 v-3 M6 242 v-3 M10 242 v-3 M14 242 v-3',
+    'M-19 314 L-8 268 M-8 314 L-12 268 M-11 262 L-4 244 M-4 262 L-9.5 244 M19 314 L8 268 M8 314 L12 268 M11 262 L4 244 M4 262 L9.5 244 M-12 266 H12',
+    'M-9 236 L5 214 M-5 214 L9 236 M-7 214 H7 M-7 214 L4 192 M-4 192 L7 214 M-6 192 H6 M-6 192 L3 170 M-3 170 L6 192',
+    'M-5 165 L1.5 140 M-1.5 140 L5 165 M-4 140 H4 M-4 140 L1 120 M-1 120 L4 140 M-3 120 H3',
+  ].join(' ');
   const morris = 'M326 340 V262 H350 V340 Z';
   const morrisTop = 'M322 262 H354 L350 256 Q338 240 326 256 Z';
   return wrap(`
-    <g opacity=".5" transform="translate(6 70) scale(.8)"><path d="${eiffel}" stroke-width="1.1"/></g>
+    <g opacity=".85" transform="translate(2 70) scale(.8)">${crayon([['crust', eiffel]])}<path d="${eiffel}" stroke-width="1.4"/><path d="${eiffelLines}" stroke-width=".8"/></g>
     <path d="${body} ${roof}" class="f-paper" stroke="none"/>
     ${crayon([['tile', roof], ['soft', `M50 86 H290 V240 H50 Z`], ['paper', oeil(140).replace(/Z$/, 'Z ') + oeil(200) + ' ' + oeil(80) + ' ' + oeil(260)], ['tile', chimneys], ['skysoft', [80, 140, 200, 260].map((x) => `M${x - 6} 72 V66 a6 6 0 0 1 12 0 V72 Z`).join(' ')], ['skysoft', [...w2, ...w3].map((w) => w.fill).join(' ')], ['ai', `M50 240 H290 V${G} H50 Z`], ['paper', colFill], ['skysoft', `${wl} ${wr} ${dr}`], ['custard', 'M88 246 H252 V262 H88 Z']])}
     <path d="M4 ${G} H${W + 106}"/>
-    <path d="${roof}"/><path d="M60 50 H280 M54 66 H286" stroke-width=".5" opacity=".4"/><path d="${chimneys}" stroke-width="1"/><path d="${pots}" stroke-width=".7"/><path d="${Array.from({ length: 22 }, (_, i) => `M${68 + i * 10} 40 v-4 q2 -3 0 -5`).join(' ')}" stroke-width=".6" opacity=".7"/>
+    <path d="${roof}"/><path d="M60 50 H280 M54 66 H286" stroke-width=".5" opacity=".4"/><path d="${chimneys}" stroke-width="1"/><path d="${pots}" stroke-width=".7"/>${(() => {
+      // 屋顶石栏杆：瓶形小柱子 + 压顶，遇到烟囱断开
+      const segs = [[64, 70], [80, 120], [130, 220], [230, 270], [280, 276]].filter(([a, b]) => b - a > 4);
+      const vase = (c) => `M${c - 1.6} 40 h3.2 q-1.2 -1.2 -.2 -2.4 q1.8 -1.3 .2 -2.8 h-2.8 q-1.6 1.5 .2 2.8 q1 1.2 -.6 2.4 Z`;
+      let bal = '', rail = '';
+      for (const [a, b] of segs) {
+        rail += `M${a} 31.6 H${b} V34.8 H${a} Z `;
+        const n = Math.max(1, Math.round((b - a - 2) / 6));
+        for (let i = 0; i < n; i++) bal += vase(a + (b - a) * (i + 0.5) / n) + ' ';
+      }
+      return `${crayon([['soft', `${rail} ${bal}`]])}<path d="${bal}" stroke-width=".6"/><path d="${rail}" stroke-width=".8"/>`;
+    })()}
     ${[80, 140, 200, 260].map((x) => `<path d="${oeil(x)}" stroke-width="1"/><path d="M${x - 6} 72 V66 a6 6 0 0 1 12 0 V72 Z M${x} 60 v12" stroke-width=".7"/><path d="M${x - 12} 62 q-3 -6 2 -9 M${x + 12} 62 q3 -6 -2 -9" stroke-width=".7"/>`).join('')}
     <path d="M42 86 H298 V92 H42 Z" stroke-width="1.2"/><path d="${modillions}" stroke-width=".6"/>
     <path d="M50 92 V240 M290 92 V240"/>${stoneCourses(50, 290, 96, 240, 8).replace('opacity=".35"', 'opacity=".22"')}
@@ -1833,7 +1852,7 @@ function patisserie() {
     <path d="${morris} ${morrisTop}" stroke-width="1.1"/><path d="M326 268 H350 M326 312 H350 M338 240 v-6" stroke-width=".8"/><path d="M329 272 h9 v16 h-9 Z M340 276 h8 v12 h-8 Z M330 294 h16 v12 h-16 Z" stroke-width=".6"/>
     <path d="M384 ${G} V240 M378 ${G} h12 M380 ${G - 6} h8" stroke-width="2"/><path d="M384 252 q-10 0 -12 -8 M384 252 q10 0 12 -8" stroke-width="1.1"/>
     <path d="M368 244 h8 l-1 -9 h-6 Z M392 244 h8 l-1 -9 h-6 Z M380 236 h8 l-1 -10 h-6 Z" stroke-width="1"/><path d="M369 243 h6 l-1 -7 h-4 Z M393 243 h6 l-1 -7 h-4 Z M381 235 h6 l-1 -8 h-4 Z" class="glow" stroke="none"/>
-    ${chalkboard(24, G, 'CAFÉ', 'CRÊPES')}
+    ${chalkboard(37, G, 'CAFÉ', 'CRÊPES')}
     ${mascotAt(-36, G - 33)}
   `, `-40 0 ${W + 150} ${G + 12}`, 'store', 1.5);
 }
