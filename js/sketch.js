@@ -1351,16 +1351,17 @@ function kamakuraShop() {
   const roof = 'M108 148 L178 112 L258 148 Z';
   // 屋顶：一排排鱼鳞瓦、厚厚的博风板、山墙圆窗、右边一根小烟囱、屋脊上一只海鸥风向标
   const lx = (y) => 108 + (148 - y) * 70 / 36, rx = (y) => 258 - (148 - y) * 80 / 36;
-  let shingles = ''; for (let y = 120; y < 148; y += 6) { const x0 = lx(y) + 3, x1 = rx(y) - 3; shingles += `M${x0} ${y}`; for (let x = x0; x + 6 <= x1; x += 6) shingles += ' q3 3 6 0'; shingles += ' '; }
+  let shingles = ''; for (let y = 118, r = 0; y < 148; y += 6, r++) { shingles += `M${102 + (r % 2) * 3} ${y}`; for (let x = 102 + (r % 2) * 3; x < 262; x += 6) shingles += ' q3 3 6 0'; shingles += ' '; }
   const chim = 'M138 134 V112 H148 V128 Z';
   const roofWin = 'M170 128 a8 8 0 1 0 16 0 a8 8 0 1 0 -16 0 Z';
   const boards = Array.from({ length: 14 }, (_, i) => `M${127 + i * 9} 146 V${G}`).join(' ');
   let awn = 'M118 210'; for (let i = 0; i < 8; i++) awn += ' q8.25 7 16.5 0';
-  const stripes = Array.from({ length: 4 }, (_, i) => `M${118 + i * 33} 198 h16.5 v12 q-8.25 7 -16.5 0 Z`).join(' ');
+  const sc = (u) => 210 + 14 * (u / 16.5) * (1 - u / 16.5);
+  const stripes = Array.from({ length: 4 }, (_, i) => [[2, 6.5], [10, 14.5]].map(([u0, u1]) => { const x = 118 + i * 33; return `M${x + u0} 198 H${x + u1} V${sc(u1).toFixed(1)} L${x + u0} ${sc(u0).toFixed(1)} Z`; }).join(' ')).join(' ');
   const win = pane(130, 222, 58, 46, 3, 2), door = pane(208, 220, 32, 80, 1, 3), upw = pane(164, 156, 46, 30, 2, 2);
   const bed = bush([[128, 292, 8], [142, 289, 9], [156, 292, 8], [176, 293, 6]]);
   const bed2 = bush([[256, 292, 7], [268, 290, 8]]);
-  const bk = bike(306, G); const kitty = cat(206, 136);
+  const kitty = cat(206, 136);
   // 紫阳花：一团圆圆的花球，上面点一圈四瓣小花
   // 紫阳花：花球边缘一圈小鼓包，里面挤满一朵朵四瓣小花（浅一号的颜色），下面垫两片尖叶子
   const ajisai = (list) => {
@@ -1427,17 +1428,17 @@ function kamakuraShop() {
     ${blob(bush([[44, 225, 8], [62, 227, 8], [82, 225, 8], [98, 227, 7]]), 'leaf', 1.4)}${ajisai([[40, 219, 7.5, 'b'], [56, 221, 7, 'p'], [72, 218, 7.5, 'b'], [88, 220, 7, 'p'], [102, 222, 6.5, 'b']])}
 
     <path d="${house} ${roof}" class="f-paper" stroke="none"/>
-    ${crayon([['tile', roof], ['paper', house], ['skysoft', `${win.fill} ${door.fill} ${upw.fill}`], ['ai', stripes], ['paper', stripes.replace(/M(\d+) 198/g, (m, x) => `M${+x + 16.5} 198`)], ['paper', 'M120 184 H248 V197 H120 Z'], ['crust', `${loafRow(136, 246, 3, 16)} ${loafRow(136, 268, 3, 16)}`], ...kitty.fills])}
-    <path d="${roof}"/><path d="${shingles}" stroke-width=".6" opacity=".55"/>
-    ${crayon([['paper', 'M102 151 L178 107 L264 151 L258 151 L178 113 L108 151 Z'], ['skysoft', roofWin], ['tile', chim], ['shu', 'M136 112 H150 V108 H136 Z']])}
-    <path d="M102 151 L178 107 L264 151 M108 151 L178 113 L258 151" stroke-width="1.3"/><path d="M104 150 l-3 6 M262 150 l3 6" stroke-width="1.1"/>
+    ${crayon([['tile', roof], ['paper', house], ['skysoft', `${win.fill} ${door.fill} ${upw.fill}`], ['ai', stripes], ['paper', 'M120 184 H248 V197 H120 Z'], ['crust', `${loafRow(136, 246, 3, 16)} ${loafRow(136, 268, 3, 16)}`], ...kitty.fills])}
+    <clipPath id="kmk-roof"><path d="${roof}"/></clipPath><path d="${roof}"/><path d="${shingles}" clip-path="url(#kmk-roof)" stroke-width=".6" opacity=".55"/>
+    ${crayon([['paper', 'M102 151 L178 107 L264 151 H258 L178 110.5 L108 151 Z'], ['skysoft', roofWin], ['tile', chim], ['shu', 'M136 112 H150 V108 H136 Z']])}
+    <path d="M102 151 L178 107 L264 151 H258 L178 110.5 L108 151 Z" stroke-width="1.3"/>
     <path d="${roofWin}" stroke-width="1.2"/><path d="M178 120 v16 M170 128 h16" stroke-width=".8"/><path d="M168 138 h20" stroke-width="1.2"/>
     <path d="${chim} M136 112 H150 V108 H136 Z" stroke-width="1"/>${smoke(143, 104)}
     <path d="M178 107 V92" stroke-width="1.1"/><path d="M170 96 L186 96 M184 94 l3 2 l-3 2" stroke-width=".9"/><path d="M172 94 q3 -4 6 0 q3 -4 6 0" stroke-width="1"/>
     <path d="M118 146 V${G} M250 146 V${G}"/><path d="${boards}" stroke-width=".45" opacity=".3"/>
     ${upw.lines}${curtains(164, 156, 46, 30)}<path d="M158 188 H216" stroke-width="1.4"/>
     <path d="M120 184 H248 V197 H120 Z" stroke-width="1"/>
-    <path d="M118 198 H250 V210" stroke-width="1"/><path d="M118 198 V210"/><path d="${awn}"/>
+    <path d="${stripes}" stroke-width=".5" opacity=".8"/><path d="M118 198 H250 V210" stroke-width="1"/><path d="M118 198 V210"/><path d="${awn}"/>
     ${win.lines}<path d="${loafRow(136, 246, 3, 16)} ${loafRow(136, 268, 3, 16)}" stroke-width="1"/>${goldText(159, 230.5, 'パンとコーヒー', 5.4).replace('class="gold-text"', 'class="gold-text sk-text"')}
     <path d="M126 268 H192" stroke-width="1.4"/>
     ${door.lines}<path d="M234 262 v6" stroke-width="1.6"/>
@@ -1454,15 +1455,37 @@ function kamakuraShop() {
     })()}
     ${blob(bed, 'leaf', 1.6)}${ajisai([[127, 284, 7, 'p'], [142, 280, 7.5, 'b'], [157, 284, 7, 'p'], [176, 287, 6, 'b']])}
     ${chalkboard(266, G, 'パン', '珈琲').replace(/font-family="Courier Prime, monospace"/g, 'class="sk-text"')}
-    ${crayon(bk.fills)}${bk.lines}
+    ${(() => {
+      // 自行车：辐条车轮、挡泥板、红车架、皮座垫、弯把手、前灯、链盘脚踏、脚撑，前筐里插着法棍和一束小花
+      const wr = 10, wb = [291, 290], wf = [325, 290], crank = [306, 290];
+      const wheel = ([x, y]) => `M${x - wr} ${y} a${wr} ${wr} 0 1 0 ${2 * wr} 0 a${wr} ${wr} 0 1 0 ${-2 * wr} 0 Z M${x - wr + 1.6} ${y} a${wr - 1.6} ${wr - 1.6} 0 1 0 ${2 * wr - 3.2} 0 a${wr - 1.6} ${wr - 1.6} 0 1 0 ${-2 * wr + 3.2} 0 Z`;
+      const spokes = ([x, y]) => Array.from({ length: 8 }, (_, i) => { const t = i * Math.PI / 8; return `M${(x - Math.cos(t) * (wr - 1.6)).toFixed(1)} ${(y - Math.sin(t) * (wr - 1.6)).toFixed(1)} L${(x + Math.cos(t) * (wr - 1.6)).toFixed(1)} ${(y + Math.sin(t) * (wr - 1.6)).toFixed(1)}`; }).join(' ');
+      const fender = ([x, y]) => `M${x - wr - 1.5} ${y - 1} A${wr + 1.5} ${wr + 1.5} 0 0 1 ${x + wr + 1.5} ${y - 1}`;
+      const frame = `M${wb[0]} ${wb[1]} L${crank[0]} ${crank[1]} L301 272 Z M301 272 L320 272 L${crank[0]} ${crank[1]} M320 272 L${wf[0]} ${wf[1]} M300 268 L301 272 M320 272 L318.5 266`;
+      const basket = 'M321 255 H333 L331 265 H323 Z';
+      return `<path d="${spokes(wb)} ${spokes(wf)}" stroke-width=".35" opacity=".7"/>
+        ${crayon([['tile', `${wheel(wb)} ${wheel(wf)}`]], 0, 0)}<path d="${wheel(wb)} ${wheel(wf)}" stroke-width="1" fill-rule="evenodd"/>
+        <path d="M${wb[0] - 1.6} ${wb[1]} a1.6 1.6 0 1 0 3.2 0 a1.6 1.6 0 1 0 -3.2 0 M${wf[0] - 1.6} ${wf[1]} a1.6 1.6 0 1 0 3.2 0 a1.6 1.6 0 1 0 -3.2 0" class="ink-fill" stroke-width=".8"/>
+        <path d="${fender(wb)} ${fender(wf)}" stroke-width="1.4"/>
+        <path d="${frame}" style="stroke:var(--shu)" stroke-width="3"/><path d="${frame}" stroke-width=".7"/>
+        <path d="M303 290 a3.4 3.4 0 1 0 6.8 0 a3.4 3.4 0 1 0 -6.8 0 Z M${wb[0]} ${wb[1]} L304 293.2 M${wb[0]} ${wb[1]} L304 286.8" stroke-width=".8"/><path d="M306 290 l3 4 h3" stroke-width="1.2"/>
+        ${crayon([['choco', 'M295 266.5 q5 -2 9 0 q-1 2.5 -4.5 2.5 q-3.5 0 -4.5 -2.5 Z'], ['custard', 'M325 262 a2 2 0 1 0 .1 0 Z']], 0, 0)}
+        <path d="M295 266.5 q5 -2 9 0 q-1 2.5 -4.5 2.5 q-3.5 0 -4.5 -2.5 Z" stroke-width="1"/>
+        <path d="M318.5 266 q-4 -1 -6 1 M318.5 266 q1 -3 4 -3" stroke-width="1.3"/><path d="M311 266.6 h2.4" stroke-width="2.2"/>
+        ${crayon([['wood', basket], ['crust', 'M323 256 L327 246 q1.5 -1 2.5 .5 L327 256 Z'], ['pink', 'M330 252 a1.6 1.6 0 1 0 .1 0 Z'], ['ajisai', 'M332.5 254 a1.4 1.4 0 1 0 .1 0 Z']], 0, 0)}
+        <path d="M323 256 L327 246 q1.5 -1 2.5 .5 L327 256 M324.6 252 l2 -.6 M325.6 249 l2 -.6" stroke-width=".8"/><path d="M330 252 a1.6 1.6 0 1 0 .1 0 Z M332.5 254 a1.4 1.4 0 1 0 .1 0 Z M330.4 254 v1.5 M332.6 255.6 v.5" stroke-width=".6"/>
+        <path d="${basket}" stroke-width="1"/><path d="M322 258.5 H332.5 M322.6 261.8 H331.8 M325 255 L325.4 265 M328 255 L327.8 265" stroke-width=".5" opacity=".8"/>
+        <path d="M333 257 h2.4 v3 h-2.4 Z" class="glow" stroke-width=".7"/>
+        <path d="M296 290 L299 299" stroke-width="1"/>`;
+    })()}
     ${(() => {
       // 沙滩遮阳伞：直直的伞杆，伞面红白相间、下沿一圈小弧，顶上一个小球
-      const bx = [336, 348, 360, 372, 384];
-      const panel = (i) => `M360 214 L${bx[i]} 236 Q${(bx[i] + bx[i + 1]) / 2} 240 ${bx[i + 1]} 236 Z`;
-      const canopy = `M336 236 Q340 214 360 214 Q380 214 384 236 ${[3, 2, 1, 0].map((i) => `Q${(bx[i] + bx[i + 1]) / 2} 240 ${bx[i]} 236`).join(' ')} Z`;
-      return `<path d="M360 ${G} V212" stroke-width="1.6"/><path d="M357 ${G - 6} h6" stroke-width="1.2"/>
+      const bx = [341, 350.5, 360, 369.5, 379];
+      const panel = (i) => `M360 236 L${bx[i]} 258 Q${(bx[i] + bx[i + 1]) / 2} 262 ${bx[i + 1]} 258 Z`;
+      const canopy = `M341 258 Q344 236 360 236 Q376 236 379 258 ${[3, 2, 1, 0].map((i) => `Q${(bx[i] + bx[i + 1]) / 2} 262 ${bx[i]} 258`).join(' ')} Z`;
+      return `<path d="M360 ${G} V234" stroke-width="1.6"/><path d="M357 ${G - 6} h6" stroke-width="1.2"/>
         ${crayon([['shu', `${panel(0)} ${panel(2)}`], ['paper', `${panel(1)} ${panel(3)}`]], 0, 0)}
-        <path d="${canopy}" stroke-width="1.2"/><path d="M360 214 L348 236 M360 214 L360 236 M360 214 L372 236" stroke-width=".7"/><path d="M360 214 a1.6 1.6 0 1 0 .1 -3" stroke-width="1.2"/>`;
+        <path d="${canopy}" stroke-width="1.2"/><path d="M360 236 L350.5 258 M360 236 L360 258 M360 236 L369.5 258" stroke-width=".7"/><path d="M360 236 a1.6 1.6 0 1 0 .1 -3" stroke-width="1.2"/>`;
     })()}
     ${fumikiri(17)}
     ${mascotAt(40, G - 33)}
