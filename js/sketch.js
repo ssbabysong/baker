@@ -1596,7 +1596,7 @@ function chocoFactory() {
   const belt = 'M120 176 H62 V184 H120 Z';
   const beltBreads = [68, 84, 100].map((x) => `M${x} 176 c0 -7 4 -10 6 -10 c2 0 6 3 6 10 Z`).join(' ');
   const fall = 'M392 226 Q390 260 394 292 Q396 300 404 302 H408 Q402 296 402 286 Q400 256 404 226 Z';
-  const river = `M306 ${G} Q310 304 340 302 Q380 300 412 304 Q418 310 418 ${G} Z`;
+  const river = `M300 ${G} Q306 300 340 298 Q420 294 480 300 V${G} Z`;
   const bridge = 'M330 320 Q352 290 374 320';
   const lolli = (x, h, r, c) => ({ stick: `M${x} ${G} V${G - h}`, top: `M${x - r} ${G - h} a${r} ${r} 0 1 0 ${r * 2} 0 a${r} ${r} 0 1 0 ${-r * 2} 0 Z`, swirl: `M${x} ${G - h} m-${r * .6} 0 a${r * .6} ${r * .6} 0 1 1 ${r * .6} ${r * .6} a${r * .35} ${r * .35} 0 1 1 ${-r * .3} ${-r * .55}`, c });
   const L = [lolli(52, 96, 20, 'pink'), lolli(86, 70, 14, 'custard'), lolli(108, 50, 10, 'leaf')];
@@ -1609,7 +1609,7 @@ function chocoFactory() {
     ${chim.map(([x, y]) => `<path d="M${x} ${x === 352 ? 168 : 120} V${y} H${x + 16} V${x === 352 ? 168 : 120}"/>`).join('')}${crayon(chim.map(([x, y]) => ['shu', `M${x} ${x === 352 ? 168 : 120} V${y} H${x + 16} V${x === 352 ? 168 : 120} Z`]))}
     ${chim.map(([x, y]) => `<path d="M${x - 3} ${y} H${x + 19}" stroke-width="2"/>`).join('')}
     ${crayon([['skysoft', dome], ['shu', `${body} ${wing}`], ['tile', 'M114 120 H306 V112 H114 Z M296 168 H376 V160 H296 Z']])}
-    <path d="M4 ${G} H${W - 4}"/>
+    <path d="M-96 ${G} H${W + 56}"/>
     <path d="${dome}"/><path d="M210 76 V120 M189 82 Q182 100 182 120 M231 82 Q238 100 238 120 M168 104 H252" stroke-width=".7"/><path d="M210 76 v-10" stroke-width="1.2"/><path d="M207 63 a3 3 0 1 0 6 0 a3 3 0 1 0 -6 0" class="glow"/>
     <path d="M114 112 H306 V120 H114 Z M296 160 H376 V168 H296 Z" stroke-width="1"/>
     <path d="${body} ${wing}"/>${bricks(120, 300, 120, G, 9)}${bricks(300, 372, 168, G, 9)}
@@ -1620,15 +1620,33 @@ function chocoFactory() {
     <path d="${pipe}" stroke-width="9"/><path d="${pipe}" stroke="#fffcf5" stroke-width="6"/><path d="${pipeStripes}" stroke="#c4513a" stroke-width="3"/>
     <path d="M372 214 H392 Q398 214 398 222 V226" stroke-width="8"/><path d="M372 214 H392 Q398 214 398 222 V226" stroke="#fffcf5" stroke-width="5"/><path d="M378 210 v8 M386 210 v8" stroke="#c4513a" stroke-width="2.6"/>
     ${crayon([['wood', belt], ['crust', beltBreads]])}<path d="${belt}"/><path d="M66 188 a4 4 0 1 0 .1 0 M114 188 a4 4 0 1 0 .1 0" stroke-width="1"/><path d="${beltBreads}" stroke-width=".9"/><path d="M66 192 L60 214 M66 192 L72 214" stroke-width=".8"/>
-    ${crayon([['choco', fall], ['choco', river]])}<path d="${fall}" stroke-width="1.1"/><path d="M397 236 v40" stroke="#e8c9a8" stroke-width=".8" opacity=".8"/><path d="${river}" stroke-width="1.1"/><path d="M326 310 q6 -3 12 0 M356 308 q6 -3 12 0 M386 310 q6 -3 12 0" stroke="#e8c9a8" stroke-width=".8"/>
+    ${crayon([['choco', fall], ['choco', river]])}<path d="${fall}" stroke-width="1.1"/><path d="M397 236 v40" stroke="#e8c9a8" stroke-width=".8" opacity=".8"/><path d="${river}" stroke-width="1.1"/><path d="M326 310 q6 -3 12 0 M356 308 q6 -3 12 0 M386 310 q6 -3 12 0 M446 306 q6 -3 12 0 M466 312 q6 -3 12 0" stroke="#e8c9a8" stroke-width=".8"/>
+    ${crayon([['pink', 'M408 304 Q412 316 440 316 Q468 316 472 304 Z'], ['paper', 'M428 304 V282 L452 298 Z'], ['custard', 'M418 306 h4 v-4 h-4 Z M456 306 h4 v-4 h-4 Z']])}
+    <path d="M408 304 Q412 316 440 316 Q468 316 472 304 Z"/><path d="M412 308 Q440 312 468 308" stroke="#fffcf5" stroke-width="1.6" stroke-dasharray="3 3"/><path d="M428 304 V276 M428 282 L452 298 H428" stroke-width="1.1"/><path d="M428 276 l8 3 l-8 3" class="f-shu" stroke-width=".8"/>
+    <path d="M472 304 q8 -2 8 -10 q0 -6 -6 -6 q-4 0 -4 4" stroke-width="1.6"/><path d="M400 310 q-6 -2 -8 2" stroke-width=".8"/>
     <path d="${bridge}" stroke-width="5"/><path d="${bridge}" stroke="#fffcf5" stroke-width="3"/><path d="${bridge}" stroke="#e48a9a" stroke-width="3" stroke-dasharray="3 3"/>
     ${L.map((l) => `<path d="${l.stick}" stroke-width="2.2"/>`).join('')}${crayon(L.map((l) => [l.c, l.top]))}${L.map((l) => `<path d="${l.top}"/><path d="${l.swirl}" stroke-width="1" />`).join('')}
     <path d="${[244, 260, 276, 292].map(cane).join(' ')}" stroke-width="3.6"/><path d="${[244, 260, 276, 292].map(cane).join(' ')}" stroke="#fffcf5" stroke-width="2.2"/><path d="${[244, 260, 276, 292].map(cane).join(' ')}" stroke="#c4513a" stroke-width="2.2" stroke-dasharray="2.5 2.5"/>
     ${crayon([gummy(130, 'pink'), gummy(146, 'leaf'), gummy(162, 'custard')])}<path d="M122 ${G} q-1 -10 8 -12 q9 2 8 12 M138 ${G} q-1 -10 8 -12 q9 2 8 12 M154 ${G} q-1 -10 8 -12 q9 2 8 12" stroke-width="1"/>
-    ${mascotAt(4, G - 33)}
-  `, `0 0 ${W} ${G + 12}`, 'store', 1.5);
+    <path d="M-28 0 V54 M-6 0 V54" stroke-width=".8"/>
+    ${crayon([['skysoft', 'M-40 54 H6 V96 H-40 Z'], ['custard', 'M-40 50 H6 V56 H-40 Z M-40 96 H6 V100 H-40 Z']])}
+    <path d="M-40 54 H6 V96 H-40 Z M-40 50 H6 V56 H-40 Z M-40 96 H6 V100 H-40 Z"/><path d="M-17 56 V96 M-40 76 H6" stroke-width=".7"/>
+    <path d="M-30 96 v-14 a4 4 0 1 1 6 0 v14 M-12 96 v-12 a4 4 0 1 1 6 0 v12" stroke-width=".9"/>
+    <path d="M-44 70 l-8 -2 M-44 80 l-10 0 M10 70 l8 -2 M10 80 l10 0" stroke-width=".8" opacity=".6"/>
+    ${(() => {
+      const L2 = [lolli(-52, 80, 16, 'sky'), lolli(-20, 58, 12, 'shu'), lolli(14, 72, 13, 'pink')];
+      const cup = (x, cc) => `<path d="M${x - 9} ${G} L${x - 11} ${G - 14} H${x + 11} L${x + 9} ${G} Z" class="f-wood"/>${crayon([[cc, `M${x - 13} ${G - 14} q0 -12 13 -14 q13 2 13 14 Z`]])}<path d="M${x - 9} ${G} L${x - 11} ${G - 14} H${x + 11} L${x + 9} ${G} Z M${x - 13} ${G - 14} q0 -12 13 -14 q13 2 13 14" stroke-width="1"/><path d="M${x - 5} ${G} V${G - 13} M${x} ${G} V${G - 13} M${x + 5} ${G} V${G - 13}" stroke-width=".6"/><path d="M${x} ${G - 30} a2.6 2.6 0 1 0 .1 0" class="f-shu" stroke-width=".8"/>`;
+      const swirlCandy = (x, y) => `${crayon([['custard', `M${x - 9} ${y} a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0 Z`]])}<path d="M${x - 9} ${y} a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0 M${x} ${y} m-5 0 a5 5 0 1 1 5 5 a3 3 0 1 1 -2 -4" stroke-width=".9"/><path d="M${x - 9} ${y} l-6 -5 v10 Z M${x + 9} ${y} l6 -5 v10 Z" class="f-pink" stroke-width=".9"/>`;
+      const fence = Array.from({ length: 7 }, (_, i) => `M${-64 + i * 9} ${G} V${G - 22} q0 -5 4 -5`).join(' ');
+      return `${L2.map((l) => `<path d="${l.stick}" stroke-width="2.2"/>`).join('')}${crayon(L2.map((l) => [l.c, l.top]))}${L2.map((l) => `<path d="${l.top}"/><path d="${l.swirl}" stroke-width="1"/>`).join('')}
+        <path d="${fence}" stroke-width="3.4"/><path d="${fence}" stroke="#fffcf5" stroke-width="2"/><path d="${fence}" stroke="#7fae8a" stroke-width="2" stroke-dasharray="2.5 2.5"/><path d="M-66 ${G - 12} H0" stroke-width="1.6"/>
+        ${cup(-4, 'pink')}${swirlCandy(-40, G - 36)}
+        ${blob(bush([[-80, G - 10, 10], [-90, G - 22, 8], [-70, G - 24, 9]]), 'pink', 1.6)}${crayon([['paper', dots([[-84, G - 18], [-74, G - 26], [-78, G - 10]], 2.2)]], 0, 0)}`;
+    })()}
+    ${mascotAt(22, G - 33)}
+  `, `-100 0 ${W + 160} ${G + 12}`, 'store', 1.5);
 }
-export const JP_DRAFTS = { choco: [chocoFactory, 420, 332], bunny2: [bunnyWonderland, 432, 330], bunny: [bunnyCottage, 360, 312], alice: [aliceTeapot, 380, 312], kamakura: [kamakuraShop, 380, 312], hokkaido: [hokkaidoBarn, 380, 312], shitamachi: [shitamachiShop, 380, 312], showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
+export const JP_DRAFTS = { choco: [chocoFactory, 580, 332], bunny2: [bunnyWonderland, 432, 330], bunny: [bunnyCottage, 360, 312], alice: [aliceTeapot, 380, 312], kamakura: [kamakuraShop, 380, 312], hokkaido: [hokkaidoBarn, 380, 312], shitamachi: [shitamachiShop, 380, 312], showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
 
 // 隐藏款的尺寸和招牌位置（招牌上的店名由 HTML 叠上去）
 const HIDDEN = {
