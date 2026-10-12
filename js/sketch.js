@@ -329,8 +329,10 @@ function streetExtras(level) {
   const fills = [];
   let lines = '';
   const add = (o) => { fills.push(...o.fills); lines += o.lines; };
-  if (level === 5 || level === 6) [customer(216, 'sky'), customer(232, 'crust'), customer(248, 'leaf')].forEach(add);
-  if (level === 5 || level === 6) [banner(258, 'shu', '现', '烤'), banner(266, 'ai', '面', '包')].forEach(add);
+  // 排队的客人和小旗：蜡笔色块和线条包成一组，好让整个人 / 整面旗一起晃（见 css .storefront .queue / .flag）
+  const group = (cls, i) => (o) => { lines += `<g class="${cls}" style="animation-delay:${(i * 0.7).toFixed(1)}s">${crayon(o.fills)}${o.lines}</g>`; };
+  if (level === 5 || level === 6) [customer(216, 'sky'), customer(232, 'crust'), customer(248, 'leaf')].forEach((c, i) => group('queue', i)(c));
+  if (level === 5 || level === 6) [banner(258, 'shu', '现', '烤'), banner(266, 'ai', '面', '包')].forEach((b, i) => group('flag', i)(b));
   if (level >= 7) add(terrace());
   if (level >= 8) {
     const sx = 100;
@@ -578,7 +580,7 @@ function groundFloor(level) {
     <path d="M46 164 H114 V167 H46 Z"/><path d="M50 167 V178 M110 167 V178"/>
     <path d="M56 164 C55 157 61 153 68 153 C76 153 80 157 79 164"/>
     <path d="M60 156 l1 -4 l3 3"/><path d="M65 154 l2 -4 l2 4"/>
-    <path d="M61 159 q1.5 1 3 0" stroke-width="1"/><path d="M79 162 q6 0 5 -5" stroke-width="1.2"/>
+    <path d="M61 159 q1.5 1 3 0" stroke-width="1"/><path class="cat-tail" d="M79 162 q6 0 5 -5" stroke-width="1.2"/>
     <path d="M92 164 L94 158 H108 L110 164"/><path d="M95 158 C95 154 99 152 102 152 C105 152 108 154 107 158"/>`;
   }
   if (level === 3) {
@@ -594,7 +596,7 @@ function groundFloor(level) {
     <path d="M220 120 Q242 102 264 120 Z"/><path d="M242 104 L229 120 M242 104 V120 M242 104 L255 120" stroke-width=".9"/>
     <path d="M220 120 q5.5 3 11 0 q5.5 3 11 0 q5.5 3 11 0 q5.5 3 11 0" stroke-width="1"/>
     <path d="M214 158 H254 V162 H214 Z"/><path d="M214 162 H254 V165 H214 Z"/><path d="M218 165 V178 M250 165 V178"/>
-    <path d="M220 158 V152 H227 V158 Z" stroke-width="1.1"/><path d="M222 149 q-1.5 -2 0 -4 M225 149 q-1.5 -2 0 -4" stroke-width=".9"/>
+    <path d="M220 158 V152 H227 V158 Z" stroke-width="1.1"/><path class="tea-steam" d="M222 149 q-1.5 -2 0 -4 M225 149 q-1.5 -2 0 -4" stroke-width=".9"/>
     <path d="M232 158 C232 154 235 152 238 152 C241 152 244 154 243 158"/>`;
   }
   if (level === 4) {
@@ -654,7 +656,7 @@ function tinyShop() {
     <path d="M130 100 H134 V178 H130 Z"/><path d="M170 100 H174 V178 H170 Z"/><path d="M134 104 H170"/>${lattice}
     <path d="M150 140 v6" stroke-width="2"/>
     <path d="M126 178 V175 H178 V178"/>
-    <g transform="translate(8 145) scale(0.6)" stroke-width="2.5">${mascotBody('wave')}</g>
+    <g transform="translate(8 145) scale(0.6)" stroke-width="2.5"><g class="shop-mascot">${mascotBody('wave')}</g></g>
   `, '0 0 240 190', 'store', 1.5);
 }
 
@@ -682,7 +684,7 @@ function stallCart() {
     <path d="M180 132 H206 L212 126" stroke-width="2"/>
     <path d="M80 154 a12 12 0 1 0 .1 0"/><path d="M80 160 V172 M74 166 H86" stroke-width="1"/>
     <path d="M160 154 a12 12 0 1 0 .1 0"/><path d="M160 160 V172 M154 166 H166" stroke-width="1"/>
-    <g transform="translate(18 145) scale(0.6)" stroke-width="2.5">${mascotBody('wave')}</g>
+    <g transform="translate(18 145) scale(0.6)" stroke-width="2.5"><g class="shop-mascot">${mascotBody('wave')}</g></g>
   `, '0 0 240 190', 'store', 1.5);
 }
 
@@ -699,7 +701,7 @@ function machiya(level, cls) {
     <path d="M60 38 H180 V60 H60 Z"/><path d="M64 42 H176" stroke-width="0.8" opacity=".5"/>
     <path d="M78 38 L82 32"/><path d="M162 38 L158 32"/>
     ${g.lines}
-    <g transform="translate(8 145) scale(0.6)" stroke-width="2.5">${mascotBody('wave')}</g>
+    <g transform="translate(8 145) scale(0.6)" stroke-width="2.5"><g class="shop-mascot">${mascotBody('wave')}</g></g>
   `, `0 0 ${W} 190`, `store ${cls}`, 1.5);
 }
 
@@ -722,7 +724,7 @@ function grownShop(level, cls) {
         <g transform="translate(0 ${UP})">
           ${crayon(st.fills)}
           ${st.lines}
-          <g transform="translate(8 145) scale(0.6)" stroke-width="2.5">${mascotBody('wave')}</g>
+          <g transform="translate(8 145) scale(0.6)" stroke-width="2.5"><g class="shop-mascot">${mascotBody('wave')}</g></g>
         </g>
       </g>
     `, `0 0 ${W} ${190 + UP + top}`, `store ${cls}`, 1.5);
@@ -741,7 +743,7 @@ function grownShop(level, cls) {
       <path d="M4 178 Q${W / 2} 180 ${W - 4} 177"/>
       ${g.lines}
       ${st.lines}
-      <g transform="translate(8 145) scale(0.6)" stroke-width="2.5">${mascotBody('wave')}</g>
+      <g transform="translate(8 145) scale(0.6)" stroke-width="2.5"><g class="shop-mascot">${mascotBody('wave')}</g></g>
     </g>
   `, `0 0 ${W} ${190 + dy}`, `store ${cls}`, 1.5);
 }

@@ -104,13 +104,19 @@ function levelOf(n) {
   return { lv: i + 1, name: lvName(i), next: next ? { at: next.at, name: lvName(i + 1) } : null, progress: next ? (n - LEVELS[i].at) / (next.at - LEVELS[i].at) : 1 };
 }
 
+// 首页和小组件上画哪一级的店面：在升级路线里自己选过（state.shop.look，必须已解锁）就用选的，不然跟着等级走
+const lookOf = (lv) => (state.shop.look >= 1 && state.shop.look <= lv ? state.shop.look : lv);
+
 // 门店插画 + 叠在招牌上的店名
 function shopFront(level, name = '', small = false) {
   const g = storefrontSign(level);
+  // 招牌上的字号跟着店画多宽、店名多长走：英文长店名也能整个放进招牌里，不被切掉
+  const units = [...name].reduce((n, ch) => n + (/[\u2e80-\uffff]/.test(ch) ? 1.12 : 0.6), 0) || 1;
+  const fit = `font-size:min(21px,${(g.w / g.vbW * 100 * 0.9 / units).toFixed(2)}cqw)`;
   const style = `left:${(g.x / g.vbW * 100).toFixed(2)}%;width:${(g.w / g.vbW * 100).toFixed(2)}%;top:${(g.y / g.vbH * 100).toFixed(2)}%;height:${(g.h / g.vbH * 100).toFixed(2)}%`;
   return `<div class="storefront ${small ? 'mini' : ''}">${storefront(level)}${name ? (small
     ? `<span class="sign" style="${style}">${esc(name)}</span>`
-    : `<button class="sign" style="${style}" data-act="rename-shop" title="${L('点一下改店名', 'Tap to rename')}">${esc(name)}</button>`) : ''}</div>`;
+    : `<button class="sign" style="${style};${fit}" data-act="rename-shop" title="${L('点一下改店名', 'Tap to rename')}">${esc(name)}</button>`) : ''}</div>`;
 }
 
 // 升级路线：每一级的店面、需要的出炉次数，标出现在在哪
@@ -203,7 +209,29 @@ const ROUTES = [
   [/^#\/logs(?:\/(\d{4}-\d{1,2}))?$/, viewLogs, 'logs'],
   [/^#\/log\/([\w-]+)$/, viewLog, 'logs'],
   [/^#\/settings$/, viewSettings, 'shop'],
+  [/^#\/wall$/, viewWall, 'shop'],
+  [/^#\/wall\/([\w-]+)$/, viewWall, 'recipes'],
 ];
+
+// 宽屏（折叠屏展开、iPad）：店铺、配方、日历、烘焙铺开成两栏（页面里有 .split / .md 就算宽版）；表单类的页面保持一栏、居中
+const wideMQ = matchMedia('(min-width: 720px)');
+const isWide = (html) => /class="(split|md|shelf-wide|wall-page)\b/.test(html);
+// 折叠屏打开 / 合上：配方页的结构跟着变（宽屏是左边配方架、右边详情），原地重画；整页轻轻淡入，不是一下子跳过去
+wideMQ.addEventListener('change', async () => {
+  const v = resolve(location.hash || '#/')?.view;
+  if (v === viewRecipes || v === viewRecipe) await rerender();
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) $app.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, easing: 'ease-out' });
+});
+
+// 换页面内容；宽屏配方页左边那栏自己能滚，换内容时记住它滚到哪了
+function swapApp(html) {
+  const listY = $app.querySelector('.md-list')?.scrollTop;
+  $app.innerHTML = html;
+  $app.classList.toggle('wide', isWide(html));
+  const list = listY && $app.querySelector('.md-list');
+  if (list) list.scrollTop = listY;
+  syncNativeBar();
+}
 
 function resolve(hash) {
   for (const [re, view, tab] of ROUTES) {
@@ -227,7 +255,7 @@ async function route() {
   const html = await r.view(...r.args);
   if (token !== routeToken) return; // 期间又跳转了
   if (html == null) return;          // 视图自己跳走了
-  $app.innerHTML = html;
+  swapApp(html);
   renderTabs(r.tab);
   renderTabClock();
   keepAwake(hash.startsWith('#/bake/'));
@@ -243,7 +271,7 @@ async function rerender() {
   const token = routeToken;
   const html = await r.view(...r.args);
   if (token !== routeToken || html == null) return;
-  $app.innerHTML = html;
+  swapApp(html);
   renderTabClock();
   window.scrollTo(0, y);
   scheduleWidgetSync();
@@ -268,6 +296,126 @@ function renderTabs(active) {
     a.dataset.drawn = '1';
     if (on) $tabs.style.setProperty('--i', i);
   });
+  syncNativeTabs(active);
+}
+
+// iOS App 里用系统原生菜单栏（见 ios/App/App/Plugins/NativeTabs.swift）：位置、玻璃效果、iPhone Duo 上竖着排在状态栏旁边，都交给系统。
+// 网页这边只负责把标题、手绘图标、当前在哪个标签告诉它；用户点了哪个标签，它告诉网页去哪页。
+// 浏览器里没有这个插件，照旧用网页画的底部胶囊
+const nativeTabs = isNative() ? window.Capacitor.Plugins.NativeTabs : null;
+let nativeActive = null;
+let nativeTitles = '';
+let nativeIconTheme = '';
+if (nativeTabs) {
+  document.documentElement.classList.add('native-tabs');
+  nativeTabs.addListener('select', ({ key }) => {
+    const tab = TABS().find(([k]) => k === key);
+    if (tab) go(tab[1]);
+  });
+}
+// 顶部导航栏也交给系统：返回键、顶栏上带 data-tool 的按钮（值是 SF Symbols 图标名）搬到原生导航栏上，
+// 网页里的这些按钮藏起来；点原生按钮 = 点网页里原来那个按钮，行为完全一样。
+// 页面标题不搬：还是网页里原来的手绘大字，原生按钮和它在同一行。
+// 带同一个 data-tool-menu 的几个按钮合成一个原生按钮，点开是菜单（比如配方架的「导入 / 手写」）
+let nativeTools = [];
+let nativeBack = null;
+let nativeBarSig = '';
+if (nativeTabs) {
+  nativeTabs.addListener('tap', ({ id }) => {
+    if (id === 'back') nativeBack?.click();
+    else nativeTools[Number(id)]?.click();
+  });
+}
+// 导航栏按钮也用店里的手绘图标：data-tool 的 SF Symbols 名 → 手绘图标；系统只取形状，颜色跟着导航栏走
+const BAR_ICONS = { gearshape: 'gear', 'square.and.arrow.up': 'share', pencil: 'pencil', checkmark: 'check', plus: 'plus' };
+const barIconCache = new Map();
+function barIcon(name) {
+  // 齿轮在网页里是蜡笔涂满的一块，交给系统只剩个剪影；导航栏上改画它的手绘轮廓线，和别的线条图标一样
+  const svg = name === 'gear'
+    ? icon('gear').replace(/<g class="crayon"[^>]*>/, '<g>').replace('class="f-soft"', 'fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round"')
+    : icon(name);
+  // 网页里的线条很细（适合大插画），导航栏上的小图标加粗一点，和系统按钮的分量差不多
+  const bold = svg.replace('stroke-width="2.2"', 'stroke-width="4.4"').replace('stroke-width="3.2"', 'stroke-width="4.4"');
+  if (!barIconCache.has(name)) barIconCache.set(name, svgToPng(bold.replace('<svg', '<svg style="color:#000"'), 24, 24).catch(() => undefined));
+  return barIconCache.get(name);
+}
+
+async function syncNativeBar() {
+  if (!nativeTabs) return;
+  const heads = [...$app.querySelectorAll('.topbar, .greet, .bake-head')];
+  nativeBack = $app.querySelector('.topbar > a.btn.icon:first-child, .bake-head > a.btn.icon:first-child');
+  nativeTools = heads.flatMap((h) => [...h.querySelectorAll('[data-tool], [data-tool-menu]')]);
+  const label = (el) => el.getAttribute('aria-label') || el.textContent.trim();
+  const items = [];
+  const menus = {};
+  nativeTools.forEach((el, i) => {
+    const m = el.dataset.toolMenu;
+    if (!m) { items.push({ id: String(i), symbol: el.dataset.tool, title: label(el), prominent: el.hasAttribute('data-tool-prominent') }); return; }
+    if (!menus[m]) items.push(menus[m] = { id: `menu-${m}`, symbol: m, title: el.dataset.toolTitle || label(el), prominent: false, menu: [] });
+    menus[m].menu.push({ id: String(i), title: label(el) });
+  });
+  const bar = {
+    back: nativeBack ? label(nativeBack) : undefined,
+    items,
+  };
+  const sig = JSON.stringify(bar);
+  if (sig === nativeBarSig) return;
+  nativeBarSig = sig;
+  for (const it of items) if (BAR_ICONS[it.symbol]) it.icon = await barIcon(BAR_ICONS[it.symbol]);
+  if (bar.back) bar.backIcon = await barIcon('back');
+  if (sig !== nativeBarSig) return; // 画图标的工夫页面又变了，以新的为准
+  nativeTabs.bar(bar).catch((e) => console.warn('native bar', e));
+}
+
+// 折叠屏半折、折痕横在屏幕中间（手机横过来立着，像个小笔记本）：html.laptop，--fold-top / --fold-bottom 是折痕上下沿。
+// 烘焙页在这个姿势下分成两截：上半截固定显示正在进行的这一步，下半截滚动看其余内容（见 CSS）
+function applyPosture(p) {
+  const f = p?.fold;
+  const laptop = p?.status === 'partial' && f && f.w > f.h;
+  const root = document.documentElement;
+  root.classList.toggle('laptop', !!laptop);
+  // 合上用外屏：首页第一屏正好到三个数字为止（html.folded，见 CSS）
+  root.classList.toggle('folded', p?.status === 'closed');
+  if (laptop) {
+    root.style.setProperty('--fold-top', `${f.y}px`);
+    root.style.setProperty('--fold-bottom', `${f.y + f.h}px`);
+  }
+}
+// 调试版 App 的假数据开关（-seed 50 / -unseed，见 js/dev-seed.js）；正式版这里永远拿到 0，不会加载那个文件
+if (nativeTabs?.devSeed) {
+  nativeTabs.devSeed().then(async ({ n, bakes, clear }) => {
+    if (!n && !clear) return;
+    const dev = await import('./dev-seed.js');
+    await (clear ? dev.unseed() : dev.seed(n, bakes ?? n));
+    rerender();
+  }).catch(() => {});
+}
+if (nativeTabs) {
+  nativeTabs.addListener('posture', applyPosture);
+  nativeTabs.posture().then(applyPosture).catch(() => {});
+}
+
+async function syncNativeTabs(active = nativeActive) {
+  if (!nativeTabs) return;
+  nativeActive = active;
+  const titles = Object.fromEntries(TABS().map(([k, , label]) => [k, label]));
+  const t = tabClockText();
+  if (t) titles.shop = t;
+  // 图标跟着深浅色走：换主题时重新画一套
+  const root = document.documentElement;
+  const theme = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const payload = { active, titles };
+  if (theme !== nativeIconTheme) {
+    const css = getComputedStyle(root);
+    const icon = (ic, on) => svgToPng(tabIcon(ic, on).replace('<svg', `<svg style="color:${css.getPropertyValue(on ? '--doodle' : '--ink-soft').trim()}"`), 28, 28);
+    payload.icons = {};
+    for (const [k, , , ic] of TABS()) payload.icons[k] = { off: await icon(ic, false), on: await icon(ic, true) };
+    nativeIconTheme = theme;
+  }
+  const sig = JSON.stringify([active, titles]);
+  if (!payload.icons && sig === nativeTitles) return;
+  nativeTitles = sig;
+  nativeTabs.set(payload).catch((e) => console.warn('native tabs', e));
 }
 
 // 往下滚动时把菜单栏缩小，往上滚动或回到顶部时展开（和 iOS 一样）
@@ -338,9 +486,10 @@ async function viewShop() {
   const left = lv.next ? lv.next.at - bakes.length : 0;
 
   return `
+  <div class="split home"><div class="col-a">
   <div class="greet"><div class="t"><h1>${greeting()}</h1><p>${sub}</p></div>
-    <a class="btn icon ghost" href="#/settings" aria-label="${L('店务', 'Settings')}">${icon('gear')}</a></div>
-  ${shopFront(lv.lv, shop.name)}
+    <a class="btn icon ghost" href="#/settings" data-tool="gearshape" aria-label="${L('店务', 'Settings')}">${icon('gear')}</a></div>
+  ${shopFront(lookOf(lv.lv), shop.name)}
   <div class="shop-meta">
     <button class="lv" data-act="roadmap" aria-label="${L('查看升级路线', 'See the road map')}">Lv.${lv.lv} ${lv.name} ›</button>
     <span class="small muted"> · ${L(`营业第 <span class="mono">${days}</span> 天`, `Day <span class="mono">${days}</span>`)}</span>
@@ -354,6 +503,7 @@ async function viewShop() {
     <div class="stat"><b>${bakes.length}</b><span>${L('累计出炉', 'Baked')}</span></div>
     <div class="stat"><b>${thisMonth}</b><span>${L('本月出炉', 'This month')}</span></div>
   </div>
+  </div><div class="col-b">
 
   <h2>${L('烤箱', 'Ovens')}${ss.length > 1 ? ` <span class="small muted" style="font-weight:400">${L(`${ss.length} 台在烤`, `${ss.length} busy`)}</span>` : ''}</h2>
   <div class="ovens">${ovens}</div>
@@ -365,11 +515,36 @@ async function viewShop() {
   </div>
   <div class="shelf-board"></div>
 
-  <h2>${L('作品墙', 'Bake wall')} <a class="more" href="#/logs">${L('日历', 'Diary')} ›</a></h2>
+  <h2>${L('作品墙', 'Bake wall')} <a class="more" href="#/wall">${L('全部', 'All')} ›</a></h2>
   ${recent.length ? `<div class="wall">${recent.map((b, i) => polaroid(b, thumbs[i])).join('')}</div>`
     : `<div class="empty">${emptyShelf()}<div>${L('还没有作品，第一炉在等你', 'Nothing here yet. Your first batch awaits')}</div></div>`}
   <div class="home-foot">${houseLogo()}</div>
+  </div></div>
   `;
+}
+
+// 整面作品墙：所有作品按月份分组，新的在前；从配方详情进来（#/wall/<配方>）就只看这一款的
+async function viewWall(recipeId) {
+  const r = recipeId && await getRecipe(recipeId);
+  if (recipeId && !r) return notFound();
+  const bakes = (await listBakes()).filter((b) => !recipeId || b.recipeId === recipeId);
+  const urls = await Promise.all(bakes.map((b) => photoUrl(b.photoId)));
+  const groups = [];
+  bakes.forEach((b, i) => {
+    const d = new Date(b.finishedAt);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    if (groups.at(-1)?.key !== key) groups.push({ key, d, items: [] });
+    groups.at(-1).items.push(polaroid(b, urls[i]));
+  });
+  const title = r ? L(`「${esc(r.name)}」的作品`, `${esc(r.name)}: past bakes`) : L('作品墙', 'Bake wall');
+  return `<div class="wall-page">
+  <div class="topbar"><a class="btn icon ghost" href="${r ? `#/r/${r.id}` : '#/'}" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1>${title}</h1>
+    <span class="sub">${L(`共 ${bakes.length} 炉`, `${bakes.length} in all`)}</span></div>
+  ${groups.length ? groups.map((g) => `<h2>${L(`${g.d.getFullYear()} 年 ${g.d.getMonth() + 1} 月`, `${MONTHS[g.d.getMonth()]} ${g.d.getFullYear()}`)}
+      <span class="small muted" style="font-weight:400">${L(`${g.items.length} 炉`, `${g.items.length}`)}</span></h2>
+    <div class="wall">${g.items.join('')}</div>`).join('')
+    : `<div class="empty">${emptyShelf()}<div>${L('还没有作品，第一炉在等你', 'Nothing here yet. Your first batch awaits')}</div></div>`}
+  </div>`;
 }
 
 function polaroid(b, url) {
@@ -387,7 +562,20 @@ const priceTag = (r) => { const p = getPrice(r); return p != null ? `<span class
 const totalMinutes = (r) => r.steps.reduce((a, st) => a + (stepMin(st) || 0), 0);
 
 // 配方架：和首页一样的轻木板，每层三个面包，面包下面是牛皮纸名签，旁边立着价签；最后留一个空位上新配方
+// 配方架页：宽屏上整面铺开（一层五个）；点了某一款才分成左边配方架、右边详情（viewRecipe）
 async function viewRecipes() {
+  if (!wideMQ.matches) return recipeShelf();
+  return `<div class="shelf-wide">${await recipeShelf(null, 5)}</div>`;
+}
+
+async function viewRecipe(id) {
+  if (!wideMQ.matches) return recipeDetail(id);
+  const detail = await recipeDetail(id, true);
+  if (detail == null) return null;
+  return `<div class="md"><div class="md-list">${await recipeShelf(id)}</div><div class="md-detail">${detail}</div></div>`;
+}
+
+async function recipeShelf(sel = null, per = 3) {
   const [recipes, bakes] = await Promise.all([listRecipes(), listBakes()]);
   const q = state.filter.trim().toLowerCase();
   const list = q ? recipes.filter((r) => r.name.toLowerCase().includes(q) || r.ingredients.some((i) => i.name.toLowerCase().includes(q))) : recipes;
@@ -395,34 +583,39 @@ async function viewRecipes() {
   const items = list.map((r) => {
     const total = totalMinutes(r);
     const n = count(r.id);
-    return `<a class="rack-item" href="#/r/${r.id}"><span class="pic">${shape(r.shape)}${priceTag(r)}</span>
+    // 宽屏分栏时再点一下选中的那款 = 收起右边的详情，回到整面配方架
+    return `<a class="rack-item ${r.id === sel ? 'on' : ''}" href="${r.id === sel ? '#/recipes' : `#/r/${r.id}`}"${r.id === sel ? ' aria-current="true"' : ''}><span class="pic">${shape(r.shape)}${priceTag(r)}</span>
       <span class="tag">${esc(r.name)}</span>
       <small>${total ? `${L('约', '~')} ${formatMinutes(total)}` : L(`${r.steps.length} 步`, `${r.steps.length} steps`)}${n ? ` · ${L(`做过 ${n} 次`, `×${n}`)}` : ''}</small></a>`;
   });
   if (!q) items.push(`<a class="rack-item add" href="#/import">${icon('plus')}<span>${L('上新配方', 'New recipe')}</span></a>`);
   const rows = [];
-  for (let i = 0; i < items.length; i += 3) rows.push(items.slice(i, i + 3));
+  const cols = per === 5 ? ' style="--per:5"' : '';
+  for (let i = 0; i < items.length; i += per) rows.push(items.slice(i, i + per));
   return `
   <div class="topbar"><h1>${L('配方架', 'Recipe shelf')}</h1>
-    <a class="btn sm" href="#/import" data-act="new-import">${icon('paste')} ${L('导入', 'Import')}</a>
-    <a class="btn sm primary" href="#/edit/new" data-act="new-blank">${icon('plus')} ${L('手写', 'Write')}</a></div>
+    <a class="btn sm" href="#/import" data-act="new-import" data-tool-menu="plus" data-tool-title="${L('上新配方', 'New recipe')}">${icon('paste')} ${L('导入', 'Import')}</a>
+    <a class="btn sm primary" href="#/edit/new" data-act="new-blank" data-tool-menu="plus">${icon('plus')} ${L('手写', 'Write')}</a></div>
   <input class="search" type="search" placeholder="${L('找配方 / 找材料…', 'Find a recipe or ingredient…')}" value="${esc(state.filter)}" data-act-input="filter">
-  <div id="rack-results">${list.length || !q ? `<div class="rack">${rows.map((row) => `<div class="rack-row">${row.join('')}</div>`).join('')}</div>`
+  <div id="rack-results">${list.length || !q ? `<div class="rack"${cols}>${rows.map((row) => `<div class="rack-row">${row.join('')}</div>`).join('')}</div>`
     : `<div class="empty">${emptyShelf()}<div>${L(`没找到「${esc(state.filter)}」`, `Nothing matches “${esc(state.filter)}”`)}</div></div>`}</div>`;
 }
 
-async function viewRecipe(id) {
+// md：宽屏右边那栏，不要返回键（左边就是配方架）
+async function recipeDetail(id, md = false) {
   const r = await getRecipe(id);
   if (!r) return notFound();
+  state.lastRecipe = id;
   if (getPrice(r) == null) await setPrice(r.id, randomPrice(r.shape)).then((x) => { r.prices = x.prices; });
   const bakes = (await listBakes()).filter((b) => b.recipeId === id);
   const thumbs = await Promise.all(bakes.slice(0, 6).map((b) => photoUrl(b.photoId)));
   const total = totalMinutes(r);
   const baking = state.sessions.filter((s) => s.recipeId === id);
   return `
-  <div class="topbar"><a class="btn icon ghost" href="#/recipes" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1></h1>
-    <button class="btn icon ghost" data-act="share-recipe" data-id="${r.id}" aria-label="${L('分享', 'Share')}">${icon('share')}</button>
-    <a class="btn icon ghost" href="#/edit/${r.id}" aria-label="${L('编辑', 'Edit')}">${icon('pencil')}</a></div>
+  <div class="topbar">${md ? '' : `<a class="btn icon ghost" href="#/recipes" aria-label="${L('返回', 'Back')}">${icon('back')}</a>`}<h1></h1>
+    <button class="btn icon ghost" data-act="share-recipe" data-id="${r.id}" data-tool="square.and.arrow.up" aria-label="${L('分享', 'Share')}">${icon('share')}</button>
+    <a class="btn icon ghost" href="#/edit/${r.id}" data-tool="pencil" aria-label="${L('编辑', 'Edit')}">${icon('pencil')}</a></div>
+  <div class="split recipe"><div class="col-a">
   <div class="hero">${shape(r.shape)}<h1>${esc(r.name)}</h1>
     <div class="chips">
       ${r.yield ? `<span class="chip time">${esc(r.yield)}</span>` : ''}
@@ -439,16 +632,18 @@ async function viewRecipe(id) {
 
   <h2>${L('材料', 'Ingredients')}</h2>
   ${ingTable(r.ingredients)}
+  </div><div class="col-b">
 
   <h2>${L('步骤', 'Steps')}</h2>
   <ol class="steps">${r.steps.map((s, i) => { const k = stepKind(s, i, r.steps); return `<li class="k-${k}"><div class="stext">${stepHtml(s.text)}</div>${stepMeta(s, k)}</li>`; }).join('')}</ol>
 
   ${r.notes ? `<h2>${L('备注', 'Notes')}</h2><div class="card fill notes">${esc(r.notes)}</div>` : ''}
 
-  ${bakes.length ? `<h2>${L('这款的作品', 'Past bakes')}</h2><div class="wall">${bakes.slice(0, 6).map((b, i) => polaroid(b, thumbs[i])).join('')}</div>` : ''}
+  ${bakes.length ? `<h2>${L('这款的作品', 'Past bakes')} <a class="more" href="#/wall/${r.id}">${L('全部', 'All')} ›</a></h2><div class="wall">${bakes.slice(0, 6).map((b, i) => polaroid(b, thumbs[i])).join('')}</div>` : ''}
 
   <div class="row" style="margin-top:32px"><button class="btn danger sm" data-act="delete-recipe" data-id="${r.id}">${icon('trash')} ${L('删除配方', 'Delete')}</button>
-    <span class="small muted grow" style="text-align:right">v${r.version} · ${L(`更新于 ${fmtDate(r.updatedAt)}`, `updated ${fmtDate(r.updatedAt)}`)}</span></div>`;
+    <span class="small muted grow" style="text-align:right">v${r.version} · ${L(`更新于 ${fmtDate(r.updatedAt)}`, `updated ${fmtDate(r.updatedAt)}`)}</span></div>
+  </div></div>`;
 }
 
 function ingTable(ings, scale = 1) {
@@ -499,7 +694,7 @@ async function viewEdit(id) {
   return `
   <div class="topbar"><a class="btn icon ghost" href="${id === 'new' ? '#/recipes' : `#/r/${id}`}" data-act="cancel-edit" aria-label="${L('返回', 'Back')}">${icon('back')}</a>
     <h1>${id === 'new' ? L('上新配方', 'New recipe') : L('改配方', 'Edit recipe')}</h1>
-    <button class="btn primary sm" data-act="save-recipe">${icon('check')} ${L('保存', 'Save')}</button></div>
+    <button class="btn primary sm" data-act="save-recipe" data-tool="checkmark" data-tool-prominent>${icon('check')} ${L('保存', 'Save')}</button></div>
 
   <label class="f"><span>${L('名字', 'Name')}</span><input class="input" data-d="name" value="${esc(d.name)}" placeholder="${L('比如：乡村欧包', 'e.g. Country loaf')}"></label>
   <div class="f"><span class="small muted">${L('长什么样', 'Looks like')}</span>
@@ -691,12 +886,12 @@ function viewBake(id) {
     <a class="btn icon ghost" href="#/" aria-label="${L('返回', 'Back')}">${icon('back')}</a>
     <div class="t"><b>${esc(r.name)}</b><span>${L(`<span class="mono">${fmtTime(s.startedAt)}</span> 开烤 · 已 <span data-elapsed>${fmtDur(Date.now() - s.startedAt)}</span>`,
       `Started <span class="mono">${fmtTime(s.startedAt)}</span> · <span data-elapsed>${fmtDur(Date.now() - s.startedAt)}</span> in`)}</span></div>
-    <button class="btn sm ${ed ? 'primary' : ''}" data-act="bake-edit-toggle">${icon(ed ? 'check' : 'pencil')} ${ed ? L('改好了', 'Done') : L('改配方', 'Edit')}</button>
+    <button class="btn sm ${ed ? 'primary' : ''}" data-act="bake-edit-toggle" data-tool="${ed ? 'checkmark' : 'pencil'}" ${ed ? 'data-tool-prominent' : ''}>${icon(ed ? 'check' : 'pencil')} ${ed ? L('改好了', 'Done') : L('改配方', 'Edit')}</button>
   </div>
   ${others.length ? `<div class="oven-tabs">${state.sessions.map((x) => `<a class="${x.id === s.id ? 'on' : ''}" href="#/bake/${x.id}">${shape(x.recipe.shape)}<span>${esc(x.recipe.name)}</span>${x.timers.some((t) => !t.done) ? `<span class="mono small" data-clock="${x.timers.find((t) => !t.done).id}"></span>` : ''}</a>`).join('')}</div>` : ''}
   ${changes.length ? `<p class="small" style="margin:8px 0 0"><span class="badge">${L(`这次改了 ${changes.length} 处`, `${changes.length} change${changes.length > 1 ? 's' : ''}`)}</span> <span class="muted">${L('出炉时再决定要不要存回配方', 'Decide whether to keep them when it’s done')}</span></p>` : ''}
 
-  ${ed ? '' : bakeHero(s)}
+  ${ed ? '' : `<div class="split bake"><div class="col-a">${bakeHero(s)}</div><div class="col-b">`}
 
   <h2>${L('称料', 'Weigh out')} <span class="row" style="margin-left:auto;gap:6px">${scaleBtns}</span></h2>
   ${ingHtml}
@@ -711,7 +906,8 @@ function viewBake(id) {
   <div class="stack" style="margin-top:26px">
     <button class="btn crust block" data-act="go-finish">${icon('camera')} ${L('出炉啦！拍照记录', 'It’s out! Take a photo')}</button>
     <button class="btn ghost block small danger" data-act="abandon">${L('放弃这一炉', 'Give up this batch')}</button>
-  </div>`;
+  </div>
+  ${ed ? '' : '</div></div>'}`;
 }
 
 const clockText = (t) => (t.done ? L('时间到！', 'Time’s up!') : formatClock(remainingMs(t)));
@@ -859,12 +1055,19 @@ function tick() {
 }
 
 // 别的页面上不再浮一排计时小条：所有炉里最近的那个倒计时直接显示在菜单栏「店铺」下面
-function renderTabClock() {
-  const label = $tabs.querySelector('[data-tab="shop"] span');
-  if (!label) return;
+// 正在计时的话，「店铺」标签下面换成最近的那个倒计时
+function tabClockText() {
   const ts = allTimers().slice().sort((a, b) => remainingMs(a) - remainingMs(b));
   const t = ts.find((x) => x.done) || ts[0];
-  label.textContent = t ? (t.done ? L('时间到', 'Time!') : formatClock(remainingMs(t))) : L('店铺', 'Shop');
+  return t ? (t.done ? L('时间到', 'Time!') : formatClock(remainingMs(t))) : '';
+}
+function renderTabClock() {
+  syncNativeTabs();
+  syncNativeBar();
+  const label = $tabs.querySelector('[data-tab="shop"] span');
+  if (!label) return;
+  const t = tabClockText();
+  label.textContent = t || L('店铺', 'Shop');
   label.classList.toggle('mono', !!t);
   label.parentElement.classList.toggle('ticking', !!t);
 }
@@ -1052,6 +1255,7 @@ async function viewLogs(ym) {
 
   state.calSlide = null;
   return `
+  <div class="split logs"><div class="col-a">
   <div class="cal-head">
     <div class="y">${y}</div>
     <div class="m"><button data-go="#/logs/${prev}" aria-label="${L('上个月', 'Previous month')}">${icon('back')}</button>${MONTHS[m - 1]}<button data-go="#/logs/${next}" aria-label="${L('下个月', 'Next month')}" ${atNow ? 'disabled' : ''}>${icon('next')}</button></div>
@@ -1063,6 +1267,7 @@ async function viewLogs(ym) {
     <div class="stat"><b>${kinds}</b><span>recipes</span></div>
     <div class="stat"><b>${hours >= 10 ? Math.round(hours) : Math.round(hours * 10) / 10}</b><span>hours</span></div>
   </div>
+  </div><div class="col-b">
 
   ${sel ? `<div class="day-head"><b>${ymd(selDate)}</b> <span>${weekday(selDate.getDay())}</span></div>
   ${dayBakes.length ? `<div class="diary-list">${dayBakes.map((b, i) => `<a class="card ${i % 2 ? 'alt' : ''} diary-row" href="#/log/${b.id}">
@@ -1072,7 +1277,8 @@ async function viewLogs(ym) {
     : `<div class="empty day-empty">${mascot('wait')}<p>${L('这天没有开炉', 'No bakes on this day')}</p></div>`}
   ${canBackfill ? `<div class="backfill-cta"><a class="link-btn" href="#/backfill/${sel}">${icon('plus')} ${dayBakes.length ? L('这天还烤了别的？补记一炉', 'Baked something else? Add it') : L('补记这一天', 'Add a bake on this day')}</a></div>` : ''}`
   : `<div class="empty day-empty">${mascot('wait')}<p>${L('这个月还没有开炉', 'No bakes this month yet')}</p></div>
-  <div class="backfill-cta"><a class="link-btn" href="#/backfill">${icon('plus')} ${L('补记一炉', 'Add a past bake')}</a></div>`}`;
+  <div class="backfill-cta"><a class="link-btn" href="#/backfill">${icon('plus')} ${L('补记一炉', 'Add a past bake')}</a></div>`}
+  </div></div>`;
 }
 
 const hm = (t) => { const d = new Date(t); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
@@ -1292,6 +1498,10 @@ async function svgToPng(markup, w, h, pad = 0) {
     const out = svg.cloneNode(true);
     [out, ...out.querySelectorAll('*')].forEach((el, i) => { el.removeAttribute('class'); el.setAttribute('style', styles[i]); });
     out.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    // 直接按 @3x 的尺寸画：iOS 的 WebKit 会先按 SVG 自己写的宽高把图栅格化、再拉伸到画布上，
+    // 写成 1 倍大小再放大 3 倍就糊了（菜单栏、导航栏的图标、小组件的图都走这里）
+    out.setAttribute('width', w * 3);
+    out.setAttribute('height', h * 3);
     if (pad) {
       const [x, y, vw, vh] = out.getAttribute('viewBox').split(/[\s,]+/).map(Number);
       out.setAttribute('viewBox', `${x - vw * pad} ${y - vh * pad} ${vw * (1 + 2 * pad)} ${vh * (1 + 2 * pad)}`);
@@ -1300,7 +1510,7 @@ async function svgToPng(markup, w, h, pad = 0) {
     const img = new Image();
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(out));
     await img.decode();
-    const k = 3; // 按 @3x 出图
+    const k = 3; // 按 @3x 出图（和上面 SVG 的宽高一致）
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(w * k);
     canvas.height = Math.round(h * k);
@@ -1325,8 +1535,9 @@ async function syncWidgets() {
   const pic = (name, make) => { const key = `${name}-${t}`; if (!widgetSent.has(key)) draw[key] = make; return key; };
   const bread = (sh) => pic(`b-${String(sh || 'loaf').replace(/[^\w-]/g, '')}`, () => [shape(sh), 64, 64, 0.06]);
   const lv = levelOf(bakes.length);
-  const sign = storefrontSign(lv.lv);
-  const shopPic = pic(`shop${lv.lv}`, () => [storefront(lv.lv), 300, 300 * sign.vbH / sign.vbW]);
+  const look = lookOf(lv.lv);
+  const sign = storefrontSign(look);
+  const shopPic = pic(`shop${look}`, () => [storefront(look), 300, 300 * sign.vbH / sign.vbW]);
 
   const since = Date.now() - 45 * DAY; // 日历最多看这个月，留够 45 天
   const data = {
@@ -1440,13 +1651,25 @@ const actions = {
   // 升级路线里已解锁的等级：点开看大图
   async 'level-view'(el) {
     const lv = Number(el.dataset.lv);
+    const top = levelOf((await listBakes()).length).lv;
+    const using = lookOf(top) === lv;
+    // 已经在用这个：最高级就不用多一个按钮；不是最高级就给「换回跟着等级走」
+    const pick = using
+      ? (lv === top ? '' : `<button class="btn primary" data-dlg="follow">${L('换回最新的店面', 'Back to the latest shop')}</button>`)
+      : `<button class="btn primary" data-dlg="use">${L('就用这个店面', 'Use this shop')}</button>`;
     const v = await dialog(`<div class="level-big">
       ${shopFront(lv, state.shop.name, true)}
       <h3>Lv.${lv} ${lvName(lv - 1)}</h3>
       <p class="small muted">${lvDesc(lv - 1)}</p>
-      <div class="row" style="justify-content:center"><button class="btn" data-dlg="back">${icon('back')} ${L('升级路线', 'Road map')}</button><button class="btn primary" data-dlg="ok">${L('好', 'OK')}</button></div>
+      <div class="row" style="justify-content:center"><button class="btn" data-dlg="back">${icon('back')} ${L('升级路线', 'Road map')}</button>${pick || `<button class="btn primary" data-dlg="ok">${L('好', 'OK')}</button>`}</div>
     </div>`);
-    if (v === 'back') showRoadmap();
+    if (v === 'use' || v === 'follow') {
+      // 选最高级 = 跟着等级走（以后升级了自动换新店面）
+      state.shop.look = v === 'use' && lv !== top ? lv : null;
+      await saveShop(state.shop);
+      rerender();
+      scheduleWidgetSync();
+    } else if (v === 'back') showRoadmap();
   },
   async 'rename-shop'() {
     const name = await promptDlg(L('给小店起个名字', 'Name your shop'), state.shop.name);
@@ -1470,7 +1693,8 @@ const actions = {
     const r = await getRecipe(el.dataset.id);
     const text = recipeToText(r);
     try {
-      if (navigator.share) await navigator.share({ title: r.name, text });
+      if (nativeTabs) await nativeTabs.share({ title: r.name, text });
+      else if (navigator.share) await navigator.share({ title: r.name, text });
       else { await navigator.clipboard.writeText(text); toast(L('配方文字已复制', 'Recipe copied')); }
     } catch { /* 用户取消分享 */ }
   },
@@ -1802,9 +2026,10 @@ function filterRack(value) {
   state.filter = value;
   clearTimeout(filterTimer);
   filterTimer = setTimeout(async () => {
-    const html = await viewRecipes();
+    const r = resolve(location.hash || '#/');
+    const html = r && await r.view(...r.args);
     const box = document.getElementById('rack-results');
-    if (!box || !location.hash.match(/^#\/recipes/)) return;
+    if (!box || !location.hash.match(/^#\/(recipes|r\/)/)) return;
     const tpl = document.createElement('template');
     tpl.innerHTML = html;
     const next = tpl.content.getElementById('rack-results');
@@ -1827,7 +2052,7 @@ function edgeSetup(link) {
     Promise.resolve(r.view(...r.args)).then((html) => {
       if (edge !== e || html == null) return;
       const under = document.createElement('div');
-      under.className = 'under';
+      under.className = isWide(html) ? 'under wide' : 'under';
       under.innerHTML = html;
       const dim = document.createElement('div');
       dim.className = 'under-dim';

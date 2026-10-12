@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		BA4E00000000000000000002 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA4E00000000000000000001 /* MainViewController.swift */; };
 		BA4E00000000000000000004 /* WidgetBridgePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA4E00000000000000000003 /* WidgetBridgePlugin.swift */; };
+		BA4E0000000000000000E102 /* NativeTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA4E0000000000000000E101 /* NativeTabs.swift */; };
 		BA4E0000000000000000000B /* BakeryWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA4E0000000000000000000A /* BakeryWidget.swift */; };
 		BA4E0000000000000000000F /* shopfont.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BA4E0000000000000000000E /* shopfont.ttf */; };
 		BA4E00000000000000000011 /* BakeryWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BA4E00000000000000000010 /* BakeryWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -54,6 +55,7 @@
 /* Begin PBXFileReference section */
 		BA4E00000000000000000001 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		BA4E00000000000000000003 /* WidgetBridgePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBridgePlugin.swift; sourceTree = "<group>"; };
+		BA4E0000000000000000E101 /* NativeTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTabs.swift; sourceTree = "<group>"; };
 		BA4E00000000000000000005 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		BA4E0000000000000000000A /* BakeryWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BakeryWidget.swift; sourceTree = "<group>"; };
 		BA4E0000000000000000000C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -102,6 +104,7 @@
 			isa = PBXGroup;
 			children = (
 				BA4E00000000000000000003 /* WidgetBridgePlugin.swift */,
+				BA4E0000000000000000E101 /* NativeTabs.swift */,
 			);
 			path = Plugins;
 			sourceTree = "<group>";
@@ -290,6 +293,7 @@
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 				BA4E00000000000000000002 /* MainViewController.swift in Sources */,
 				BA4E00000000000000000004 /* WidgetBridgePlugin.swift in Sources */,
+				BA4E0000000000000000E102 /* NativeTabs.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
