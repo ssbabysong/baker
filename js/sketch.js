@@ -1054,7 +1054,7 @@ function kyotoMachiya() {
   const kasa = 'M-14 196 Q14 168 42 196 Z';
   return wrap(`
     <path d="${upper} ${lower} ${roof1} ${roof2}" class="f-paper" stroke="none"/>
-    ${crayon([['tile', `${roof1} ${roof2}`], ['paper', upper], ['choco', `${posts2} ${posts1}`], ['wood', `${mushi(54)} ${mushi(266)}`], ['wood', `M42 162 H318 V${G} H42 Z`], ['ai', norenPanels], ['shu', `${chochinFill(122, 170)} ${chochinFill(238, 170)}`], ['paper', `M146 206 H214 V${G} H146 Z`]])}
+    ${crayon([['tile', `${roof1} ${roof2}`], ['paper', upper], ['choco', `${posts2} ${posts1}`], ['wood', `${mushi(54)} ${mushi(266)}`], ['wood', `M42 162 H318 V${G} H42 Z`], ['ai', norenPanels], ['shu', `${chochinFill(122, 170)} ${chochinFill(238, 170)}`], ['skysoft', `M146 206 H214 V${G} H146 Z`]])}
     <path d="M4 ${G} Q${W / 2} ${G + 2} ${W - 4} ${G - 1}"/>
     <path d="${roof1}"/><path d="${tiles(42, 318, 56, 3)}" stroke-width=".6" opacity=".7"/><path d="M36 50 H324" stroke-width="2.4"/><path d="M28 70 H332" stroke-width="1.4"/>
     <path d="M36 50 q-6 -10 2 -16 q2 6 7 8 Z M324 50 q6 -10 -2 -16 q-2 6 -7 8 Z" stroke-width="1"/>
@@ -1064,7 +1064,9 @@ function kyotoMachiya() {
     <path d="${roof2}"/><path d="${tiles(36, 324, 151, 2)}" stroke-width=".6" opacity=".7"/><path d="M20 162 H340" stroke-width="1.4"/>
     <path d="${lower}"/><path d="${posts1}" stroke-width=".9"/>
     <path d="${koshi(48, 136)} ${koshi(224, 312)}" stroke-width=".55"/><path d="M48 172 H136 V${G - 20} H48 Z M224 172 H312 V${G - 20} H224 Z" stroke-width="1"/>
-    <path d="M146 206 H214 V${G} M180 206 V${G} M146 236 H214" stroke-width="1"/><path d="${Array.from({ length: 6 }, (_, i) => `M${150 + i * 11} 206 V${G}`).join(' ')}" stroke-width=".4"/>
+    ${crayon([['wood', 'M150 226 H210 V229 H150 Z M150 248 H210 V251 H150 Z']])}<path d="M150 226 H210 M150 248 H210" stroke-width=".8"/>
+    ${display([['boule', 158], ['croissant', 174], ['roll', 188], ['braid', 202]], 226)}${display([['roll', 156], ['baguette', 172], ['boule', 190], ['roll', 204]], 248)}
+    <path d="M146 206 H214 V${G} M180 206 V${G} M146 ${G - 4} H214" stroke-width="1.1"/><path d="M163 206 V${G} M197 206 V${G}" stroke-width=".7"/>
     <path d="M144 166 H216" stroke-width="2"/><path d="${norenPanels}" stroke-width=".9"/><path d="M181 186 a8 8 0 1 0 0.1 0" stroke="#fffcf5" stroke-width="1.6"/>
     <text x="159" y="200" font-size="7" text-anchor="middle" stroke="none" class="sk-text ink-fill">ぱ</text><text x="207" y="200" font-size="7" text-anchor="middle" stroke="none" class="sk-text ink-fill">ん</text>
     ${chochin(122, 170)}${chochin(238, 170)}
@@ -1080,8 +1082,24 @@ function kyotoMachiya() {
     <path d="M340 ${G} V110 M340 150 l-10 -10 M340 136 l8 -8" stroke-width="2.4"/>${blob(maple, 'shu')}
     ${crayon([['tile', `M322 ${G} V258 H338 V${G} Z M324 244 H336 V256 H324 Z M318 236 L330 228 L342 236 Z`]])}<path d="M322 ${G} V258 H338 V${G} M324 244 H336 V256 H324 Z M318 236 L330 228 L342 236 Z" stroke-width="1"/><path d="M326 248 h8 v4 h-8 Z" class="glow" stroke="none"/>
     ${crayon([['wood', `M350 ${G} L352 ${G - 10} H364 L366 ${G} Z`]])}<path d="M350 ${G} L352 ${G - 10} H364 L366 ${G} Z" stroke-width=".9"/>${blob(bush([[358, G - 16, 7]]), 'leaf', 1.2)}${crayon([['ai', dots([[354, G - 20], [362, G - 18]], 2)]], 0, 0)}
+
+    ${(() => {
+      // 生活痕迹：电线杆和电线、空调外机、煤气表、灯箱招牌、盆栽一堆、自行车、灭火桶、墙上雨渍
+      const pole = `<path d="M372 ${G} V18" stroke-width="3"/><path d="M362 30 H382 M364 40 H380" stroke-width="1.6"/>${crayon([['tile', 'M376 52 h10 v16 h-10 Z']])}<path d="M376 52 h10 v16 h-10 Z M372 58 h4" stroke-width=".9"/>
+        <path d="M-38 36 Q170 52 362 30 M-38 46 Q180 64 364 40 M372 70 Q300 120 318 150" stroke-width=".6"/><path d="M366 120 h12 v6 h-12 Z" stroke-width=".7"/>`;
+      const ac = `${crayon([['paper', 'M282 140 h26 v16 h-26 Z']])}<path d="M282 140 h26 v16 h-26 Z M286 158 v3 M304 158 v3" stroke-width=".9"/><path d="M294 148 a5 5 0 1 0 .1 0 M291 148 h6 M294 145 v6" stroke-width=".5"/><path d="M308 150 q8 0 8 12" stroke-width=".7"/>`;
+      const meter = `${crayon([['paper', 'M30 176 h9 v10 h-9 Z']])}<path d="M30 176 h9 v10 h-9 Z M34.5 181 a2 2 0 1 0 .1 0 M34 186 V${G - 24} M34 ${G - 24} h-6" stroke-width=".7"/>`;
+      const lightbox = `${crayon([['paper', 'M322 176 h12 v40 h-12 Z']])}<path d="M318 180 h4 M318 210 h4 M322 176 h12 v40 h-12 Z" stroke-width="1"/><text x="328" y="192" font-size="7" text-anchor="middle" stroke="none" fill="#c4513a" class="sk-text">パ</text><text x="328" y="206" font-size="7" text-anchor="middle" stroke="none" fill="#c4513a" class="sk-text">ン</text>`;
+      const pot = (x, w, h, c, r) => `${crayon([[c, `M${x - w / 2} ${G} L${x - w / 2 - 1} ${G - h} H${x + w / 2 + 1} L${x + w / 2} ${G} Z`]])}<path d="M${x - w / 2} ${G} L${x - w / 2 - 1} ${G - h} H${x + w / 2 + 1} L${x + w / 2} ${G} Z" stroke-width=".8"/>${blob(bush([[x, G - h - r * .7, r], [x - r * .7, G - h - r * .2, r * .6], [x + r * .7, G - h - r * .2, r * .6]]), 'leaf', 1.1)}`;
+      const pots = pot(54, 10, 8, 'wood', 6) + pot(68, 14, 6, 'paper', 7) + pot(84, 8, 9, 'shu', 5) + pot(98, 18, 8, 'paper', 8) + pot(116, 9, 7, 'wood', 5) + crayon([['pink', dots([[64, G - 14], [72, G - 16], [94, G - 18]], 2)], ['custard', dots([[100, G - 20], [52, G - 16]], 1.8)]], 0, 0);
+      const can = `${crayon([['sky', `M126 ${G} v-8 h8 v8 Z`]])}<path d="M126 ${G} v-8 h8 v8 Z M134 ${G - 6} l5 -4 M127 ${G - 8} q3 -4 6 0" stroke-width=".7"/>`;
+      const buckets = `${crayon([['shu', `M136 ${G} l-1 -8 h8 l-1 8 Z M136 ${G - 9} l-1 -7 h8 l-1 7 Z`]])}<path d="M136 ${G} l-1 -8 h8 l-1 8 Z M136 ${G - 9} l-1 -7 h8 l-1 7 Z" stroke-width=".7"/>`;
+      const b = bike(246, G);
+      const stains = `<path d="M70 72 v10 M150 72 v14 M232 72 v8 M300 72 v12 M120 164 v6 M250 164 v8" stroke-width=".5" opacity=".25"/>`;
+      return pole + ac + meter + lightbox + pots + can + buckets + crayon(b.fills) + b.lines + stains;
+    })()}
     ${mascotAt(-34, G - 33)}
-  `, `-38 0 ${W + 46} ${G + 12}`, 'store', 1.5);
+  `, `-38 0 ${W + 64} ${G + 12}`, 'store', 1.5);
 }
 
 // Lv14 维也纳咖啡馆：四层的老派大楼——奶油色立面、壁柱、窗上交替的三角和弧形窗楣、二楼通长石栏杆阳台、屋顶铜绿小穹顶；
@@ -1798,7 +1816,7 @@ function patisserie() {
   `, `-40 0 ${W + 150} ${G + 12}`, 'store', 1.5);
 }
 
-export const JP_DRAFTS = { paris: [patisserie, 450, 352], oldshop: [oldBakery, 406, 288], kyoto: [kyotoMachiya, 406, 280], choco: [chocoFactory, 580, 332], bunny2: [bunnyWonderland, 432, 330], bunny: [bunnyCottage, 360, 312], alice: [aliceTeapot, 380, 312], kamakura: [kamakuraShop, 380, 312], hokkaido: [hokkaidoBarn, 380, 312], shitamachi: [shitamachiShop, 380, 312], showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
+export const JP_DRAFTS = { paris: [patisserie, 450, 352], oldshop: [oldBakery, 406, 288], kyoto: [kyotoMachiya, 424, 280], choco: [chocoFactory, 580, 332], bunny2: [bunnyWonderland, 432, 330], bunny: [bunnyCottage, 360, 312], alice: [aliceTeapot, 380, 312], kamakura: [kamakuraShop, 380, 312], hokkaido: [hokkaidoBarn, 380, 312], shitamachi: [shitamachiShop, 380, 312], showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
 
 // 隐藏款的尺寸和招牌位置（招牌上的店名由 HTML 叠上去）
 const HIDDEN = {
@@ -1806,7 +1824,7 @@ const HIDDEN = {
   10: { draw: londonTearoom, W: 320, H: 280, sign: { x: 58, y: 160, w: 204, h: 20 } },
   11: { draw: tainanShophouse, W: 330, H: 280, sign: { x: 100, y: 60, w: 130, h: 20 } },
   12: { draw: shanghaiShikumen, W: 320, H: 290, sign: { x: 84, y: 150, w: 152, h: 16 } },
-  13: { draw: kyotoMachiya, W: 406, H: 280, sign: { x: 150, y: 96, w: 136, h: 28 } },
+  13: { draw: kyotoMachiya, W: 424, H: 280, sign: { x: 150, y: 96, w: 136, h: 28 } },
   14: { draw: viennaCafe, W: 360, H: 342, sign: { x: 96, y: 234, w: 168, h: 20 } },
 };
 export const MAX_LEVEL = 14;
