@@ -1380,16 +1380,16 @@ function kamakuraShop() {
     ${upw.lines}${curtains(164, 156, 46, 30)}<path d="M158 188 H216" stroke-width="1.4"/>
     <path d="M120 184 H248 V197 H120 Z" stroke-width="1"/>
     <path d="M118 198 H250 V210" stroke-width="1"/><path d="M118 198 V210"/><path d="${awn}"/>
-    ${win.lines}<path d="${loafRow(136, 246, 3, 16)} ${loafRow(136, 268, 3, 16)}" stroke-width="1"/>${goldText(159, 230, 'BAKERY & COFFEE', 4.6)}
+    ${win.lines}<path d="${loafRow(136, 246, 3, 16)} ${loafRow(136, 268, 3, 16)}" stroke-width="1"/>${goldText(159, 230.5, 'パンとコーヒー', 5.4).replace('class="gold-text"', 'class="gold-text sk-text"')}
     <path d="M126 268 H192" stroke-width="1.4"/>
     ${door.lines}<path d="M234 262 v6" stroke-width="1.6"/>
-    ${crayon([['paper', 'M214 236 h20 v8 h-20 Z']])}<path d="M218 232 L224 228 L230 232 M214 236 h20 v8 h-20 Z" stroke-width=".7"/><text x="224" y="242" font-size="4.6" text-anchor="middle" stroke="none" fill="currentColor" font-family="Courier Prime, monospace">OPEN</text>
+    ${crayon([['paper', 'M214 236 h20 v8 h-20 Z']])}<path d="M218 232 L224 228 L230 232 M214 236 h20 v8 h-20 Z" stroke-width=".7"/><text x="224" y="242" font-size="4.6" text-anchor="middle" stroke="none" fill="currentColor" class="sk-text">営業中</text>
     ${lamp(198, 214)}
     ${kitty.lines}
 
     ${crayon([['sky', 'M108 300 L102 236 Q106 222 114 236 L116 300 Z']])}<path d="M108 300 L102 236 Q106 222 114 236 L116 300 Z"/><path d="M108 236 V296" stroke-width=".7"/>
     ${blob(bed, 'leaf', 1.6)}${crayon([['sky', dots([[124, 287], [138, 283], [150, 287], [176, 289]], 2.4)], ['pink', dots([[132, 290], [160, 290]], 2.2)]], 0, 0)}
-    ${chalkboard(266, G, 'PAN', 'CAFÉ')}
+    ${chalkboard(266, G, 'パン', '珈琲').replace(/font-family="Courier Prime, monospace"/g, 'class="sk-text"')}
     ${crayon(bk.fills)}${bk.lines}
     <path d="M356 ${G} L360 230" stroke-width="1.4"/>${crayon([['shu', 'M338 236 Q360 214 382 228 L370 230 Z'], ['paper', 'M350 231 Q360 222 370 230 Z']])}<path d="M336 238 Q360 212 382 228 M336 238 L382 228 M348 234 L360 220 M370 231 L364 218" stroke-width="1"/>
     ${mascotAt(40, G - 33)}
