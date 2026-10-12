@@ -858,11 +858,19 @@ function oldBakery() {
       ...ex.fills,
     ])}
     <path d="M4 ${G} Q${W / 2} ${G + 2} ${W - 4} ${G - 1}"/>
-    <path d="M70 30 V14 H86 V30 M244 30 V10 H260 V30" stroke-width="1.2"/><path d="M165 0 V-14" stroke-width="1"/>${crayon([['shu', 'M165 -14 L177 -10 L165 -6 Z']])}<path d="M165 -14 L177 -10 L165 -6 Z" stroke-width=".8"/><path d="M68 14 H88 M242 10 H262" stroke-width="1.6"/><path d="M74 14 v-4 h3 v4 M80 14 v-5 h3 v5 M248 10 v-4 h3 v4 M254 10 v-5 h3 v5" stroke-width=".8"/>${smoke(252, 6)}
+    <path d="M70 30 V14 H86 V30 M244 30 V10 H260 V30" stroke-width="1.2"/><path d="M68 14 H88 M242 10 H262" stroke-width="1.6"/><path d="M74 14 v-4 h3 v4 M80 14 v-5 h3 v5 M248 10 v-4 h3 v4 M254 10 v-5 h3 v5" stroke-width=".8"/>${smoke(252, 6)}
     ${stoneCourses(40, 290, 40, 140, 8)}
-    ${crayon([['soft', 'M120 26 L165 2 L210 26 Z'], ['paper', 'M155 18 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0 Z'], ['custard', 'M34 26 h8 v-6 h-8 Z M288 26 h8 v-6 h-8 Z']])}
-    <path d="M118 26 L165 0 L212 26" stroke-width="1.4"/><path d="M126 24 L165 4 L204 24" stroke-width=".7"/><path d="M155 18 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0"/><path d="M165 18 V11 M165 18 L170 21" stroke-width="1.1"/><path d="${Array.from({ length: 12 }, (_, i) => { const a = i / 12 * Math.PI * 2; return `M${(165 + Math.sin(a) * 8).toFixed(1)} ${(18 - Math.cos(a) * 8).toFixed(1)} l${(Math.sin(a) * 1.4).toFixed(1)} ${(-Math.cos(a) * 1.4).toFixed(1)}`; }).join(' ')}" stroke-width=".6"/>
-    <path d="M165 0 v-0" /><path d="M150 26 v-0" />
+    ${(() => {
+      // 弧形卷涡山墙：两边 S 形卷涡往上收，顶上一段圆弧，正中圆形浮雕里是金色大碱水面包，底下一条「1925」小饰带
+      const gable = 'M124 26 C124 18 134 18 136 12 C138 4 146 2 152 2 Q165 -6 178 2 C184 2 192 4 194 12 C196 18 206 18 206 26 Z';
+      const medal = 'M152 13 a13 11 0 1 0 26 0 a13 11 0 1 0 -26 0 Z';
+      return `${crayon([['soft', gable], ['paper', medal], ['custard', 'M150 22 H180 V27 H150 Z']])}
+        <path d="${gable}" stroke-width="1.3"/><path d="M130 24 C130 20 138 20 140 14 M200 24 C200 20 192 20 190 14" stroke-width=".7"/>
+        <path d="M124 26 q-4 -6 2 -9 q4 2 1 5 M206 26 q4 -6 -2 -9 q-4 2 -1 5" stroke-width=".9"/>
+        <path d="${medal}" stroke-width="1"/>${pretzelAt(157, 4, 0.25)}
+        <path d="M150 22 H180 V27 H150 Z" stroke-width=".7"/>${goldText(165, 26.2, '· 1925 ·', 4).replace('class="gold-text"', 'fill="currentColor"')}
+        ${crayon([['custard', 'M162 -6 h6 v-3 q-3 -6 -6 0 Z M120 26 h6 v-4 q-3 -6 -6 0 Z M204 26 h6 v-4 q-3 -6 -6 0 Z']])}<path d="M162 -6 h6 v-3 q-3 -6 -6 0 Z M120 26 h6 v-4 q-3 -6 -6 0 Z M204 26 h6 v-4 q-3 -6 -6 0 Z" stroke-width=".8"/>`;
+    })()}
     <path d="${Array.from({ length: 27 }, (_, i) => `M${40 + i * 9.4} 26 v-5 q2 -3 0 -5`).join(' ')}" stroke-width=".6" opacity=".7"/><path d="M38 21 H118 M212 21 H292" stroke-width=".7"/>
     <path d="M34 26 h8 v-6 h-8 Z M288 26 h8 v-6 h-8 Z M36 20 q2 -6 4 0 M290 20 q2 -6 4 0" stroke-width=".9"/>
     <path d="${Array.from({ length: 30 }, (_, i) => `M${36 + i * 8.5} 40 v3`).join(' ')}" stroke-width=".7"/>
