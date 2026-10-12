@@ -4,7 +4,7 @@ import {
   exportAll, importAll, guessShape, setPrice, randomPrice, getPrice,
 } from './store.js';
 import { parseRecipeText, formatAmount, formatMinutes, guessStepKind } from './parser.js';
-import { rateStar, hanko, houseLogo, shape, icon, storefront, storefrontSign, ovenScene, stageScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES, SHAPE_NAMES_EN } from './sketch.js';
+import { rateStar, hanko, houseLogo, shape, icon, storefront, storefrontSign, mysteryShop, ovenScene, stageScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES, SHAPE_NAMES_EN } from './sketch.js';
 import {
   remainingMs, formatClock, createTimer, pauseTimer, resumeTimer, addMinutes,
   unlockAudio, playChime, playLevelUp, haptic, startRinging, stopRinging, askNotifyPermission, notify, keepAwake,
@@ -114,27 +114,43 @@ function levelOf(n) {
 // 首页和小组件上画哪一级的店面：在升级路线里自己选过（state.shop.look，必须已解锁）就用选的，不然跟着等级走
 const lookOf = (lv) => (state.shop.look >= 1 && state.shop.look <= lv ? state.shop.look : lv);
 
+// 店名在招牌字体里有多宽（以字号为 1 计）：用画布量真字体；字体还没加载好就先用备用字体量，加载好以后重画一遍
+const signCanvas = document.createElement('canvas').getContext('2d');
+let signFontReady = document.fonts?.check?.('16px ShopFont') ?? true;
+if (!signFontReady) document.fonts.load('16px ShopFont').then(() => { signFontReady = true; rerender(); }).catch(() => {});
+const measure = (t) => { signCanvas.font = `100px ${getComputedStyle(document.documentElement).getPropertyValue('--title') || 'sans-serif'}`; return signCanvas.measureText(t); };
+const textEm = (t) => measure(t).width / 100;
+// 字身要往下挪多少（以字号为 1 计）才在招牌上看着正好居中：量出字形实际占的上下范围，和一行的正中间比。
+// 中文看整个方块字；英文看大写字母从顶到基线这一段（小写的 y、g 往下拖的尾巴不算）
+const inkShift = (cjk) => {
+  const m = measure(cjk ? '面' : 'H');
+  const base = (100 - m.fontBoundingBoxAscent - m.fontBoundingBoxDescent) / 2 + m.fontBoundingBoxAscent;
+  return (50 - (base + (m.actualBoundingBoxDescent - m.actualBoundingBoxAscent) / 2)) / 100;
+};
+
 // 门店插画 + 叠在招牌上的店名
+// 字号按招牌在画里的大小算（cqw = 店面宽度的百分之一，大图小图都对）：字宽加字距占招牌宽的八成多一点，字高不超过招牌高的八成。
+// 中文字距宽一点，英文窄一点；上下按字形实际的位置对正（inkShift）
 function shopFront(level, name = '', small = false) {
   const g = storefrontSign(level);
-  // 招牌上的字号跟着店画多宽、店名多长走：英文长店名也能整个放进招牌里，不被切掉
-  const units = [...name].reduce((n, ch) => n + (/[\u2e80-\uffff]/.test(ch) ? 1.12 : 0.6), 0) || 1;
-  let fit = `font-size:min(21px,${(g.w / g.vbW * 100 * 0.9 / units).toFixed(2)}cqw)`;
-  let style = `left:${(g.x / g.vbW * 100).toFixed(2)}%;width:${(g.w / g.vbW * 100).toFixed(2)}%;top:${(g.y / g.vbH * 100).toFixed(2)}%;height:${(g.h / g.vbH * 100).toFixed(2)}%`;
-  // 隐藏款的画面元素多、招牌小：字号按招牌在画里的大小算（cqw = 店面宽度的百分之一），店名长了再缩一点；
-  // 手写字体的字身偏上，往下挪一点才看着居中
-  if (g.fit) {
-    const fs = Math.min(g.h * 0.86, g.w / (Math.max(4, [...name].length) * 1.2));
-    style += `;letter-spacing:.06em;line-height:1;padding-top:${(fs * 0.24 / g.vbW * 100).toFixed(2)}cqw;font-size:${(fs / g.vbW * 100).toFixed(2)}cqw`;
-    fit = '';
-  }
+  const n = [...name].length || 1;
+  const cjk = /[\u2e80-\uffff]/.test(name);
+  const ls = cjk ? 0.12 : 0.05;
+  // 隐藏款的招牌又细又扁：中文可以撑满一点；英文 y、g 的尾巴会往下拖，要留出位置
+  const fs = Math.min(g.h * (g.fit ? (cjk ? 0.92 : 0.72) : 0.8), (g.w * 0.84) / (textEm(name || '店') + ls * n));
+  const cq = (v) => `${(v / g.vbW * 100).toFixed(2)}cqw`;
+  const shift = inkShift(cjk); // 招牌是弹性居中的：上面垫 2 倍，字就往下走 1 倍
+  const style = `left:${(g.x / g.vbW * 100).toFixed(2)}%;width:${(g.w / g.vbW * 100).toFixed(2)}%;top:${(g.y / g.vbH * 100).toFixed(2)}%;height:${(g.h / g.vbH * 100).toFixed(2)}%`
+    + `;font-size:${cq(fs)};letter-spacing:${ls}em;line-height:1;padding-left:${ls}em`
+    + (shift > 0 ? `;padding-top:${cq(fs * shift * 2)}` : `;padding-bottom:${cq(-fs * shift * 2)}`);
   return `<div class="storefront ${small ? 'mini' : ''}">${storefront(level)}${name ? (small
     ? `<span class="sign" style="${style}">${esc(name)}</span>`
-    : `<button class="sign" style="${style};${fit}" data-act="rename-shop" title="${L('点一下改店名', 'Tap to rename')}">${esc(name)}</button>`) : ''}</div>`;
+    : `<button class="sign" style="${style}" data-act="rename-shop" title="${L('点一下改店名', 'Tap to rename')}">${esc(name)}</button>`) : ''}</div>`;
 }
 
 // 升级路线：每一级的店面、需要的出炉次数，标出现在在哪
-async function showRoadmap() {
+// 从某一级的大图点「升级路线」回来时，列表停在点进去之前滚到的地方
+async function showRoadmap(scrollTop = 0) {
   const n = (await listBakes()).length;
   const cur = levelOf(n);
   await dialog(`<div class="roadmap">
@@ -142,16 +158,16 @@ async function showRoadmap() {
     <p class="small muted">${L(`每出炉一次就离下一级近一点。现在累计出炉 <b class="need">${n}</b> 次。`, `Every bake gets you closer. Baked so far: <b class="need">${n}</b>.`)} ${L('点已解锁的店面可以看大图。', 'Tap an unlocked shop to see it big.')}</p>
     <ol>${LEVELS.map((lvl, i) => {
       const st = i + 1 < cur.lv ? 'past' : i + 1 === cur.lv ? 'now' : 'next';
-      const secret = lvl.hidden && st === 'next'; // 还没解锁的隐藏款：剪影 + 问号
+      const secret = lvl.hidden && st === 'next'; // 还没解锁的隐藏款：盖着布的店 + 问号
       const divider = lvl.hidden && !LEVELS[i - 1].hidden ? `<li class="secret-head">${L('— 隐藏款 —', '— Secret shops —')}</li>` : '';
-      return `${divider}<li class="${st} ${secret ? 'secret' : ''}" ${st !== 'next' ? `data-act="level-view" data-lv="${i + 1}" role="button"` : ''}>${shopFront(i + 1, '', true)}
+      return `${divider}<li class="${st} ${secret ? 'secret' : ''}" ${st !== 'next' ? `data-act="level-view" data-lv="${i + 1}" role="button"` : ''}>${secret ? `<div class="storefront mini">${mysteryShop()}</div>` : shopFront(i + 1, '', true)}
         <div class="t"><b>Lv.${i + 1} ${secret ? '???' : lvName(i)}</b>
           <span class="small muted">${secret ? L('继续出炉，解锁之后才知道是什么', 'Keep baking to find out what it is') : lvDesc(i)}</span>
           <span class="small ${st === 'now' ? 'here' : 'muted'}">${st === 'now' ? L('你在这里', 'You are here') : st === 'past' ? L('已达成', 'Done')
             : L(`出炉 <b class="need">${lvl.at}</b> 次解锁`, `Unlocks at <b class="need">${lvl.at}</b> bakes`)}</span></div></li>`;
     }).join('')}</ol>
     <div class="row" style="justify-content:center"><button class="btn primary" data-dlg="ok">${L('知道啦', 'Got it')}</button></div>
-  </div>`);
+  </div>`, { onOpen: (d) => { d.querySelector('.roadmap ol').scrollTop = scrollTop; } });
 }
 
 // ---------- 弹窗 ----------
@@ -1669,6 +1685,7 @@ const actions = {
   // 升级路线里已解锁的等级：点开看大图
   async 'level-view'(el) {
     const lv = Number(el.dataset.lv);
+    const listTop = el.closest('ol')?.scrollTop || 0;
     const top = levelOf((await listBakes()).length).lv;
     const using = lookOf(top) === lv;
     // 已经在用这个：最高级就不用多一个按钮；不是最高级就给「换回跟着等级走」
@@ -1687,7 +1704,7 @@ const actions = {
       await saveShop(state.shop);
       rerender();
       scheduleWidgetSync();
-    } else if (v === 'back') showRoadmap();
+    } else if (v === 'back') showRoadmap(listTop);
   },
   async 'rename-shop'() {
     const name = await promptDlg(L('给小店起个名字', 'Name your shop'), state.shop.name);

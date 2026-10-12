@@ -1953,6 +1953,25 @@ export function storefront(level = 3, cls = '') {
   return grownShop(level, cls);
 }
 
+// 还没解锁的隐藏款：店被一块大布盖着，系着蝴蝶结、挂一张问号小牌——四个隐藏款都画这一张，看不出底下是什么
+export function mysteryShop(cls = '') {
+  const cloth = 'M50 178 C48 150 50 116 58 98 L82 70 Q120 52 158 70 L182 98 C190 116 192 150 190 178 Q174 171 160 178 Q144 170 128 178 Q112 171 98 178 Q82 171 68 178 Q58 173 50 178 Z';
+  const band = 'M53 124 Q120 138 187 124 L188 133 Q120 147 52 133 Z';
+  const tag = 'M170 136 L186 131 L192 155 L176 160 Z';
+  return wrap(`
+    ${crayon([['soft', cloth], ['shu', band], ['paper', tag]])}
+    <path d="M4 178 Q120 180 236 177"/>
+    <path d="${cloth}"/>
+    <path d="M110 58 q10 -14 20 0"/>
+    <path d="M84 74 q-14 50 -16 102 M102 64 q-6 56 -4 112 M120 60 q3 60 -1 116 M138 64 q6 56 4 112 M156 74 q14 50 16 102" stroke-width=".9" opacity=".45"/>
+    <path d="M53 124 Q120 138 187 124 M52 133 Q120 147 188 133"/>
+    <path d="M120 136 c-12 -14 -26 -9 -21 0 c3 7 14 5 21 0 Z M120 136 c12 -14 26 -9 21 0 c-3 7 -14 5 -21 0 Z M117 138 l-7 16 M123 138 l7 16"/>
+    <path d="M163 134 L172 137"/><path d="${tag}"/>
+    <path d="M177 142 q1 -5 6 -5 q5 1 4 6 q-1 3 -5 5 l1 3 M184 155 v.4" stroke-width="1.7"/>
+    <g transform="translate(8 145) scale(0.6)" stroke-width="2.5"><g class="shop-mascot">${mascotBody('wave')}</g></g>
+  `, '0 0 240 190', `store ${cls}`, 1.5);
+}
+
 // ---------- 烤箱：显示屏位置留给 HTML 叠加倒计时 ----------
 
 export function ovenScene(cls = '', baking = false, done = false) {
