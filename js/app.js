@@ -96,9 +96,9 @@ const LEVELS = [
   { at: 100, name: ['旗舰面包店', 'Flagship Bakery'], desc: ['三层的旗舰店，屋顶也开了空中露台，成了街区的地标', 'Three floors and a rooftop terrace: a neighborhood landmark'] },
   // 隐藏款：没解锁之前只露一个剪影和「???」
   { at: 200, hidden: true, name: ['百年老铺', 'Century Bakery'], desc: ['三层的欧洲老面包店：墨绿色木门面、条纹布篷、铸铁挂牌，二三楼挂着百叶窗', 'A three-story old-world bakery: forest-green woodwork, a striped awning and a wrought-iron sign'] },
-  { at: 600, hidden: true, name: ['镰仓海边面包店', 'Kamakura Seaside'], desc: ['海边的白色木板小屋：鱼鳞瓦屋顶、蓝白条纹雨棚，门口一丛丛紫阳花，石墙后面开过江之电，远处是灯塔、江之岛和消波块', 'A white clapboard house by the sea: fish-scale roof, blue-and-white awning, hydrangeas by the door, the Enoden tram behind the wall, a lighthouse, Enoshima and tetrapods beyond'] },
-  { at: 700, hidden: true, name: ['京都町家老店', 'Kyoto Machiya'], desc: ['两层的京都町家：木格子、藏青暖帘、红灯笼，二楼挂着大木招牌，旁边一棵红枫', 'A two-story Kyoto townhouse: wooden lattice, an indigo noren, red lanterns and a maple'] },
-  { at: 800, hidden: true, name: ['巴黎甜品沙龙', 'Paris Pâtisserie'], desc: ['奥斯曼风格的大楼：孟莎屋顶和石栏杆、圆形老虎窗、通长铸铁阳台，一楼四根柱子三个拱门，街边莫里斯广告柱和路灯，远处一座埃菲尔铁塔', 'A Haussmann building: mansard roof with a stone balustrade, round dormers, a long iron balcony, four columns and three arches below, a Morris column and street lamp, the Eiffel Tower in the distance'] },
+  { at: 300, hidden: true, name: ['镰仓海边面包店', 'Kamakura Seaside'], desc: ['海边的白色木板小屋：鱼鳞瓦屋顶、蓝白条纹雨棚，门口一丛丛紫阳花，石墙后面开过江之电，远处是灯塔、江之岛和消波块', 'A white clapboard house by the sea: fish-scale roof, blue-and-white awning, hydrangeas by the door, the Enoden tram behind the wall, a lighthouse, Enoshima and tetrapods beyond'] },
+  { at: 400, hidden: true, name: ['京都町家老店', 'Kyoto Machiya'], desc: ['两层的京都町家：木格子、藏青暖帘、红灯笼，二楼挂着大木招牌，旁边一棵红枫', 'A two-story Kyoto townhouse: wooden lattice, an indigo noren, red lanterns and a maple'] },
+  { at: 500, hidden: true, name: ['巴黎甜品沙龙', 'Paris Pâtisserie'], desc: ['奥斯曼风格的大楼：孟莎屋顶和石栏杆、圆形老虎窗、通长铸铁阳台，一楼四根柱子三个拱门，街边莫里斯广告柱和路灯，远处一座埃菲尔铁塔', 'A Haussmann building: mansard roof with a stone balustrade, round dormers, a long iron balcony, four columns and three arches below, a Morris column and street lamp, the Eiffel Tower in the distance'] },
 ];
 const lvName = (i) => L(...LEVELS[i].name);
 const lvDesc = (i) => L(...LEVELS[i].desc);
