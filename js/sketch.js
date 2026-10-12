@@ -871,8 +871,22 @@ function oldBakery() {
         <path d="M150 22 H180 V27 H150 Z" stroke-width=".7"/>${goldText(165, 26.2, '· 1925 ·', 4).replace('class="gold-text"', 'fill="currentColor"')}
         ${crayon([['custard', 'M162 -6 h6 v-3 q-3 -6 -6 0 Z M120 26 h6 v-4 q-3 -6 -6 0 Z M204 26 h6 v-4 q-3 -6 -6 0 Z']])}<path d="M162 -6 h6 v-3 q-3 -6 -6 0 Z M120 26 h6 v-4 q-3 -6 -6 0 Z M204 26 h6 v-4 q-3 -6 -6 0 Z" stroke-width=".8"/>`;
     })()}
-    <path d="${Array.from({ length: 27 }, (_, i) => `M${40 + i * 9.4} 26 v-5 q2 -3 0 -5`).join(' ')}" stroke-width=".6" opacity=".7"/><path d="M38 21 H118 M212 21 H292" stroke-width=".7"/>
-    <path d="M34 26 h8 v-6 h-8 Z M288 26 h8 v-6 h-8 Z M36 20 q2 -6 4 0 M290 20 q2 -6 4 0" stroke-width=".9"/>
+    ${(() => {
+      // 石头栏杆：胖胖的瓶形小柱子 + 一条压顶，遇到烟囱和中间山墙就断开，两头是方墩
+      const segs = [[42, 70], [86, 120], [210, 244], [260, 288]];
+      const vase = (c) => `M${c - 1.6} 26 h3.2 q-1.2 -1.2 -.2 -2.4 q1.8 -1.3 .2 -2.8 h-2.8 q-1.6 1.5 .2 2.8 q1 1.2 -.6 2.4 Z`;
+      let bal = '', rail = '';
+      for (const [a, b] of segs) {
+        rail += `M${a} 17.6 H${b} V20.8 H${a} Z `;
+        const n = Math.max(1, Math.round((b - a - 2) / 6));
+        for (let i = 0; i < n; i++) bal += vase(a + (b - a) * (i + 0.5) / n) + ' ';
+      }
+      const posts = 'M34 26 V16 H42 V26 Z M288 26 V16 H296 V26 Z';
+      const caps = 'M33 16 H43 V14 H33 Z M287 16 H297 V14 H287 Z';
+      return `${crayon([['soft', `${rail} ${bal} ${posts} ${caps}`]])}
+        <path d="${bal}" stroke-width=".6"/><path d="${rail}" stroke-width=".8"/><path d="${posts} ${caps}" stroke-width=".9"/>
+        <path d="M36 14 q2 -5 4 0 M290 14 q2 -5 4 0" stroke-width=".8"/>`;
+    })()}
     <path d="${Array.from({ length: 30 }, (_, i) => `M${36 + i * 8.5} 40 v3`).join(' ')}" stroke-width=".7"/>
     <path d="M34 30 H296 V40 H34 Z"/><path d="M40 26 H290" stroke-width="1"/>${[60, 100, 140, 180, 220, 260].map((x) => `<path d="M${x} 40 v4" stroke-width="1"/>`).join('')}
     <path d="M40 40 V146 M290 40 V146"/>
