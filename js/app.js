@@ -115,10 +115,11 @@ function levelOf(n) {
 function shopFront(level, name = '', small = false) {
   const g = storefrontSign(level);
   let style = `left:${(g.x / g.vbW * 100).toFixed(2)}%;width:${(g.w / g.vbW * 100).toFixed(2)}%;top:${(g.y / g.vbH * 100).toFixed(2)}%;height:${(g.h / g.vbH * 100).toFixed(2)}%`;
-  // 隐藏款的画面元素多、招牌小：字号按招牌在画里的大小算（cqw = 店面宽度的百分之一），店名长了再缩一点，颜色配招牌
-  if (g.color) {
+  // 隐藏款的画面元素多、招牌小：字号按招牌在画里的大小算（cqw = 店面宽度的百分之一），店名长了再缩一点；
+  // 手写字体的字身偏上，往下挪一点才看着居中
+  if (g.fit) {
     const fs = Math.min(g.h * 0.86, g.w / (Math.max(4, [...name].length) * 1.2));
-    style += `;color:${g.color};letter-spacing:.06em;font-size:${(fs / g.vbW * 100).toFixed(2)}cqw`;
+    style += `;letter-spacing:.06em;line-height:1;padding-top:${(fs * 0.24 / g.vbW * 100).toFixed(2)}cqw;font-size:${(fs / g.vbW * 100).toFixed(2)}cqw`;
   }
   return `<div class="storefront ${small ? 'mini' : ''}">${storefront(level)}${name ? (small
     ? `<span class="sign" style="${style}">${esc(name)}</span>`

@@ -1933,12 +1933,12 @@ function patisserie() {
 export const JP_DRAFTS = { london: [londonTearoom, 320, 280], tainan: [tainanShophouse, 330, 280], shanghai: [shanghaiShikumen, 320, 290], vienna: [viennaCafe, 360, 342], paris: [patisserie, 450, 352], oldshop: [oldBakery, 406, 288], kyoto: [kyotoMachiya, 424, 280], choco: [chocoFactory, 580, 332], bunny2: [bunnyWonderland, 432, 330], bunny: [bunnyCottage, 360, 312], alice: [aliceTeapot, 380, 312], kamakura: [kamakuraShop, 380, 312], hokkaido: [hokkaidoBarn, 380, 312], shitamachi: [shitamachiShop, 380, 312], showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
 
 // 隐藏款的尺寸和招牌位置（招牌上的店名由 HTML 叠上去）
-// color：店名的颜色，和招牌底色搭配
+// fit：店名字号按招牌在画里的大小算
 const HIDDEN = {
-  9: { draw: oldBakery, W: 406, H: 288, sign: { x: 118, y: 168, w: 162, h: 16, color: '#3f5b34' } },
-  10: { draw: kamakuraShop, W: 386, H: 312, sign: { x: 122, y: 182, w: 124, h: 14, color: '#34558f' } },
-  11: { draw: kyotoMachiya, W: 424, H: 280, sign: { x: 150, y: 96, w: 136, h: 28, color: '#3b2516' } },
-  12: { draw: patisserie, W: 450, H: 352, sign: { x: 128, y: 246, w: 164, h: 16, color: '#2c3e6e' } },
+  9: { draw: oldBakery, W: 406, H: 288, sign: { x: 118, y: 168, w: 162, h: 16, fit: true } },
+  10: { draw: kamakuraShop, W: 386, H: 312, sign: { x: 122, y: 182, w: 124, h: 14, fit: true } },
+  11: { draw: kyotoMachiya, W: 424, H: 280, sign: { x: 150, y: 96, w: 136, h: 28, fit: true } },
+  12: { draw: patisserie, W: 450, H: 352, sign: { x: 128, y: 246, w: 164, h: 16, fit: true } },
 };
 export const MAX_LEVEL = 12;
 
