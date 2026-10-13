@@ -1102,22 +1102,7 @@ function kyotoSlope() {
     <path d="${tiers}" stroke-width="1"/><path d="${rails}" stroke-width=".6"/><path d="${roofs}" stroke-width="1.2"/><path d="${spire} ${rings}" stroke-width="1.1"/><path d="M${px - 3} ${top - 44} q3 -6 6 0" stroke-width="1"/>
     ${blob(maple, 'shu', 1.6)}<path d="M398 236 V214 M398 222 l-7 -6 M398 218 l6 -7" stroke-width="1.5"/>
     <path d="${wallR} ${wallCap}" class="f-paper" stroke="none"/>${crayon([['soft', wallR], ['tile', wallCap]])}<path d="${wallR}" stroke-width="1.2"/><path d="${wallCap}" stroke-width="1.1"/>
-    <path d="${roofTop} ${upper} ${eave} ${lower}" class="f-paper" stroke="none"/>
-    ${crayon([['tile', `${roofTop} ${eave}`], ['ochre', upper], ['ochre', lower], ['wood', `${mushiko} ${counters}`], ['crust', sudare], ['skysoft', door], ['choco', noren], ['paper', sign]])}
-    <path d="${roofTop}" stroke-width="1.3"/><path d="M118 160 H322" stroke-width=".6" opacity=".6"/><path d="M114 168 l-4 -4 M326 168 l4 -4" stroke-width="1.1"/>
-    <path d="M220 146 v-6 h-6 l6 -5 l6 5 h-6" stroke-width="1"/>
-    <path d="${upper}" stroke-width="1.2"/><path d="M126 168 V214 M314 168 V214" stroke-width="2"/>
-    <path d="${mushiko}" stroke-width="1"/><path d="${[136, 280].map((x) => [4, 8, 12, 16, 20].map((d) => `M${x + d} 176 V204`).join(' ')).join(' ')}" stroke-width=".7"/>
-    <path d="${sign}" stroke-width="1.1"/>
-    <path d="${eave}" stroke-width="1.3"/><path d="M112 222 H328" stroke-width=".6" opacity=".6"/>
-    <path d="${lower}" stroke-width="1.2"/><path d="${posts}" stroke-width="2"/>
-    <path d="${sudare}" stroke-width="1"/><path d="${sudareLines}" stroke-width=".4" opacity=".7"/><path d="M146 256 v4 M294 256 v4" stroke-width=".8"/>
-    <path d="${[[126, 166], [274, 314]].map(([a, b]) => `M${a} 262 H${b}`).join(' ')}" stroke-width=".7"/>
-    ${display([['croissant', 134], ['roll', 147], ['boule', 159], ['braid', 284], ['roll', 297], ['croissant', 307]], 274)}
-    ${display([['cake', 140], ['tart', 156], ['eclair', 286], ['macarons', 304]], 262)}
-    <path d="${counters}" stroke-width="1"/>
-    <path d="${door}" stroke-width="1.2"/><path d="M246 252 V291 M228 270 H264" stroke-width=".8"/><path d="M242 276 v5 M250 276 v5" stroke-width="1.3"/>
-    <path d="${noren}" stroke-width="1"/><path d="M239.3 232 V252 M252.6 232 V252" stroke-width=".8"/><path d="M243 241 a3 3 0 1 0 6 0 a3 3 0 1 0 -6 0" stroke="#fffcf5" stroke-width="1.4"/>
+    <g transform="translate(94.6 103.4) scale(0.7)">${kyotoMachiya(true).replace(/^<svg[^>]*><rect[^>]*\/>/, '').replace(/<\/svg>$/, '')}</g>
     <path d="${groundD}" class="f-paper" stroke="none"/>${crayon([['soft', groundD]])}
     <path d="M0 300 ${steps.slice(1).map(([x, y]) => `H${x} V${y}`).join(' ')}" stroke-width="1.4"/><path d="${stepLines}" stroke-width="1"/>
     <path d="${Array.from({ length: 9 }, (_, i) => `M${120 + i * 26} 296 l8 0`).join(' ')} M10 306 h10 M50 304 h12 M88 302 h10 M352 288 h6 M368 281 h6 M384 274 h6 M400 267 h6" stroke-width=".7" opacity=".5"/>
@@ -1132,7 +1117,8 @@ function kyotoSlope() {
 
 
 // Lv13 京都町家老店：两层的町家——一楼深色木格子、长长的藏青暖帘和一对灯笼，一楼檐上一溜瓦，二楼白墙虫笼窗，正中挂一块大木招牌；旁边竹篱笆、石灯笼和一棵红枫
-function kyotoMachiya() {
+// bare：只画房子本身（不要地面线、门口的伞和长凳、红枫、石灯笼、盆栽、电线杆和小人），给二年坂坡道那张图嵌进去用
+function kyotoMachiya(bare = false) {
   // 两层京町家：屋顶一排排瓦、两端鬼瓦；二楼白灰墙露木柱、两扇虫笼窗、正中挂木招牌；一楼浅色木格子、深色柱子、三幅藏青暖帘、
   // 墙根一排弯弯的竹犬矢来，两盏红灯笼；左边门口一条铺红毡的长凳和大红伞，右边石灯笼、盆栽和一棵红枫
   const W = 360, G = 268;
@@ -1153,7 +1139,7 @@ function kyotoMachiya() {
   return wrap(`
     <path d="${upper} ${lower} ${roof1} ${roof2}" class="f-paper" stroke="none"/>
     ${crayon([['tile', `${roof1} ${roof2}`], ['paper', upper], ['choco', `${posts2} ${posts1}`], ['wood', `${mushi(54)} ${mushi(266)}`], ['wood', `M42 162 H318 V${G} H42 Z`], ['ai', norenPanels], ['shu', `${chochinFill(122, 170)} ${chochinFill(238, 170)}`], ['skysoft', `M146 206 H214 V${G} H146 Z`]])}
-    <path d="M4 ${G} Q${W / 2} ${G + 2} ${W - 4} ${G - 1}"/>
+    ${bare ? '' : `<path d="M4 ${G} Q${W / 2} ${G + 2} ${W - 4} ${G - 1}"/>`}
     <path d="${roof1}"/><path d="${tiles(42, 318, 56, 3)}" stroke-width=".6" opacity=".7"/><path d="M36 50 H324" stroke-width="2.4"/><path d="M28 70 H332" stroke-width="1.4"/>
     <path d="M36 50 q-6 -10 2 -16 q2 6 7 8 Z M324 50 q6 -10 -2 -16 q-2 6 -7 8 Z" stroke-width="1"/>
     <path d="${upper}"/><path d="${posts2}" stroke-width=".9"/><path d="M42 140 H318" stroke-width="1.1"/>
@@ -1174,12 +1160,12 @@ function kyotoMachiya() {
     <path d="M60 162 v10" stroke-width=".7"/><path d="M56 172 q4 -6 8 0 Z" stroke-width=".9"/>${crayon([['sky', 'M56 172 q4 -6 8 0 Z']])}<path d="M60 172 v8" stroke-width=".6"/>
     ${cat(232, 50, 'paper').lines}
 
-    <path d="M14 ${G} V196" stroke-width="1.6"/>${crayon([['shu', kasa]])}<path d="${kasa}" stroke-width="1.1"/><path d="M14 172 v-4 M0 196 L14 176 M28 196 L14 176" stroke-width=".7"/>
+    ${bare ? '' : `    <path d="M14 ${G} V196" stroke-width="1.6"/>${crayon([['shu', kasa]])}<path d="${kasa}" stroke-width="1.1"/><path d="M14 172 v-4 M0 196 L14 176 M28 196 L14 176" stroke-width=".7"/>
     ${crayon([['shu', `M-8 ${G - 14} H36 V${G - 10} H-8 Z`]])}<path d="M-8 ${G - 14} H36 V${G - 10} H-8 Z M-4 ${G - 10} V${G} M32 ${G - 10} V${G}" stroke-width="1"/>
     ${crayon([['paper', `M4 ${G - 14} h6 v-3 h-6 Z`], ['custard', `M14 ${G - 14} q4 -6 8 0 Z`]])}<path d="M4 ${G - 14} h6 v-3 h-6 Z M14 ${G - 14} q4 -6 8 0" stroke-width=".7"/>
     <path d="M340 ${G} V110 M340 150 l-10 -10 M340 136 l8 -8" stroke-width="2.4"/>${blob(maple, 'shu')}
     ${crayon([['tile', `M322 ${G} V258 H338 V${G} Z M324 244 H336 V256 H324 Z M318 236 L330 228 L342 236 Z`]])}<path d="M322 ${G} V258 H338 V${G} M324 244 H336 V256 H324 Z M318 236 L330 228 L342 236 Z" stroke-width="1"/><path d="M326 248 h8 v4 h-8 Z" class="glow" stroke="none"/>
-    ${crayon([['wood', `M350 ${G} L352 ${G - 10} H364 L366 ${G} Z`]])}<path d="M350 ${G} L352 ${G - 10} H364 L366 ${G} Z" stroke-width=".9"/>${blob(bush([[358, G - 16, 7]]), 'leaf', 1.2)}${crayon([['ai', dots([[354, G - 20], [362, G - 18]], 2)]], 0, 0)}
+    ${crayon([['wood', `M350 ${G} L352 ${G - 10} H364 L366 ${G} Z`]])}<path d="M350 ${G} L352 ${G - 10} H364 L366 ${G} Z" stroke-width=".9"/>${blob(bush([[358, G - 16, 7]]), 'leaf', 1.2)}${crayon([['ai', dots([[354, G - 20], [362, G - 18]], 2)]], 0, 0)}`}
 
     ${(() => {
       // 生活痕迹：电线杆和电线、空调外机、煤气表、灯箱招牌、盆栽一堆、自行车、灭火桶、墙上雨渍
@@ -1194,9 +1180,9 @@ function kyotoMachiya() {
       const buckets = `${crayon([['shu', `M136 ${G} l-1 -8 h8 l-1 8 Z M136 ${G - 9} l-1 -7 h8 l-1 7 Z`]])}<path d="M136 ${G} l-1 -8 h8 l-1 8 Z M136 ${G - 9} l-1 -7 h8 l-1 7 Z" stroke-width=".7"/>`;
       const b = bike(246, G);
       const stains = `<path d="M70 72 v10 M150 72 v14 M232 72 v8 M300 72 v12 M120 164 v6 M250 164 v8" stroke-width=".5" opacity=".25"/>`;
-      return pole + ac + meter + lightbox + pots + can + buckets + crayon(b.fills) + b.lines + stains;
+      return (bare ? '' : pole) + ac + meter + lightbox + pots + can + buckets + crayon(b.fills) + b.lines + stains;
     })()}
-    ${mascotAt(-34, G - 33)}
+    ${bare ? '' : mascotAt(-34, G - 33)}
   `, `-38 0 ${W + 64} ${G + 12}`, 'store', 1.5);
 }
 
@@ -2013,7 +1999,7 @@ export const JP_DRAFTS = { kyotoMachiya: [kyotoMachiya, 424, 280], london: [lond
 const HIDDEN = {
   9: { draw: oldBakery, W: 406, H: 288, sign: { x: 118, y: 168, w: 162, h: 16, fit: true } },
   10: { draw: kamakuraShop, W: 386, H: 312, sign: { x: 122, y: 182, w: 124, h: 14, fit: true } },
-  11: { draw: kyotoSlope, W: 420, H: 312, sign: { x: 174, y: 179, w: 92, h: 18, fit: true } },
+  11: { draw: kyotoSlope, W: 420, H: 312, sign: { x: 173, y: 170.6, w: 95.2, h: 19.6, fit: true } },
   12: { draw: patisserie, W: 450, H: 352, sign: { x: 128, y: 246, w: 164, h: 16, fit: true } },
 };
 export const MAX_LEVEL = 12;
