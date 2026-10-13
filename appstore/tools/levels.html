@@ -2,7 +2,9 @@
 <!-- 小店升级路线的宣传图，用 app 自己的简笔画店面拼出来：
      levels.html?kind=all&lang=zh        → 一张总图，8 个等级一字排开（1920×1080 @2x = 3840×2160）
      levels.html?kind=one&lv=5&lang=zh   → 单个等级的大图（1024×1024 @2x = 2048×2048）
-     levels.html?kind=xhs&lang=zh        → 小红书竖图 3:4，四排每排两家店（1242×1656 @2x = 2484×3312） -->
+     levels.html?kind=xhs&lang=zh        → 小红书竖图 3:4，四排每排两家店（1242×1656 @2x = 2484×3312）
+     levels.html?kind=hidden&lang=zh     → 隐藏款总图，4 家一字排开（1920×1080 @2x）
+     levels.html?kind=xhs-hidden&lang=zh → 隐藏款的小红书竖图，两排每排两家（1242×1656 @2x） -->
 <html><head><meta charset="utf-8">
 <link rel="stylesheet" href="../../css/style.css">
 <style>
@@ -63,15 +65,23 @@ const LEVELS = [
   { at: 45, name: ['两层小楼', 'Two-Story Bakery'], desc: ['加盖了带拱窗的二楼，屋顶立起一个大碱水面包', 'A second floor with arched windows and a giant pretzel on the roof'] },
   { at: 70, name: ['露台面包店', 'Terrace Bakery'], desc: ['盖了两层的新店，楼下落地窗，旁边开了露台', 'A new two-story shop with a glass front and a terrace next door'] },
   { at: 100, name: ['旗舰面包店', 'Flagship Bakery'], desc: ['三层的旗舰店，屋顶也开了空中露台，成了街区的地标', 'Three floors and a rooftop terrace: a neighborhood landmark'] },
+  // 隐藏款（宣传图上的文案比 app 里的短一点）
+  { at: 200, hidden: true, name: ['百年老铺', 'Century Bakery'], desc: ['欧洲百年老面包店：墨绿木门面、满橱窗的面包和甜点，屋顶立着碱水面包徽章', 'An old-world bakery: green woodwork, windows full of bread and cakes, a pretzel crest on the roof'] },
+  { at: 300, hidden: true, name: ['镰仓海边面包店', 'Kamakura Seaside'], desc: ['海边的白色小屋，门口开满紫阳花，墙后开过江之电，远处是灯塔', 'A white house by the sea: hydrangeas by the door, the Enoden tram passing, a lighthouse and Enoshima beyond'] },
+  { at: 400, hidden: true, name: ['京都町家老店', 'Kyoto Machiya'], desc: ['木格子、藏青暖帘、红灯笼，二楼挂着大木招牌，旁边一棵红枫', 'Wooden lattice, an indigo noren, red lanterns and a maple tree'] },
+  { at: 500, hidden: true, name: ['巴黎甜品沙龙', 'Paris Pâtisserie'], desc: ['奥斯曼风格的大楼，一楼三个拱门的甜品橱窗，远处一座埃菲尔铁塔', 'A Haussmann building with three arched pastry windows and the Eiffel Tower beyond'] },
 ];
 const T = (pair) => pair[zh ? 0 : 1];
 const atText = (n) => n === 0 ? (zh ? '开店' : 'Start') : (zh ? `出炉 ${n} 次` : `${n} bakes`);
+const secret = zh ? '隐藏款' : 'Secret shop';
 
 // 店面 + 招牌上的店名；k = 每个 viewBox 单位多少像素（同一张图里 k 一样，大的店就真的更大）
 function shop(level, cx, bottom, k, sign) {
   const g = storefrontSign(level);
   const w = g.vbW * k;
-  const st = `left:${(g.x / g.vbW * 100).toFixed(2)}%;width:${(g.w / g.vbW * 100).toFixed(2)}%;top:${(g.y / g.vbH * 100).toFixed(2)}%;height:${(g.h / g.vbH * 100).toFixed(2)}%`;
+  let st = `left:${(g.x / g.vbW * 100).toFixed(2)}%;width:${(g.w / g.vbW * 100).toFixed(2)}%;top:${(g.y / g.vbH * 100).toFixed(2)}%;height:${(g.h / g.vbH * 100).toFixed(2)}%`;
+  // 隐藏款的招牌小：字号按招牌在画里的大小算，和 app 里一样
+  if (g.fit) { const fs = Math.min(g.h * 0.86, g.w / (Math.max(4, [...shopName].length) * 1.2)) * k; sign = fs; st += `;letter-spacing:.06em;line-height:1;padding-top:${fs * 0.24}px`; }
   return { html: `<div class="shop" style="left:${cx - w / 2}px;bottom:${bottom}px;width:${w}px;--sign:${sign}px"><div class="storefront">${storefront(level)}<span class="sign" style="${st}">${shopName}</span></div></div>`, w, h: g.vbH * k };
 }
 const floatBread = (s, x, y, size, rot) => `<div class="abs float" style="left:${x}px;top:${y}px;width:${size}px;height:${size}px;transform:rotate(${rot}deg)">${shape(s)}</div>`;
@@ -138,8 +148,37 @@ if (kind === 'all') {
     });
   });
   stage.innerHTML = html;
+} else if (kind === 'hidden' || kind === 'xhs-hidden') {
+  // 隐藏款：烤到 200 / 300 / 400 / 500 次才解锁的四家店
+  const xhs = kind === 'xhs-hidden';
+  const W = xhs ? 1242 : 1920, H = xhs ? 1656 : 1080;
+  document.body.style.width = W + 'px'; document.body.style.height = H + 'px';
+  const k = xhs ? 1.27 : 1.02, gap = xhs ? 44 : 38;
+  const rows = xhs ? [[9, 10], [11, 12]] : [[9, 10, 11, 12]];
+  const groundY = [];
+  let y = xhs ? 300 : 380;
+  for (const row of rows) { y += Math.max(...row.map((lv) => storefrontSign(lv).vbH * k)); groundY.push(y); y += xhs ? 170 : 0; }
+  let html = `
+    <h1 style="top:${xhs ? 56 : 90}px;font-size:${zh ? (xhs ? 66 : 64) : 56}px;letter-spacing:${zh ? '.08em' : '.01em'}"><span>${zh ? '一直烤下去，解锁隐藏款' : 'Keep baking, unlock secret shops'}</span></h1>
+    <div class="sub" style="top:${xhs ? 164 : 192}px;font-size:${zh ? 28 : 25}px">${zh ? '出炉 200 次之后，每 100 次换一家世界各地的老店' : 'After 200 bakes, a new shop from somewhere in the world every 100'}</div>
+    ${cloud(xhs ? 70 : 1690, xhs ? 1500 : 70, 140)}${floatBread('croissant', xhs ? 1110 : 110, xhs ? 1500 : 250, 60, -14)}${floatBread('pretzel', xhs ? 1000 : 1760, xhs ? 250 : 250, 62, 12)}
+    ${brand(xhs ? W / 2 - 110 : 48, xhs ? H - 80 : 40, 24)}`;
+  rows.forEach((row, ri) => {
+    const ws = row.map((lv) => storefrontSign(lv).vbW * k);
+    let x = (W - (ws.reduce((a, b) => a + b, 0) + gap * (row.length - 1))) / 2;
+    html += ground(40, groundY[ri] - 4, W - 80);
+    row.forEach((lv, ci) => {
+      const cx = x + ws[ci] / 2;
+      const L = LEVELS[lv - 1];
+      html += shop(lv, cx, H - groundY[ri], k, 14).html + `<div class="label" style="left:${cx}px;top:${groundY[ri] + 16}px">
+        <span class="lv" style="font-size:17px">Lv.${lv}</span> <span class="nm" style="display:inline;font-size:25px;margin-left:6px">${T(L.name)}</span><span class="at" style="font-size:15px;margin-top:4px">${secret} · ${atText(L.at)}</span></div>`;
+      x += ws[ci] + gap;
+    });
+  });
+  html += `<div class="desc" style="top:${groundY[groundY.length - 1] + (xhs ? 120 : 140)}px;font-size:${zh ? 24 : 21}px;padding:0 160px">${zh ? '没解锁之前，升级路线里只能看到一个剪影和「???」' : 'Until you unlock them, the roadmap only shows a silhouette and "???"'}</div>`;
+  stage.innerHTML = html;
 } else {
-  const lv = Math.min(8, Math.max(1, Number(q.get('lv')) || 1));
+  const lv = Math.min(LEVELS.length, Math.max(1, Number(q.get('lv')) || 1));
   const L = LEVELS[lv - 1];
   const W = 1024, H = 1024;
   document.body.style.width = W + 'px'; document.body.style.height = H + 'px';
@@ -150,14 +189,14 @@ if (kind === 'all') {
   const s = shop(lv, W / 2, H - groundY, k, Math.round(13 * k));
   stage.innerHTML = `
     ${cloud(90, 150, 140)}${cloud(790, 140, 150)}
-    ${floatBread(['croissant', 'toast', 'anpan', 'melonpan', 'pretzel', 'chocobun', 'bagel', 'baguette'][lv - 1], 130, 300, 70, -12)}
-    ${floatBread(['bagel', 'chocobun', 'croissant', 'toast', 'baguette', 'melonpan', 'anpan', 'pretzel'][lv - 1], 830, 310, 66, 10)}
+    ${floatBread(['croissant', 'toast', 'anpan', 'melonpan', 'pretzel', 'chocobun', 'bagel', 'baguette', 'pretzel', 'melonpan', 'anpan', 'croissant'][lv - 1], 130, 300, 70, -12)}
+    ${floatBread(['bagel', 'chocobun', 'croissant', 'toast', 'baguette', 'melonpan', 'anpan', 'pretzel', 'baguette', 'toast', 'chocobun', 'bagel'][lv - 1], 830, 310, 66, 10)}
     <div class="label" style="left:${W / 2}px;top:52px"><span class="lv" style="font-size:30px;padding:3px 22px">Lv.${lv}</span></div>
     ${ground(70, groundY - 4, W - 140)}
     ${s.html}
     <h1 style="top:${groundY + 34}px;font-size:${zh ? 60 : 54}px;letter-spacing:${zh ? '.08em' : '.01em'}"><span>${T(L.name)}</span></h1>
     <div class="desc" style="top:${groundY + 124}px;font-size:${zh ? 26 : 23}px;padding:0 90px">${T(L.desc)}</div>
-    <div class="abs" style="right:44px;top:56px;font-family:var(--mono);color:#8a7a6a;font-size:22px">${atText(L.at)}</div>
+    <div class="abs" style="right:44px;top:56px;font-family:var(--mono);color:#8a7a6a;font-size:22px">${L.hidden ? `${secret} · ` : ''}${atText(L.at)}</div>
     ${brand(44, 44, 22)}`;
 }
 document.fonts.ready.then(() => { document.body.dataset.ready = '1'; });
