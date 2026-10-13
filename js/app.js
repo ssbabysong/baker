@@ -99,7 +99,7 @@ const LEVELS = [
 // 镰仓 = 小店到 Lv.4、京都 = Lv.6、百年老铺 = Lv.8，巴黎甜品沙龙是累计出炉 200 次的纪念礼物
 const SECRETS = [
   { id: 10, lv: 4, name: ['镰仓海边面包店', 'Kamakura Seaside'], desc: ['海边的白色木板小屋：鱼鳞瓦屋顶、蓝白条纹雨棚，门口一丛丛紫阳花，石墙后面开过江之电，远处是灯塔、江之岛和消波块', 'A white clapboard house by the sea: fish-scale roof, blue-and-white awning, hydrangeas by the door, the Enoden tram behind the wall, a lighthouse, Enoshima and tetrapods beyond'] },
-  { id: 11, lv: 6, name: ['京都町家老店', 'Kyoto Machiya'], desc: ['两层的京都町家：木格子、藏青暖帘、红灯笼，二楼挂着大木招牌，旁边一棵红枫', 'A two-story Kyoto townhouse: wooden lattice, an indigo noren, red lanterns and a maple'] },
+  { id: 11, lv: 6, name: ['京都洋馆面包店', 'Kyoto Brick Bakery'], desc: ['大正时代的红砖洋馆：白石腰线、两角小圆顶塔楼，一楼拱形橱窗摆满面包，拱门挂着一截藏青暖帘，门口石灯笼和红枫，远处一座五重塔', 'A Taisho-era red-brick building: white stone bands, two little domed towers, arched windows full of bread, a short indigo noren at the door, a stone lantern, a maple and a pagoda beyond'] },
   { id: 9, lv: 8, name: ['百年老铺', 'Century Bakery'], desc: ['三层的欧洲老面包店：墨绿色木门面、条纹布篷、铸铁挂牌，橱窗里摆满面包和甜点，屋顶立着碱水面包徽章', 'A three-story old-world bakery: forest-green woodwork, a striped awning, windows full of bread and cakes and a pretzel crest on the roof'] },
   { id: 12, bakes: 200, name: ['巴黎甜品沙龙', 'Paris Pâtisserie'], desc: ['奥斯曼风格的大楼：孟莎屋顶和石栏杆、圆形老虎窗、通长铸铁阳台，一楼三个拱门的甜品橱窗，远处一座埃菲尔铁塔', 'A Haussmann building: mansard roof with a stone balustrade, round dormers, a long iron balcony, three arched pastry windows and the Eiffel Tower in the distance'] },
 ];

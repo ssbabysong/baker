@@ -1057,6 +1057,66 @@ function shanghaiShikumen() {
   `, `0 0 ${W} ${G + 12}`, 'store', 1.5);
 }
 
+// 京都老洋馆面包店：大正时期辰野式的红砖洋楼（三条通那种老银行），红砖墙上横着几道白石带，两角各一座小圆顶塔楼，
+// 中间石板屋顶开老虎窗；一楼三个拱形橱窗摆满面包，正中拱门挂一小截藏青暖帘；门口石灯笼、红枫，远处一座五重塔
+function kyotoYokan() {
+  const W = 380, G = 290;
+  const body = `M60 118 H320 V${G} H60 Z`;
+  const towerL = 'M58 118 V96 H102 V118 Z', towerR = 'M278 118 V96 H322 V118 Z';
+  const dome = (x) => `M${x - 21} 96 C${x - 21} 78 ${x - 10} 68 ${x} 64 C${x + 10} 68 ${x + 21} 78 ${x + 21} 96 Z`;
+  const roof = 'M100 120 L108 100 H272 L280 120 Z';
+  const gable = 'M164 101 L190 78 L216 101 Z';
+  const dormer = (x) => `M${x - 8} 112 V104 L${x} 98 L${x + 8} 104 V112 Z`;
+  // 白石腰线只画在窗和窗之间，不横穿窗户
+  const bands = 'M58 118 H322 V125 H58 Z M58 196 H322 V204 H58 Z ' + [[60, 71], [89, 126], [144, 181], [199, 236], [254, 291], [309, 320]].map(([x0, x1]) => `M${x0} 156 H${x1} V160 H${x0} Z`).join(' ');
+  const bays = [80, 135, 190, 245, 300];
+  const ups = bays.map((x) => pane(x - 9, 132, 18, 52, 2, 3));
+  const lintels = bays.map((x) => `M${x - 12} 127 h24 v4 h-24 Z M${x - 11} 184 h22 v3 h-22 Z`).join(' ');
+  const keys = bays.map((x) => `M${x - 2.5} 127 h5 l-1 6 h-3 Z`).join(' ');
+  const arch = (x, w, top) => `M${x - w / 2} ${G} V${top + w / 2} A${w / 2} ${w / 2} 0 0 1 ${x + w / 2} ${top + w / 2} V${G} Z`;
+  const shopWins = [[85, 40], [137, 40], [243, 40], [295, 40]].map(([x, w]) => arch(x, w, 214));
+  const archStone = [[85, 40, 214], [137, 40, 214], [243, 40, 214], [295, 40, 214], [190, 44, 222]].map(([x, w, t]) => `M${x - w / 2 - 3} ${t + w / 2} A${w / 2 + 3} ${w / 2 + 3} 0 0 1 ${x + w / 2 + 3} ${t + w / 2}`).join(' ');
+  const door = arch(190, 44, 222);
+  const sign = 'M148 205 H232 V218 H148 Z';
+  const pagoda = (x, y) => { let d = `M${x} ${y - 78} V${y - 64}`; for (let i = 0; i < 5; i++) { const yy = y - 60 + i * 13, w = 12 + i * 3; d += ` M${x - w} ${yy} Q${x} ${yy - 5} ${x + w} ${yy} M${x - w + 4} ${yy} V${yy + 9} M${x + w - 4} ${yy} V${yy + 9}`; } return d; };
+  const lantern = 'M343 290 h14 l-2 -5 h-10 Z M346 285 V270 h8 V285 M342 270 l8 -6 l8 6 Z M347 276 h6 v-5 h-6 Z';
+  const maple = bush([[30, 214, 16], [44, 200, 14], [22, 196, 12], [40, 222, 12]]);
+  return wrap(`
+    <path d="${pagoda(352, 150)}" stroke-width="1.1" opacity=".35"/>
+    <path d="${body} ${towerL} ${towerR} ${dome(80)} ${dome(300)} ${roof} ${gable}" class="f-paper" stroke="none"/>
+    ${crayon([['brick', body], ['brick', `${towerL} ${towerR}`], ['tile', `${roof} ${gable}`], ['leaf', `${dome(80)} ${dome(300)}`], ['paper', bands], ['paper', lintels],
+      ['skysoft', ups.map((u) => u.fill).join(' ')], ['skysoft', shopWins.join(' ')], ['paper', sign], ['wood', door], ['skysoft', `M178 ${G - 2} V244 h24 V${G - 2} Z`], ['ai', 'M176 236 h28 v9 h-28 Z'],
+      ['paper', `${dormer(130)} ${dormer(250)}`], ['skysoft', 'M184 92 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0 Z']])}
+    ${bricks(60, 320, 125, 196, 6)}${bricks(60, 320, 204, G, 6)}
+    <path d="${ups.map((u) => u.fill).join(' ')} ${shopWins.join(' ')} ${door} ${sign}" class="f-paper" stroke="none"/>${crayon([['skysoft', ups.map((u) => u.fill).join(' ')], ['skysoft', shopWins.join(' ')], ['paper', sign], ['wood', door], ['skysoft', `M178 ${G - 2} V244 h24 V${G - 2} Z`], ['ai', 'M176 236 h28 v9 h-28 Z']], 0, 0)}
+    <path d="${body}" stroke-width="1.6"/><path d="${towerL} ${towerR}" stroke-width="1.3"/><path d="${dome(80)} ${dome(300)}" stroke-width="1.3"/>
+    <path d="M80 64 V56 M300 64 V56 M80 50 V44 M300 44 V50" stroke-width="1.1"/>${crayon([['custard', 'M77.5 53 a2.5 2.5 0 1 0 5 0 a2.5 2.5 0 1 0 -5 0 Z M297.5 53 a2.5 2.5 0 1 0 5 0 a2.5 2.5 0 1 0 -5 0 Z']], 0, 0)}<path d="M77.5 53 a2.5 2.5 0 1 0 5 0 a2.5 2.5 0 1 0 -5 0 Z M297.5 53 a2.5 2.5 0 1 0 5 0 a2.5 2.5 0 1 0 -5 0 Z" stroke-width=".9"/>
+    <path d="M64 96 q16 -10 32 0 M284 96 q16 -10 32 0" stroke-width=".6" opacity=".6"/>
+    <path d="${roof}" stroke-width="1.3"/><path d="M104 110 H276" stroke-width=".5" opacity=".5"/>
+    <path d="${gable}" stroke-width="1.3"/><path d="M184 92 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0 Z M190 86 v12 M184 92 h12" stroke-width=".8"/>
+    <path d="${dormer(130)} ${dormer(250)}" stroke-width="1"/><path d="M130 104 v8 M250 104 v8" stroke-width=".6"/>
+    <path d="${bands}" stroke-width=".9"/><path d="${lintels}" stroke-width=".7"/>${crayon([['custard', keys]], 0, 0)}<path d="${keys}" stroke-width=".6"/>
+    ${ups.map((u) => u.lines).join('')}${bays.map((x) => curtains(x - 9, 132, 18, 52)).join('')}
+    ${windowScene(126, 132, 18, 52, 'cup', 'leaf')}${windowScene(236, 132, 18, 52, 'book', 'shu')}
+    <path d="${shopWins.join(' ')}" stroke-width="1.3"/><path d="${archStone}" stroke-width="2.6" stroke="#fffcf5"/><path d="${archStone}" stroke-width=".7"/>
+    <path d="${[85, 137, 243, 295].map((x) => `M${x - 20} 262 H${x + 20} M${x} 234 V${G}`).join(' ')}" stroke-width=".7"/>
+    ${display([['baguette', 76], ['croissant', 94], ['boule', 128], ['braid', 146], ['cake', 234], ['tart', 252], ['macarons', 287], ['cupcake', 303]], 261)}
+    ${display([['roll', 74], ['roll', 86], ['croissant', 97], ['eclair', 132], ['boule', 145], ['tart', 236], ['cake', 252], ['eclair', 290], ['roll', 302]], G - 3)}
+    <path d="${sign}" stroke-width="1.1"/>
+    <path d="${door}" stroke-width="1.4"/><path d="M178 ${G - 2} V244 h24 V${G - 2} Z M190 244 V${G - 2}" stroke-width=".9"/><path d="M186 268 v6 M194 268 v6" stroke-width="1.4"/>
+    <path d="M176 236 h28 v9 h-28 Z M183 236 v9 M190 236 v9 M197 236 v9" stroke-width=".8"/>
+    <path d="M170 226 h40 l4 -5 h-48 Z" stroke-width="1"/>
+    <path d="M172 ${G} h36 v-3 h-36 Z" stroke-width=".9"/>
+    ${lamp(66, 206)}${lamp(314, 206)}
+    ${blob(maple, 'shu', 1.6)}<path d="M34 ${G} V214 M34 226 l-6 -6 M34 220 l7 -7" stroke-width="1.6"/>
+    ${crayon([['soft', lantern]], 0, 0)}<path d="${lantern}" stroke-width="1"/><path d="M347 276 h6 v-5 h-6 Z" class="glow" stroke="none"/>
+    ${crayon([['wood', 'M326 290 l2 -12 h10 l2 12 Z'], ['leaf', bush([[333, 274, 7]])]], 0, 0)}<path d="M326 290 l2 -12 h10 l2 12 Z" stroke-width="1"/><path d="${bush([[333, 274, 7]])}" stroke-width="1"/>
+    <path d="M4 ${G} Q${W / 2} ${G + 2} ${W - 4} ${G - 1}"/>
+    ${mascotAt(-2, G - 33).replace('translate(-2', 'translate(44')}
+  `, `0 0 ${W} ${G + 12}`, 'store', 1.5);
+}
+
+
 // Lv13 京都町家老店：两层的町家——一楼深色木格子、长长的藏青暖帘和一对灯笼，一楼檐上一溜瓦，二楼白墙虫笼窗，正中挂一块大木招牌；旁边竹篱笆、石灯笼和一棵红枫
 function kyotoMachiya() {
   // 两层京町家：屋顶一排排瓦、两端鬼瓦；二楼白灰墙露木柱、两扇虫笼窗、正中挂木招牌；一楼浅色木格子、深色柱子、三幅藏青暖帘、
@@ -1932,14 +1992,14 @@ function patisserie() {
   `, `-40 0 ${W + 150} ${G + 12}`, 'store', 1.5);
 }
 
-export const JP_DRAFTS = { london: [londonTearoom, 320, 280], tainan: [tainanShophouse, 330, 280], shanghai: [shanghaiShikumen, 320, 290], vienna: [viennaCafe, 360, 342], paris: [patisserie, 450, 352], oldshop: [oldBakery, 406, 288], kyoto: [kyotoMachiya, 424, 280], choco: [chocoFactory, 580, 332], bunny2: [bunnyWonderland, 432, 330], bunny: [bunnyCottage, 360, 312], alice: [aliceTeapot, 380, 312], kamakura: [kamakuraShop, 380, 312], hokkaido: [hokkaidoBarn, 380, 312], shitamachi: [shitamachiShop, 380, 312], showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
+export const JP_DRAFTS = { kyotoMachiya: [kyotoMachiya, 424, 280], london: [londonTearoom, 320, 280], tainan: [tainanShophouse, 330, 280], shanghai: [shanghaiShikumen, 320, 290], vienna: [viennaCafe, 360, 342], paris: [patisserie, 450, 352], oldshop: [oldBakery, 406, 288], kyoto: [kyotoMachiya, 424, 280], choco: [chocoFactory, 580, 332], bunny2: [bunnyWonderland, 432, 330], bunny: [bunnyCottage, 360, 312], alice: [aliceTeapot, 380, 312], kamakura: [kamakuraShop, 380, 312], hokkaido: [hokkaidoBarn, 380, 312], shitamachi: [shitamachiShop, 380, 312], showa: [showaKissa, 320, 280, { x: 52, y: 196, w: 1, h: 1 }], onsen: [onsenBakery, 360, 290], sando: [sandoShop, 360, 290], ginza: [ginzaParlor, 340, 342] };
 
 // 隐藏款的尺寸和招牌位置（招牌上的店名由 HTML 叠上去）
 // fit：店名字号按招牌在画里的大小算
 const HIDDEN = {
   9: { draw: oldBakery, W: 406, H: 288, sign: { x: 118, y: 168, w: 162, h: 16, fit: true } },
   10: { draw: kamakuraShop, W: 386, H: 312, sign: { x: 122, y: 182, w: 124, h: 14, fit: true } },
-  11: { draw: kyotoMachiya, W: 424, H: 280, sign: { x: 150, y: 96, w: 136, h: 28, fit: true } },
+  11: { draw: kyotoYokan, W: 380, H: 302, sign: { x: 150, y: 205.5, w: 80, h: 12, fit: true } },
   12: { draw: patisserie, W: 450, H: 352, sign: { x: 128, y: 246, w: 164, h: 16, fit: true } },
 };
 export const MAX_LEVEL = 12;
