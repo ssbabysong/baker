@@ -4,7 +4,8 @@
      levels.html?kind=one&lv=5&lang=zh   → 单个等级的大图（1024×1024 @2x = 2048×2048）；&secret=kamakura 是单个隐藏款
      levels.html?kind=xhs&lang=zh        → 小红书竖图 3:4，四排每排两家店（1242×1656 @2x = 2484×3312）
      levels.html?kind=hidden&lang=zh     → 隐藏款总图，4 家一字排开（1920×1080 @2x）
-     levels.html?kind=xhs-hidden&lang=zh → 隐藏款的小红书竖图，两排每排两家（1242×1656 @2x） -->
+     levels.html?kind=xhs-hidden&lang=zh → 隐藏款的小红书竖图，两排每排两家（1242×1656 @2x）
+     levels.html?kind=full&reveal=0      → 完整升级路线竖图（3:4）：8 个等级 + 4 个隐藏款；reveal=0 隐藏款盖着布不揭晓，reveal=1 全部亮出来 -->
 <html><head><meta charset="utf-8">
 <link rel="stylesheet" href="../../css/style.css">
 <style>
@@ -48,7 +49,7 @@
 </svg>
 <div id="stage"></div>
 <script type="module">
-import { storefront, storefrontSign, shape, houseLogo } from '../../js/sketch.js';
+import { storefront, storefrontSign, shape, houseLogo, mysteryShop } from '../../js/sketch.js';
 const q = new URLSearchParams(location.search);
 const kind = q.get('kind') || 'all';
 const lang = q.get('lang') || 'zh';
@@ -149,6 +150,53 @@ if (kind === 'all') {
       x += ws[ci] + gap;
     });
   });
+  stage.innerHTML = html;
+} else if (kind === 'full') {
+  // 完整的升级路线：上面三排是 8 个等级（一排比一排大），下面一个虚线框装 4 个隐藏款
+  const reveal = q.get('reveal') === '1';
+  const W = 1242, H = 1656;
+  document.body.style.width = W + 'px'; document.body.style.height = H + 'px';
+  const k = 0.96, gap = 70;
+  const rows = [[1, 2, 3], [4, 5, 6], [7, 8]];
+  const groundY = [];
+  let y = 228;
+  for (const row of rows) { y += Math.max(...row.map((lv) => storefrontSign(lv).vbH * k)); groundY.push(y); y += 84; }
+  let html = `
+    <h1 style="top:48px;font-size:${zh ? 64 : 54}px;letter-spacing:${zh ? '.08em' : '.01em'}"><span>${zh ? '从小推车，到街角的地标' : 'From a little cart to a landmark'}</span></h1>
+    <div class="sub" style="top:148px;font-size:${zh ? 27 : 24}px">${zh ? '每出炉一次面包，你的小店就长大一点，路上还藏着 4 家隐藏款' : 'Every batch grows your shop, with 4 secret shops along the way'}</div>
+    ${cloud(1040, 250, 120)}${floatBread('croissant', 70, 260, 56, -14)}${floatBread('pretzel', 1110, 560, 56, 12)}${floatBread('toast', 60, 760, 50, 8)}`;
+  rows.forEach((row, ri) => {
+    const ws = row.map((lv) => storefrontSign(lv).vbW * k);
+    let x = (W - (ws.reduce((a, b) => a + b, 0) + gap * (row.length - 1))) / 2;
+    html += ground(50, groundY[ri] - 4, W - 100);
+    row.forEach((lv, ci) => {
+      const cx = x + ws[ci] / 2;
+      const L = LEVELS[lv - 1];
+      // 解锁隐藏款的那几级挂一个小礼物标记
+      const gift = SECRETS.find((sx) => sx.how[0].includes(`Lv.${lv} `));
+      html += shop(lv, cx, H - groundY[ri], k, 13).html + `<div class="label" style="left:${cx}px;top:${groundY[ri] + 10}px">
+        <span class="lv" style="font-size:15px">Lv.${lv}</span> <span class="nm" style="display:inline;font-size:22px;margin-left:5px">${T(L.name)}</span><span class="at" style="font-size:13px;margin-top:2px">${atText(L.at)}${gift ? ` · <span style="color:#c0573f">🎁 ${zh ? '送隐藏款' : '+ secret shop'}</span>` : ''}</span></div>`;
+      if (ci < row.length - 1) html += `<div class="arrow" style="left:${x + ws[ci] + gap / 2 - 13}px;top:${groundY[ri] - 50}px;font-size:26px">→</div>`;
+      x += ws[ci] + gap;
+    });
+  });
+  // 隐藏款：虚线框
+  const boxTop = groundY[2] + 84, boxH = H - 92 - boxTop;
+  html += `<div class="abs" style="left:40px;right:40px;top:${boxTop}px;height:${boxH}px;border:3px dashed #c9ab86;border-radius:28px;background:#fbf3e3"></div>
+    <div class="abs" style="left:0;right:0;top:${boxTop - 22}px;text-align:center"><span style="background:#f7f2e8;padding:0 18px;font-family:var(--title);font-size:30px;letter-spacing:.1em">${zh ? '隐藏款' : 'Secret shops'}</span></div>`;
+  const ks = reveal ? 0.63 : 1.02;
+  const sw = SECRETS.map((x) => (reveal ? storefrontSign(x.id).vbW : 240) * ks);
+  const sg = reveal ? 22 : 40;
+  const sGround = boxTop + boxH - 92;
+  let sx = (W - (sw.reduce((a, b) => a + b, 0) + sg * 3)) / 2;
+  SECRETS.forEach((X, i) => {
+    const cx = sx + sw[i] / 2;
+    if (reveal) html += shop(X.id, cx, H - sGround, ks, 10).html;
+    else html += `<div class="shop" style="left:${cx - sw[i] / 2}px;bottom:${H - sGround}px;width:${sw[i]}px"><div class="storefront">${mysteryShop()}</div></div>`;
+    html += `<div class="label" style="left:${cx}px;top:${sGround + 8}px"><span class="nm" style="font-size:${reveal ? 19 : 26}px;margin-top:0">${reveal ? T(X.name) : '???'}</span><span class="at" style="font-size:13px;margin-top:2px">${T(X.how)}</span></div>`;
+    sx += sw[i] + sg;
+  });
+  html += brand(W / 2 - 110, H - 72, 22);
   stage.innerHTML = html;
 } else if (kind === 'hidden' || kind === 'xhs-hidden') {
   // 隐藏款：烤到 200 / 300 / 400 / 500 次才解锁的四家店
