@@ -751,7 +751,7 @@ function grownShop(level, cls) {
 }
 
 
-// ---------- 隐藏款（Lv9–13）：出炉 200 / 300 / 400 / 500 / 1000 次才解锁 ----------
+// ---------- 隐藏款：小店到 Lv.4 / 6 / 8 和累计出炉 200 次时解锁，可以换上当店面（见 app.js 的 SECRETS） ----------
 // 每一款都是单独画的一栋，不再沿用前面的楼层叠加；地平线在 H - 12，店长站在左下角
 const mascotAt = (x, y) => `<g transform="translate(${x} ${y}) scale(0.6)" stroke-width="2.5">${mascotBody('wave')}</g>`;
 const smoke = (x, y) => `<path d="M${x} ${y} q-6 -6 0 -12 q6 -6 0 -12 q-5 -5 1 -10" stroke-width="1.3" opacity=".55"/><path d="M${x + 8} ${y - 6} q-4 -5 1 -9 q5 -4 1 -9" stroke-width="1.1" opacity=".4"/>`;

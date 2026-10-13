@@ -8,7 +8,7 @@ const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || u
 for (const lang of ['zh', 'en']) {
   const dir = `${OUT}${lang === 'zh' ? 'zh-Hans' : 'en-US'}`;
   mkdirSync(dir, { recursive: true });
-  const jobs = [['all', '', 1920, 1080, 'levels-all'], ['hidden', '', 1920, 1080, 'levels-hidden'], ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((lv) => ['one', lv, 1024, 1024, `level-${lv}`])];
+  const jobs = [['all', '', 1920, 1080, 'levels-all'], ['hidden', '', 1920, 1080, 'levels-hidden'], ...[1, 2, 3, 4, 5, 6, 7, 8].map((lv) => ['one', lv, 1024, 1024, `level-${lv}`]), ...['kamakura', 'kyoto', 'century', 'paris'].map((x) => ['one', `&secret=${x}`, 1024, 1024, `secret-${x}`])];
   if (lang === 'zh') jobs.push(['xhs', '', 1242, 1656, 'xiaohongshu'], ['xhs-hidden', '', 1242, 1656, 'xiaohongshu-hidden']);
   for (const [kind, lv, w, h, file] of jobs) {
     const p = await (await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 })).newPage();

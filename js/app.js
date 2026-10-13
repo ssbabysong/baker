@@ -94,25 +94,37 @@ const LEVELS = [
   { at: 45, name: ['两层小楼', 'Two-Story Bakery'], desc: ['加盖了带拱窗的二楼，屋顶立起一个大碱水面包', 'A second floor with arched windows and a giant pretzel on the roof'] },
   { at: 70, name: ['露台面包店', 'Terrace Bakery'], desc: ['盖了两层的新店，楼下落地窗，旁边开了露台', 'A new two-story shop with a glass front and a terrace next door'] },
   { at: 100, name: ['旗舰面包店', 'Flagship Bakery'], desc: ['三层的旗舰店，屋顶也开了空中露台，成了街区的地标', 'Three floors and a rooftop terrace: a neighborhood landmark'] },
-  // 隐藏款：没解锁之前只露一个剪影和「???」
-  { at: 200, hidden: true, name: ['百年老铺', 'Century Bakery'], desc: ['三层的欧洲老面包店：墨绿色木门面、条纹布篷、铸铁挂牌，二三楼挂着百叶窗', 'A three-story old-world bakery: forest-green woodwork, a striped awning and a wrought-iron sign'] },
-  { at: 300, hidden: true, name: ['镰仓海边面包店', 'Kamakura Seaside'], desc: ['海边的白色木板小屋：鱼鳞瓦屋顶、蓝白条纹雨棚，门口一丛丛紫阳花，石墙后面开过江之电，远处是灯塔、江之岛和消波块', 'A white clapboard house by the sea: fish-scale roof, blue-and-white awning, hydrangeas by the door, the Enoden tram behind the wall, a lighthouse, Enoshima and tetrapods beyond'] },
-  { at: 400, hidden: true, name: ['京都町家老店', 'Kyoto Machiya'], desc: ['两层的京都町家：木格子、藏青暖帘、红灯笼，二楼挂着大木招牌，旁边一棵红枫', 'A two-story Kyoto townhouse: wooden lattice, an indigo noren, red lanterns and a maple'] },
-  { at: 500, hidden: true, name: ['巴黎甜品沙龙', 'Paris Pâtisserie'], desc: ['奥斯曼风格的大楼：孟莎屋顶和石栏杆、圆形老虎窗、通长铸铁阳台，一楼四根柱子三个拱门，街边莫里斯广告柱和路灯，远处一座埃菲尔铁塔', 'A Haussmann building: mansard roof with a stone balustrade, round dormers, a long iron balcony, four columns and three arches below, a Morris column and street lamp, the Eiffel Tower in the distance'] },
 ];
+// 隐藏款：不占等级，满足条件就解锁，可以在升级路线里换上当店面（id 就是 sketch.js 里 HIDDEN 的编号）
+// 镰仓 = 小店到 Lv.4、京都 = Lv.6、百年老铺 = Lv.8，巴黎甜品沙龙是累计出炉 200 次的纪念礼物
+const SECRETS = [
+  { id: 10, lv: 4, name: ['镰仓海边面包店', 'Kamakura Seaside'], desc: ['海边的白色木板小屋：鱼鳞瓦屋顶、蓝白条纹雨棚，门口一丛丛紫阳花，石墙后面开过江之电，远处是灯塔、江之岛和消波块', 'A white clapboard house by the sea: fish-scale roof, blue-and-white awning, hydrangeas by the door, the Enoden tram behind the wall, a lighthouse, Enoshima and tetrapods beyond'] },
+  { id: 11, lv: 6, name: ['京都町家老店', 'Kyoto Machiya'], desc: ['两层的京都町家：木格子、藏青暖帘、红灯笼，二楼挂着大木招牌，旁边一棵红枫', 'A two-story Kyoto townhouse: wooden lattice, an indigo noren, red lanterns and a maple'] },
+  { id: 9, lv: 8, name: ['百年老铺', 'Century Bakery'], desc: ['三层的欧洲老面包店：墨绿色木门面、条纹布篷、铸铁挂牌，橱窗里摆满面包和甜点，屋顶立着碱水面包徽章', 'A three-story old-world bakery: forest-green woodwork, a striped awning, windows full of bread and cakes and a pretzel crest on the roof'] },
+  { id: 12, bakes: 200, name: ['巴黎甜品沙龙', 'Paris Pâtisserie'], desc: ['奥斯曼风格的大楼：孟莎屋顶和石栏杆、圆形老虎窗、通长铸铁阳台，一楼三个拱门的甜品橱窗，远处一座埃菲尔铁塔', 'A Haussmann building: mansard roof with a stone balustrade, round dormers, a long iron balcony, three arched pastry windows and the Eiffel Tower in the distance'] },
+];
+const secretOf = (id) => SECRETS.find((x) => x.id === id);
+const secretOpen = (x, n) => (x.lv ? levelOf(n).lv >= x.lv : n >= x.bakes);
+const secretHow = (x) => (x.lv ? L(`小店到 Lv.${x.lv} 解锁`, `Unlocks at Lv.${x.lv}`) : L(`累计出炉 ${x.bakes} 次的纪念礼物`, `A gift for your ${x.bakes}th bake`));
+// 店面的名字：普通等级用等级名，隐藏款用自己的名字
+const lookName = (id) => (secretOf(id) ? L(...secretOf(id).name) : lvName(id - 1));
+const lookDesc = (id) => (secretOf(id) ? L(...secretOf(id).desc) : lvDesc(id - 1));
 const lvName = (i) => L(...LEVELS[i].name);
 const lvDesc = (i) => L(...LEVELS[i].desc);
 function levelOf(n) {
   let i = 0;
   while (i + 1 < LEVELS.length && n >= LEVELS[i + 1].at) i++;
   const next = LEVELS[i + 1];
-  // 下一级是隐藏款：名字先不告诉
-  const nextName = next && (next.hidden ? L('隐藏款', 'a secret shop') : lvName(i + 1));
-  return { lv: i + 1, name: lvName(i), hidden: !!LEVELS[i].hidden, next: next ? { at: next.at, name: nextName, hidden: !!next.hidden } : null, progress: next ? (n - LEVELS[i].at) / (next.at - LEVELS[i].at) : 1 };
+  return { lv: i + 1, name: lvName(i), next: next ? { at: next.at, name: lvName(i + 1) } : null, progress: next ? (n - LEVELS[i].at) / (next.at - LEVELS[i].at) : 1 };
 }
 
-// 首页和小组件上画哪一级的店面：在升级路线里自己选过（state.shop.look，必须已解锁）就用选的，不然跟着等级走
-const lookOf = (lv) => (state.shop.look >= 1 && state.shop.look <= lv ? state.shop.look : lv);
+// 首页和小组件上画哪个店面：在升级路线里自己选过（state.shop.look，必须已解锁：不高于现在等级的店，或者已解锁的隐藏款）就用选的，不然跟着等级走
+const lookOf = (lv, n) => {
+  const k = state.shop.look;
+  if (k >= 1 && k <= lv && !secretOf(k)) return k;
+  if (secretOf(k) && secretOpen(secretOf(k), n)) return k;
+  return lv;
+};
 
 // 店名在招牌字体里有多宽（以字号为 1 计）：用画布量真字体；字体还没加载好就先用备用字体量，加载好以后重画一遍
 const signCanvas = document.createElement('canvas').getContext('2d');
@@ -158,13 +170,20 @@ async function showRoadmap(scrollTop = 0) {
     <p class="small muted">${L(`每出炉一次就离下一级近一点。现在累计出炉 <b class="need">${n}</b> 次。`, `Every bake gets you closer. Baked so far: <b class="need">${n}</b>.`)} ${L('点已解锁的店面可以看大图。', 'Tap an unlocked shop to see it big.')}</p>
     <ol>${LEVELS.map((lvl, i) => {
       const st = i + 1 < cur.lv ? 'past' : i + 1 === cur.lv ? 'now' : 'next';
-      const secret = lvl.hidden && st === 'next'; // 还没解锁的隐藏款：盖着布的店 + 问号
-      const divider = lvl.hidden && !LEVELS[i - 1].hidden ? `<li class="secret-head">${L('— 隐藏款 —', '— Secret shops —')}</li>` : '';
-      return `${divider}<li class="${st} ${secret ? 'secret' : ''}" ${st !== 'next' ? `data-act="level-view" data-lv="${i + 1}" role="button"` : ''}>${secret ? `<div class="storefront mini">${mysteryShop()}</div>` : shopFront(i + 1, '', true)}
-        <div class="t"><b>Lv.${i + 1} ${secret ? '???' : lvName(i)}</b>
-          <span class="small muted">${secret ? L('继续出炉，解锁之后才知道是什么', 'Keep baking to find out what it is') : lvDesc(i)}</span>
+      return `<li class="${st}" ${st !== 'next' ? `data-act="level-view" data-lv="${i + 1}" role="button"` : ''}>${shopFront(i + 1, '', true)}
+        <div class="t"><b>Lv.${i + 1} ${lvName(i)}</b>
+          <span class="small muted">${lvDesc(i)}</span>
           <span class="small ${st === 'now' ? 'here' : 'muted'}">${st === 'now' ? L('你在这里', 'You are here') : st === 'past' ? L('已达成', 'Done')
             : L(`出炉 <b class="need">${lvl.at}</b> 次解锁`, `Unlocks at <b class="need">${lvl.at}</b> bakes`)}</span></div></li>`;
+    }).join('')}
+    <li class="secret-head">${L('— 隐藏款 —', '— Secret shops —')}</li>
+    ${SECRETS.map((x) => {
+      const open = secretOpen(x, n); // 还没解锁：盖着布的店 + 问号
+      const using = open && lookOf(cur.lv, n) === x.id;
+      return `<li class="${open ? 'past' : 'next secret'} ${using ? 'now' : ''}" ${open ? `data-act="level-view" data-lv="${x.id}" role="button"` : ''}>${open ? shopFront(x.id, '', true) : `<div class="storefront mini">${mysteryShop()}</div>`}
+        <div class="t"><b>${open ? L(...x.name) : '???'}</b>
+          <span class="small muted">${open ? L(...x.desc) : L('解锁之后才知道是什么', 'Unlock it to find out what it is')}</span>
+          <span class="small ${using ? 'here' : 'muted'}">${using ? L('正在用这家店面', 'In use') : open ? L('已解锁，点开可以换上', 'Unlocked: tap to use it') : secretHow(x)}</span></div></li>`;
     }).join('')}</ol>
     <div class="row" style="justify-content:center"><button class="btn primary" data-dlg="ok">${L('知道啦', 'Got it')}</button></div>
   </div>`, { onOpen: (d) => { d.querySelector('.roadmap ol').scrollTop = scrollTop; } });
@@ -518,17 +537,19 @@ async function viewShop() {
   const recent = bakes.slice(0, 6);
   const thumbs = await Promise.all(recent.map((b) => photoUrl(b.photoId)));
   const left = lv.next ? lv.next.at - bakes.length : 0;
+  const giftLeft = Math.max(0, ...SECRETS.filter((x) => x.bakes).map((x) => x.bakes - bakes.length));
 
   return `
   <div class="split home"><div class="col-a">
   <div class="greet"><div class="t"><h1>${greeting()}</h1><p>${sub}</p></div>
     <a class="btn icon ghost" href="#/settings" data-tool="gearshape" aria-label="${L('店务', 'Settings')}">${icon('gear')}</a></div>
-  ${shopFront(lookOf(lv.lv), shop.name)}
+  ${shopFront(lookOf(lv.lv, bakes.length), shop.name)}
   <div class="shop-meta">
     <button class="lv" data-act="roadmap" aria-label="${L('查看升级路线', 'See the road map')}">Lv.${lv.lv} ${lv.name} ›</button>
     <span class="small muted"> · ${L(`营业第 <span class="mono">${days}</span> 天`, `Day <span class="mono">${days}</span>`)}</span>
     ${lv.next ? `<div class="progress"><i style="width:${Math.round(lv.progress * 100)}%"></i></div>
-      <div class="small muted">${L(`再出炉 <b class="need">${left}</b> 次 → ${lv.next.name}`, `<b class="need">${left}</b> more bake${left > 1 ? 's' : ''} → ${lv.next.name}`)}</div>`
+      <div class="small muted">${L(`再出炉 <b class="need">${left}</b> 次 → ${lv.next.name}`, `<b class="need">${left}</b> more bake${left > 1 ? 's' : ''} → ${lv.next.name}`)}${SECRETS.some((x) => x.lv === lv.lv + 1) ? L(' + 隐藏款', ' + a secret shop') : ''}</div>`
+      : giftLeft > 0 ? `<div class="small muted">${L(`已经是最高等级啦 · 再出炉 <b class="need">${giftLeft}</b> 次有纪念礼物`, `Top level · <b class="need">${giftLeft}</b> more for an anniversary gift`)}</div>`
       : `<div class="small muted">${L('已经是最高等级啦', 'Top level reached')}</div>`}
   </div>
 
@@ -1244,13 +1265,26 @@ async function celebrate(count, shapeName) {
   const a = levelOf(count - 1);
   const b = levelOf(count);
   const up = b.lv > a.lv;
-  if (up) playLevelUp(); else playChime();
+  // 这一炉刚好解锁的隐藏款（升到 Lv.4 / 6 / 8，或者第 200 炉）
+  const fresh = SECRETS.filter((x) => secretOpen(x, count) && !secretOpen(x, count - 1));
+  if (up || fresh.length) playLevelUp(); else playChime();
   const left = b.next ? b.next.at - count : 0;
-  await dialog(`<div class="celebrate">${up ? shopFront(b.lv, state.shop.name, true) : `<div class="duo">${shape(shapeName)}${mascot('yay')}</div>`}
-    <h3>${up ? (b.hidden ? L(`解锁隐藏款！Lv.${b.lv} ${b.name}`, `Secret shop unlocked! Lv.${b.lv} ${b.name}`) : L(`小店升级啦！Lv.${b.lv} ${b.name}`, `Level up! Lv.${b.lv} ${b.name}`)) : L(`第 ${count} 炉出炉！`, `Batch #${count} is out!`)}</h3>
+  const gift = fresh.find((x) => x.bakes);
+  // 第 200 炉这种纪念日，第一张直接是礼物，不再先弹一张普通的出炉
+  if (up || !gift) await dialog(`<div class="celebrate">${up ? shopFront(b.lv, state.shop.name, true) : `<div class="duo">${shape(shapeName)}${mascot('yay')}</div>`}
+    <h3>${up ? L(`小店升级啦！Lv.${b.lv} ${b.name}`, `Level up! Lv.${b.lv} ${b.name}`) : L(`第 ${count} 炉出炉！`, `Batch #${count} is out!`)}</h3>
     ${up ? `<p class="small muted" style="margin-top:-4px">${lvDesc(b.lv - 1)}</p>` : ''}
     <p class="muted">${b.next ? L(`再出炉 ${left} 次，就能升级成「${b.next.name}」`, `${left} more to become “${b.next.name}”`) : L('已经是最高等级的小店了', 'Your shop is at the top level')}</p>
-    <button class="btn primary" data-dlg="ok">${L('好耶', 'Yay')}</button></div>`);
+    <button class="btn primary" data-dlg="ok">${fresh.length ? L('好耶，还有惊喜？', 'Yay! And…?') : L('好耶', 'Yay')}</button></div>`);
+  for (const x of fresh) {
+    const v = await dialog(`<div class="celebrate">${shopFront(x.id, state.shop.name, true)}
+      <h3>${x.bakes ? L(`出炉 ${x.bakes} 次纪念礼物！`, `A gift for ${x.bakes} bakes!`) : L('解锁隐藏款！', 'Secret shop unlocked!')}</h3>
+      <p><b>${L(...x.name)}</b></p>
+      <p class="small muted" style="margin-top:-4px">${L(...x.desc)}</p>
+      <p class="muted">${L('以后在升级路线里也能随时换上', 'You can switch to it any time from the road map')}</p>
+      <div class="row" style="justify-content:center"><button class="btn" data-dlg="later">${L('先不换', 'Not now')}</button><button class="btn primary" data-dlg="use">${L('换上这家店', 'Use this shop')}</button></div></div>`);
+    if (v === 'use') { state.shop.look = x.id; await saveShop(state.shop); rerender(); scheduleWidgetSync(); }
+  }
 }
 
 // ---------- 作品 ----------
@@ -1569,7 +1603,7 @@ async function syncWidgets() {
   const pic = (name, make) => { const key = `${name}-${t}`; if (!widgetSent.has(key)) draw[key] = make; return key; };
   const bread = (sh) => pic(`b-${String(sh || 'loaf').replace(/[^\w-]/g, '')}`, () => [shape(sh), 64, 64, 0.06]);
   const lv = levelOf(bakes.length);
-  const look = lookOf(lv.lv);
+  const look = lookOf(lv.lv, bakes.length);
   const sign = storefrontSign(look);
   const shopPic = pic(`shop${look}`, () => [storefront(look), 300, 300 * sign.vbH / sign.vbW]);
 
@@ -1686,16 +1720,17 @@ const actions = {
   async 'level-view'(el) {
     const lv = Number(el.dataset.lv);
     const listTop = el.closest('ol')?.scrollTop || 0;
-    const top = levelOf((await listBakes()).length).lv;
-    const using = lookOf(top) === lv;
+    const n = (await listBakes()).length;
+    const top = levelOf(n).lv;
+    const using = lookOf(top, n) === lv;
     // 已经在用这个：最高级就不用多一个按钮；不是最高级就给「换回跟着等级走」
     const pick = using
       ? (lv === top ? '' : `<button class="btn primary" data-dlg="follow">${L('换回最新的店面', 'Back to the latest shop')}</button>`)
       : `<button class="btn primary" data-dlg="use">${L('就用这个店面', 'Use this shop')}</button>`;
     const v = await dialog(`<div class="level-big">
       ${shopFront(lv, state.shop.name, true)}
-      <h3>Lv.${lv} ${lvName(lv - 1)}</h3>
-      <p class="small muted">${lvDesc(lv - 1)}</p>
+      <h3>${secretOf(lv) ? `${L('隐藏款', 'Secret')} · ${lookName(lv)}` : `Lv.${lv} ${lvName(lv - 1)}`}</h3>
+      <p class="small muted">${lookDesc(lv)}</p>
       <div class="row" style="justify-content:center"><button class="btn" data-dlg="back">${icon('back')} ${L('升级路线', 'Road map')}</button>${pick || `<button class="btn primary" data-dlg="ok">${L('好', 'OK')}</button>`}</div>
     </div>`);
     if (v === 'use' || v === 'follow') {
