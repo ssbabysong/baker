@@ -9,7 +9,7 @@ import SwiftUI
 
 private let appGroup = "group.com.ssbabysong.bakerydays"
 // 所有文字（中英文、数字）都用 App 的店铺字体
-private let titleFont = "YEFONTXiaoShiTou"
+private let titleFont = "XiaolaiSC"
 private let zh = Locale.preferredLanguages.first?.hasPrefix("zh") ?? true
 private func T(_ a: String, _ b: String) -> String { zh ? a : b }
 
