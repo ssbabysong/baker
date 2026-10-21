@@ -923,3 +923,14 @@ html.laptop .bake > .col-b > h2:first-child { margin-top: 4px; }
   --mono: 'Courier Prime', 'Courier New', 'AppFont', ui-monospace, monospace;
   font-family: var(--font);
 }
+
+/* 导入页：给 AI 助手的提示词 */
+.ai-help { margin-top: 18px; padding: 12px 14px; }
+.ai-help summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; font-family: var(--title); font-size: 15px; }
+.ai-help summary::-webkit-details-marker { display: none; }
+.ai-help summary::marker { content: ""; }
+.ai-help summary::after { content: '›'; margin-left: auto; color: var(--ink-soft); transition: transform .2s ease; }
+.ai-help[open] summary::after { transform: rotate(90deg); }
+.ai-help summary .ic { width: 18px; height: 18px; }
+.ai-help > p { margin: 10px 0 8px; }
+.ai-prompt { white-space: pre-wrap; font-family: var(--font); font-size: 13px; line-height: 1.6; color: var(--ink); background: var(--paper-2); border-radius: 12px; padding: 10px 12px; margin: 0 0 10px; max-height: 260px; overflow-y: auto; -webkit-user-select: text; user-select: text; }

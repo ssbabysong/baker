@@ -833,6 +833,55 @@ Steps:
 4. Shape and proof 1 h
 5. Bake at 250°C for 40 min`);
 
+// 给用户自己的 AI 助手（ChatGPT、豆包、Kimi、DeepSeek……）用的提示词：让它把随便什么样的食谱整理成这里最好认的格式
+const AI_PROMPT = () => L(`请把我发给你的面包 / 甜点食谱整理成下面这个格式。只输出整理好的配方，不要加任何其他说明。
+
+第一行：配方名
+
+材料：
+每行一种材料，写成「名称 数量单位」，比如「高筋面粉 250g」「鸡蛋 1个」「盐 适量」
+用量是范围的写成「牛奶 130-150g」
+材料分几组的（比如面团、馅料、表面装饰），先单独写一行组名加冒号，比如「馅料：」，再在下面列这一组的材料
+
+步骤：
+1. 每一步一行，前面用数字编号
+2. 这一步要等的时间直接写进句子里，比如「一次发酵 60分钟」「180°C 烤 25分钟」，发酵、静置、冷藏、烘烤都写上时间
+
+小贴士：
+（可选）其他说明写在这里
+
+要求：
+- 重量尽量换算成克（g），液体用克或毫升（ml）
+- 温度用摄氏度（°C）
+- 不要用表格、加粗、表情符号
+- 原文是英文或其他语言时，翻译成中文
+
+食谱原文：
+`, `Please rewrite the bread / pastry recipe I send you in exactly this format. Output only the recipe, with no other commentary.
+
+First line: the recipe name
+
+Ingredients:
+One ingredient per line as "amount unit name", e.g. "250g bread flour", "1 egg", "salt to taste"
+For a range write "130-150g milk"
+If the ingredients come in groups (dough, filling, topping…), put the group name on its own line ending with a colon, e.g. "Filling:", then list that group's ingredients under it
+
+Steps:
+1. One step per line, numbered
+2. Put any waiting time right in the sentence, e.g. "Bulk ferment 60 min", "Bake at 180°C for 25 min" — give a time for every proof, rest, chill and bake
+
+Notes:
+(optional) anything else goes here
+
+Rules:
+- Use grams (g) for weights where possible; grams or millilitres (ml) for liquids
+- Temperatures in °C
+- No tables, bold text or emoji
+- If the original is in another language, translate it into English
+
+Original recipe:
+`);
+
 function viewImport() {
   return `
   <div class="topbar"><a class="btn icon ghost" href="#/recipes" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1>${L('导入配方', 'Import a recipe')}</h1></div>
@@ -844,7 +893,14 @@ function viewImport() {
     <label class="btn">${icon('upload')} ${L('文件', 'File')}<input type="file" accept=".txt,.md,.json,text/plain,application/json" hidden data-act-change="import-file"></label>
   </div>
   <p class="small muted" style="margin-top:18px">${L('小提示：写上「材料」「步骤」这样的小标题会认得更准；时间写成「30分钟」「1.5小时」「45 min」都可以。',
-    'Tip: headings like “Ingredients” and “Steps” help; times like “30 min”, “1.5 h” or “1h30m” all work.')}</p>`;
+    'Tip: headings like “Ingredients” and “Steps” help; times like “30 min”, “1.5 h” or “1h30m” all work.')}</p>
+  <details class="card ai-help">
+    <summary>${icon('paste')} ${L('配方太乱？让你的 AI 助手先整理一下', 'Messy recipe? Let your AI assistant tidy it first')}</summary>
+    <p class="small muted">${L('截图、外文食谱、视频文案、长篇笔记都可以：把下面这段话复制给 ChatGPT、豆包、Kimi、DeepSeek 之类的 AI 助手，后面贴上食谱原文（或者发截图），再把它整理好的结果粘贴到上面的框里。',
+      'Screenshots, recipes in other languages, video captions, long blog posts: copy the text below into ChatGPT or any AI assistant, add the recipe (or a screenshot) after it, then paste its answer into the box above.')}</p>
+    <pre class="ai-prompt">${esc(AI_PROMPT())}<span class="muted">${L('（在这里贴上食谱原文或截图）', '(paste the recipe or a screenshot here)')}</span></pre>
+    <button class="btn block" data-act="copy-ai-prompt">${icon('paste')} ${L('复制这段话', 'Copy the prompt')}</button>
+  </details>`;
 }
 
 // =====================================================================
@@ -1800,6 +1856,10 @@ const actions = {
     state.draft = null; state.draftFor = null;
     toast(L('配方已上架', 'Recipe is on the shelf'));
     go(`#/r/${saved.id}`);
+  },
+  async 'copy-ai-prompt'() {
+    try { await navigator.clipboard.writeText(AI_PROMPT()); toast(L('已复制，去 AI 助手那里粘贴吧', 'Copied: paste it into your AI assistant')); }
+    catch { toast(L('复制失败，长按上面的文字手动复制', 'Couldn’t copy: long-press the text to copy it')); }
   },
   'parse-import'() {
     const text = document.getElementById('import-text').value;
