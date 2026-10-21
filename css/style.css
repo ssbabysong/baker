@@ -15,6 +15,8 @@
   font-family: 'AppFont';
   src: url('../fonts/xiaonaipao.ttf') format('truetype');
   font-display: swap;
+  /* 这款字在字框里画得小（字身约为小石头的 9 成），笔画又细：整体放大 15%，和原来的字号看起来一样大 */
+  size-adjust: 115%;
 }
 
 :root {
