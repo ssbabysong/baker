@@ -936,7 +936,8 @@ function viewBake(id) {
   }).join('');
 
   const others = state.sessions.filter((x) => x.id !== s.id);
-  return `
+  // 烘焙页和配方详情页一样用猫啃珠圆体：外面包一层 .rfont（display: contents，不影响排版）
+  return `<div class="rfont">
   <div class="bake-head">
     <a class="btn icon ghost" href="#/" aria-label="${L('返回', 'Back')}">${icon('back')}</a>
     <div class="t"><b>${esc(r.name)}</b><span>${L(`<span class="mono">${fmtTime(s.startedAt)}</span> 开烤 · 已 <span data-elapsed>${fmtDur(Date.now() - s.startedAt)}</span>`,
@@ -962,7 +963,7 @@ function viewBake(id) {
     <button class="btn crust block" data-act="go-finish">${icon('camera')} ${L('出炉啦！拍照记录', 'It’s out! Take a photo')}</button>
     <button class="btn ghost block small danger" data-act="abandon">${L('放弃这一炉', 'Give up this batch')}</button>
   </div>
-  ${ed ? '' : '</div></div>'}`;
+  ${ed ? '' : '</div></div>'}</div>`;
 }
 
 const clockText = (t) => (t.done ? L('时间到！', 'Time’s up!') : formatClock(remainingMs(t)));

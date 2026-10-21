@@ -6,7 +6,7 @@
 - 授权：多家字体站依据作者声明标注为「免费商用」；字体文件内的说明写着「本字体由深圳仪品信息技术有限公司制作 需授权请联系了解授权协议」。用于 app 内嵌之类的用途，建议向也字工厂确认。
 
 
-`recipefont.ttf` 是「猫啃珠圆体」（MaokenZhuyuanTi 1.000，基于龙珠体 / RocknRoll 圆润化），只在配方详情页用。
+`recipefont.ttf` 是「猫啃珠圆体」（MaokenZhuyuanTi 1.000，基于龙珠体 / RocknRoll 圆润化），只在配方详情页和烘焙页用。
 
 - 来源：猫啃网 https://www.maoken.com/
 - 授权：SIL Open Font License 1.1，全文见同目录的 `OFL.txt`。允许嵌入 app 并随 app 分发，不能单独售卖字体文件。

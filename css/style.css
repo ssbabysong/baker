@@ -9,7 +9,7 @@
        url('../fonts/shopfont.ttf') format('truetype');
   font-display: swap;
 }
-/* 配方详情页单独用猫啃珠圆体（SIL OFL 1.1，授权见 fonts/OFL.txt） */
+/* 配方详情页和烘焙页用猫啃珠圆体（SIL OFL 1.1，授权见 fonts/OFL.txt） */
 @font-face {
   font-family: 'RecipeFont';
   src: local('MaokenZhuyuanTi'), url('../fonts/recipefont.ttf') format('truetype');
@@ -773,8 +773,8 @@ dialog button:focus:not(:focus-visible), dialog [data-dlg]:focus { outline: none
     padding-right: calc(env(safe-area-inset-right) + 32px);
   }
   .greet, .topbar { padding-right: 0; }
-  #app > *, .under > * { max-width: 600px; margin-left: auto; margin-right: auto; }
-  #app.wide > *, .under.wide > * { max-width: 1040px; }
+  #app > *, .under > *, #app > .rfont > *, .under > .rfont > * { max-width: 600px; margin-left: auto; margin-right: auto; }
+  #app.wide > *, .under.wide > *, #app.wide > .rfont > *, .under.wide > .rfont > * { max-width: 1040px; }
   #app.wide > .topbar { margin-bottom: 4px; }
 
   .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 0 48px; align-items: start; }
@@ -854,7 +854,7 @@ html.native-tabs .topbar:not(:has(> :not(a.btn.icon:first-child):not(h1:empty):n
 /* ---------- 折叠屏半折（html.laptop）：烘焙页分上下两截 ----------
    上半截（折痕以上，立着的那半）固定显示正在进行的这一步：动画在左，步骤、按钮在右；
    下半截（平放的那半）是称料、全部步骤这些，自己往上滚，滚到折痕就钻到上半截下面，上半截不跟着动 */
-html.laptop #app:has(> .split.bake) { padding-top: calc(var(--fold-bottom) + 12px); }
+html.laptop #app:has(> .split.bake, > .rfont > .split.bake) { padding-top: calc(var(--fold-bottom) + 12px); }
 html.laptop .split.bake { display: block; }
 html.laptop .split.bake > .col-a {
   /* 一直盖到折痕下沿：滚上来的内容不会从折痕那条缝里露出来；内容只排在折痕以上 */
@@ -909,8 +909,9 @@ html.laptop .bake > .col-b > h2:first-child { margin-top: 4px; }
 /* 隐藏款：灯罩里暖黄的光 */
 .store .glow { fill: #f6d27a; }
 
-/* 配方详情页：整页换成猫啃珠圆体，数字的打字机字体里中文也落到它 */
-.split.recipe {
+/* 配方详情页和烘焙页：整页换成猫啃珠圆体，数字的打字机字体里中文也落到它 */
+.rfont { display: contents; }
+.split.recipe, .rfont {
   --font: 'RecipeFont', 'ShopFont', 'PingFang SC', 'Noto Sans SC', sans-serif;
   --title: 'RecipeFont', 'ShopFont', 'PingFang SC', sans-serif;
   --mono: 'Courier Prime', 'Courier New', 'RecipeFont', ui-monospace, monospace;
