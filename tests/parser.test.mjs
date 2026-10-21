@@ -198,3 +198,28 @@ test('parseRecipeText: 标题后面冒号直接跟内容，前缀当分组', () 
   assert.equal(r.steps.length, 2);
   assert.equal(r.steps[0].minutes, 10);
 });
+
+test('parseRecipeText: AI 整理出来的格式（组名和材料同一行、空格隔开、带 * 的步骤和小贴士）', () => {
+  const r = parseRecipeText(`栗子碱水包
+材料：
+面团： 中筋面粉 500g 水 300g 即发干酵母 3g（或鲜酵母 9g） 无盐黄油 25g
+栗子馅： 栗子泥 240g
+碱水： 冷水 1000g 食品级氢氧化钠 30-40g
+步骤：
+
+* 混合面团材料：将中筋面粉和水放入厨师机，低速搅拌3分钟。
+* 在72-75°F环境下进行第一次发酵40-60分钟。
+* 将发酵好的面团放入冰箱冷藏15-20分钟。
+* 烤箱提前充分预热至392-410°F。
+* 以392-410°F烘烤13-17分钟。
+
+小贴士：
+
+* 碱水必须使用食品级氢氧化钠。`);
+  assert.deepEqual(r.ingredients.map((i) => [i.name, i.amount, i.unit, i.note]), [
+    ['中筋面粉', 500, 'g', '面团'], ['水', 300, 'g', '面团'], ['即发干酵母', 3, 'g', '或鲜酵母 9g'], ['无盐黄油', 25, 'g', '面团'],
+    ['栗子泥', 240, 'g', '栗子馅'], ['冷水', 1000, 'g', '碱水'], ['食品级氢氧化钠', 30, 'g', '30-40g'],
+  ]);
+  assert.deepEqual(r.steps.map((s) => [s.minutes, s.kind]), [[3, 'knead'], [60, 'ferment'], [20, 'chill'], [null, 'other'], [17, 'bake']]);
+  assert.equal(r.notes, '碱水必须使用食品级氢氧化钠。');
+});

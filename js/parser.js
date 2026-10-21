@@ -96,9 +96,14 @@ function round(n) {
 
 export function guessStepKind(text) {
   const t = String(text || '').toLowerCase();
-  if (/发酵|醒发|ferment|proof|rise|bulk/.test(t)) return 'ferment';
-  if (/冷藏|冷冻|chill|fridge|refrigerat/.test(t)) return 'chill';
-  if (/烤|烘|bake|oven/.test(t)) return 'bake';
+  const minutes = parseDuration(t);
+  // 「把发酵好的面团放进冰箱冷藏」是冷藏，不是发酵：真正的发酵会写「进行发酵 / 一次发酵 / 发酵至……」
+  const realFerment = /(进行|开始|一次|二次|最后|第[一二三]次|中种|室温)\s*发酵|发酵\s*(至|到|\d)|醒发|ferment|proof|rise|bulk/.test(t);
+  if (/冷藏|冷冻|冰箱|chill|fridge|refrigerat|freez/.test(t) && !realFerment) return 'chill';
+  if (realFerment || (/发酵/.test(t) && !/发酵(好|后)的?/.test(t))) return 'ferment';
+  if (/冷藏|冷冻|冰箱|chill|fridge|refrigerat|freez/.test(t)) return 'chill';
+  // 只是提到「烤」不算烘烤：要真的写了烤多久，预热烤箱也不算
+  if (/烤|烘|bake|oven/.test(t) && minutes != null && minutes >= 1 && !/预热|preheat/.test(t)) return 'bake';
   if (/静置|松弛|休息|rest|autolyse|autolyze|水合/.test(t)) return 'rest';
   if (/揉|搅拌|混合|厨师机|打面|面包机|knead|mix|fold|折叠|stand mixer/.test(t)) return 'knead';
   return 'other';
@@ -148,6 +153,27 @@ function looksLikeIngredient(line) {
   return new RegExp(`${NUM}\\s*(${UNIT_RE})`, 'i').test(raw) && parseDuration(raw) == null;
 }
 
+// 一行里用空格连着写了好几样材料（AI 常这么排）：「中筋面粉 500g 水 300g 即发干酵母 3g（或鲜酵母 9g）」。
+// 括号里的空格先保护起来，然后按「名字 + 用量」一段一段切开；只处理名字在前、至少两个用量的行
+const AMOUNT_TOKEN = new RegExp(`^${NUM}(?:\\s*[-~～–—]\\s*\\d+(?:\\.\\d+)?)?\\s*(?:${UNIT_RE})?(?:[（(].*)?$`, 'i');
+function splitInline(line) {
+  const raw = line.replace(LIST_MARK, '').trim();
+  const guarded = raw.replace(/[（(][^)）]*[)）]/g, (m) => m.replace(/\s+/g, '\u0000'));
+  const tokens = guarded.split(/\s+/).filter(Boolean).map((t) => t.replace(/\u0000/g, ' '));
+  if (tokens.length < 4 || AMOUNT_TOKEN.test(tokens[0])) return null;
+  const parts = [];
+  let cur = [];
+  let hasAmt = false;
+  for (const t of tokens) {
+    if (/^[（(]/.test(t) && parts.length && !cur.length) { parts[parts.length - 1] += ` ${t}`; continue; }
+    if (hasAmt && !AMOUNT_TOKEN.test(t)) { parts.push(cur.join(' ')); cur = []; hasAmt = false; }
+    cur.push(t);
+    if (AMOUNT_TOKEN.test(t)) hasAmt = true;
+  }
+  if (cur.length) parts.push(cur.join(' '));
+  return parts.length >= 2 && parts.every(looksLikeIngredient) ? parts : null;
+}
+
 export function parseStep(line) {
   const text = line.replace(LIST_MARK, '').trim();
   if (!text) return null;
@@ -184,12 +210,14 @@ export function parseRecipeText(input) {
 
   for (let line of lines) {
     if (!line) continue;
-    const sec = sectionOf(line);
+    let sec = sectionOf(line);
+    // 「* 混合面团材料：将面粉……」这种是列表里的一条正文，冒号前面恰好像小标题，不能当成新的一段
+    if (sec && sec.rest && (LIST_MARK.test(line) || (mode === 'step' && sec.mode === 'ing'))) sec = null;
     if (sec) {
       mode = sec.mode;
       group = sec.mode === 'ing' ? sec.group : '';
       if (!sec.rest) continue;
-      if (mode === 'note') { notes.push(sec.rest); continue; }
+      if (mode === 'note') { notes.push(sec.rest.replace(LIST_MARK, '')); continue; }
       line = sec.rest; // 冒号后面直接写了内容：当成这一段的第一行接着处理
     }
 
@@ -198,15 +226,23 @@ export function parseRecipeText(input) {
       continue;
     }
 
-    if (mode === 'note') { notes.push(line); continue; }
+    if (mode === 'note') { notes.push(line.replace(LIST_MARK, '')); continue; }
     // 材料里的小分组：「面包体（10个）」「馅料」「表面装饰：」，记下来当后面材料的备注
+    // 「栗子馅： 栗子泥 240g」：组名和这一组的材料写在同一行
+    if (mode === 'ing') {
+      const gm = line.replace(LIST_MARK, '').match(/^([^:：\d]{1,12})[:：]\s*(.+)$/);
+      if (gm && looksLikeIngredient(gm[2].split(/\s+/).slice(0, 2).join(' ')) || (gm && /\d/.test(gm[2]) && !/[，。,.]/.test(gm[2]))) {
+        group = gm[1].replace(/[（(].*?[)）]/g, '').trim();
+        line = gm[2];
+      }
+    }
     if (mode === 'ing' && isGroupHeader(line)) { group = line.replace(/[（(].*?[)）]/g, '').replace(/[:：]\s*$/, '').trim(); continue; }
     const asIng = mode === 'ing' || (mode == null && looksLikeIngredient(line));
     if (asIng) {
       // 同一行里写了多个材料，比如 "面粉 250g、水 160g"
       const parts = line.split(/[，,、;；]\s*/).filter(Boolean);
       const splittable = parts.length > 1 && parts.every(looksLikeIngredient);
-      for (const p of splittable ? parts : [line]) {
+      for (const p of splittable ? parts : (splitInline(line) || [line])) {
         const ing = parseIngredient(p);
         if (ing && group && !ing.note) ing.note = group;
         if (ing) recipe.ingredients.push(ing);
