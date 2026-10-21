@@ -889,8 +889,7 @@ function viewImport() {
     'Paste a whole recipe from anywhere. I’ll pick out the <span class="scribble">ingredients and amounts</span> and <span class="scribble">each step with its time</span>; you can tweak it after.')}</p>
   <textarea class="input tall" id="import-text" placeholder="${esc(IMPORT_EXAMPLE())}"></textarea>
   <div class="row" style="margin-top:12px">
-    <button class="btn primary grow" data-act="parse-import">${icon('check')} ${L('认一下', 'Read it')}</button>
-    <label class="btn">${icon('upload')} ${L('文件', 'File')}<input type="file" accept=".txt,.md,.json,text/plain,application/json" hidden data-act-change="import-file"></label>
+    <button class="btn primary block" data-act="parse-import">${icon('check')} ${L('认一下', 'Read it')}</button>
   </div>
   <p class="small muted" style="margin-top:18px">${L('小提示：写上「材料」「步骤」这样的小标题会认得更准；时间写成「30分钟」「1.5小时」「45 min」都可以。',
     'Tip: headings like “Ingredients” and “Steps” help; times like “30 min”, “1.5 h” or “1h30m” all work.')}</p>
@@ -2015,19 +2014,6 @@ const changeActions = {
   },
 
   'mode'(el) { const s = routeSession(); if (s) { finishDraft(s.id).mode = el.value; persistSessions(); } },
-  async 'import-file'(el) {
-    const file = el.files?.[0];
-    if (!file) return;
-    const text = await file.text();
-    if (/\.json$/i.test(file.name)) {
-      try {
-        const data = JSON.parse(text);
-        if (data.app === 'baker') { await importAll(data); toast(L('备份已恢复', 'Backup restored')); go('#/recipes'); return; }
-        if (data.name) { state.draft = { ...blankRecipe(), ...data, id: undefined }; state.draftFor = 'new'; go('#/edit/new'); return; }
-      } catch { /* 不是 JSON，当文字处理 */ }
-    }
-    document.getElementById('import-text').value = text;
-  },
   async 'import-all'(el) {
     const file = el.files?.[0];
     if (!file) return;
