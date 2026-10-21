@@ -1,5 +1,6 @@
-Copyright 2020-2024 LXGW (https://github.com/lxgw/kose-font)
-Copyright 2014 Nozomi Seto (https://ja.osdn.net/projects/setofont/)
+Copyright 2022-2023 LongZhuTi Project Authors.
+Copyright 2020 The RocknRoll Project Authors (https://github.com/fontworks-fonts/RocknRoll)
+猫啃珠圆体 MaokenZhuyuanTi (https://www.maoken.com/)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:

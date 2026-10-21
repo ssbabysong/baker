@@ -2,11 +2,17 @@
    奶油纸底 + 可可色文字 + 砖红线稿 + 蜡笔色块（面包黄 / 雾蓝 / 橄榄绿）
    数字和日期用打字机字体，英文小注用手写体 */
 
-/* 店铺字体：小赖字体（随 app 一起提供，见 fonts/README.md） */
+/* 店铺字体：也字工厂小石头（随 app 一起提供，见 fonts/README.md） */
 @font-face {
   font-family: 'ShopFont';
-  src: local('Xiaolai SC'), local('XiaolaiSC'),
+  src: local('也字工厂小石头'), local('YEFONTXiaoShiTou'),
        url('../fonts/shopfont.ttf') format('truetype');
+  font-display: swap;
+}
+/* 配方详情页单独用猫啃珠圆体（SIL OFL 1.1，授权见 fonts/OFL.txt） */
+@font-face {
+  font-family: 'RecipeFont';
+  src: local('MaokenZhuyuanTi'), url('../fonts/recipefont.ttf') format('truetype');
   font-display: swap;
 }
 
@@ -38,7 +44,7 @@
   --hair: rgba(74, 58, 46, .14);              /* 细分隔线 / 轻描边 */
   --font: 'ShopFont', 'PingFang SC', 'Noto Sans SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
   --title: 'ShopFont', 'ZCOOL KuaiLe', 'PingFang SC', 'Noto Sans SC', sans-serif;
-  --mono: 'Courier Prime', 'Courier New', 'ShopFont', ui-monospace, monospace;   /* 中文字落到小赖字体 */
+  --mono: 'Courier Prime', 'Courier New', 'ShopFont', ui-monospace, monospace;   /* 中文字落到小石头 */
   --tabbar-h: 64px;
   --glass: rgba(255, 252, 245, .58);          /* 菜单栏：半透明玻璃 */
   --glass-edge: rgba(255, 255, 255, .75);     /* 玻璃边缘的高光 */
@@ -442,7 +448,7 @@ dialog[open]:has(> .roadmap) { display: flex; flex-direction: column; overflow: 
   background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--doodle) 50%, transparent) 0 4px, transparent 4px 8px); }
 .steps .meta { margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .steps .meta:empty { display: none; }
-/* 步骤正文：还是店里的小赖字体，但用浅一点的可可色；数字用最深的墨色，这样只有数字跳出来 */
+/* 步骤正文：还是店里的小石头字体，但用浅一点的可可色；数字用最深的墨色，这样只有数字跳出来 */
 .steps .stext { min-width: 0; overflow-wrap: anywhere; font-size: 15px; line-height: 1.7; letter-spacing: .02em; color: color-mix(in srgb, var(--ink) 62%, var(--paper)); }
 b.num { font-weight: 400; color: var(--ink); }
 /* 每一步的类型：发酵 / 烘烤 / 揉面 / 整形 / 冷却 / 装饰，各一个颜色，编号圆圈也跟着上色 */
@@ -902,3 +908,11 @@ html.laptop .bake > .col-b > h2:first-child { margin-top: 4px; }
 
 /* 隐藏款：灯罩里暖黄的光 */
 .store .glow { fill: #f6d27a; }
+
+/* 配方详情页：整页换成猫啃珠圆体，数字的打字机字体里中文也落到它 */
+.split.recipe {
+  --font: 'RecipeFont', 'ShopFont', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  --title: 'RecipeFont', 'ShopFont', 'PingFang SC', sans-serif;
+  --mono: 'Courier Prime', 'Courier New', 'RecipeFont', ui-monospace, monospace;
+  font-family: var(--font);
+}

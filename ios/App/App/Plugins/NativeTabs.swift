@@ -145,7 +145,7 @@ final class TabsController: UITabBarController, UITabBarControllerDelegate {
         ? UIColor(red: 0xef / 255, green: 0xe6 / 255, blue: 0xd8 / 255, alpha: 1)
         : UIColor(red: 0x33 / 255, green: 0x29 / 255, blue: 0x1f / 255, alpha: 1) }
 
-    /// 店里的字体（小赖字体）：用网页那份 public/fonts/shopfont.ttf，底部菜单的文字用它，和网页一致
+    /// 店里的字体（也字工厂小石头）：用网页那份 public/fonts/shopfont.ttf，底部菜单的文字用它，和网页一致
     private static var shopFontDescriptor: UIFontDescriptor? = {
         guard let url = Bundle.main.url(forResource: "shopfont", withExtension: "ttf", subdirectory: "public/fonts") else { return nil }
         CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)

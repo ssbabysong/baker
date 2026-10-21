@@ -1,9 +1,10 @@
 // 离线缓存：app 外壳预缓存，其余（比如字体）用到时顺手缓存。
-const CACHE = 'baker-v113';
+const CACHE = 'baker-v114';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/app.js', 'js/store.js', 'js/parser.js', 'js/sketch.js', 'js/timers.js', 'js/i18n.js', 'js/catalog.js', 'catalog/recipes.json',
   'fonts/shopfont.ttf',
+  'fonts/recipefont.ttf',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 
