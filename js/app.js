@@ -81,7 +81,7 @@ function stepKind(st, i, steps) {
 const kindTag = (k) => (kindLabel(k) ? `<span class="kind k-${k}">${kindLabel(k)}</span>` : '');
 
 // 步骤文字：只把数字（时间、温度、份数、用量）加粗
-const NUM_RE = /(\d+(?:\.\d+)?(?:\s*[-~～]\s*\d+(?:\.\d+)?)?\s*(?:°\s*C|℃|度|%|％|分钟|分|小时|秒|倍|份|个|克|g|kg|ml|min|h(?![a-z])|s(?![a-z]))?)/gi;
+const NUM_RE = /(\d+(?:\.\d+)?(?:\s*[-~～]\s*\d+(?:\.\d+)?)?\s*(?:°\s*[CF]|℃|℉|度|%|％|分钟|分|小时|秒|倍|份|个|克|g|kg|ml|min|h(?![a-z])|s(?![a-z]))?)/gi;
 const stepHtml = (text) => esc(text).replace(NUM_RE, '<b class="num">$1</b>');
 
 // 店铺等级：私房烘焙的成长路线，出炉次数越多，小店越像样
@@ -853,14 +853,14 @@ const AI_PROMPT = () => L(`请把我发给你的面包 / 甜点食谱整理成�
 
 步骤：
 1. 每一步一行，前面用数字编号
-2. 这一步要等的时间直接写进句子里，比如「一次发酵 60分钟」「180°C 烤 25分钟」，发酵、静置、冷藏、烘烤都写上时间
+2. 这一步要等的时间直接写进句子里，比如「一次发酵 60分钟」「350°F 烤 25分钟」，发酵、静置、冷藏、烘烤都写上时间
 
 小贴士：
 （可选）其他说明写在这里
 
 要求：
 - 重量尽量换算成克（g），液体用克或毫升（ml）
-- 温度用摄氏度（°C）
+- 温度用华氏度（°F），原文是摄氏度的换算成华氏度
 - 不要用表格、加粗、表情符号
 - 原文是英文或其他语言时，翻译成中文
 
@@ -876,14 +876,14 @@ If the ingredients come in groups (dough, filling, topping…), put the group na
 
 Steps:
 1. One step per line, numbered
-2. Put any waiting time right in the sentence, e.g. "Bulk ferment 60 min", "Bake at 180°C for 25 min" — give a time for every proof, rest, chill and bake
+2. Put any waiting time right in the sentence, e.g. "Bulk ferment 60 min", "Bake at 350°F for 25 min" — give a time for every proof, rest, chill and bake
 
 Notes:
 (optional) anything else goes here
 
 Rules:
 - Use grams (g) for weights where possible; grams or millilitres (ml) for liquids
-- Temperatures in °C
+- Temperatures in °F (convert from °C if needed)
 - No tables, bold text or emoji
 - If the original is in another language, translate it into English
 
