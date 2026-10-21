@@ -436,7 +436,7 @@ dialog[open]:has(> .roadmap) { display: flex; flex-direction: column; overflow: 
 .ing-table .note { color: var(--ink-soft); font-size: 13px; }
 
 .steps { list-style: none; margin: 0; padding: 0; counter-reset: s; }
-.steps > li { counter-increment: s; position: relative; padding: 4px 0 18px 42px; min-height: 52px; }
+.steps > li { counter-increment: s; position: relative; padding: 3px 0 26px 42px; min-height: 52px; }
 .steps > li::before {
   content: counter(s); position: absolute; left: 0; top: 3px; width: 28px; height: 28px;
   border: 1.8px solid var(--doodle); color: var(--doodle); border-radius: 50% 45% 52% 48%;
@@ -448,16 +448,16 @@ dialog[open]:has(> .roadmap) { display: flex; flex-direction: column; overflow: 
   background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--doodle) 50%, transparent) 0 4px, transparent 4px 8px); }
 .steps .meta { margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .steps .meta:empty { display: none; }
-/* 步骤正文：还是店里的小石头字体，但用浅一点的可可色；数字用最深的墨色，这样只有数字跳出来 */
-.steps .stext { min-width: 0; overflow-wrap: anywhere; font-size: 15px; line-height: 1.7; letter-spacing: .02em; color: color-mix(in srgb, var(--ink) 62%, var(--paper)); }
-b.num { font-weight: 400; color: var(--ink); }
+/* 步骤正文：一种颜色读到底（珠圆体本身就粗，再分深浅色反而花），行距放宽一点好扫读；数字不再单独变色 */
+.steps .stext { min-width: 0; overflow-wrap: anywhere; font-size: 15px; line-height: 1.85; letter-spacing: .03em; color: color-mix(in srgb, var(--ink) 82%, var(--paper)); }
+b.num { font-weight: 400; color: inherit; }
 /* 每一步的类型：发酵 / 烘烤 / 揉面 / 整形 / 冷却 / 装饰，各一个颜色，编号圆圈也跟着上色 */
 /* 只有两种「等」的步骤上色：发酵抹茶绿、烘烤朱红；揉面、整形、冷却、装饰都只是一个灰色小字标签 */
 .k-ferment { --k: #7d9150; } .k-bake { --k: var(--shu); }
 .kind { display: inline-flex; align-items: center; font-size: 12px; line-height: 20px; padding: 0 9px; border-radius: 999px;
   color: var(--ink-soft); border: 1px solid var(--hair); }
 .k-ferment .kind, .kind.k-ferment, .k-bake .kind, .kind.k-bake { color: var(--k); background: color-mix(in srgb, var(--k) 12%, transparent); border-color: color-mix(in srgb, var(--k) 35%, transparent); }
-.steps > li.k-ferment::before, .steps > li.k-bake::before { border-color: var(--k); color: var(--k); }
+/* 编号圆圈统一一个颜色，类型只看小标签，不然一列彩色圆圈很乱 */
 .bake-steps > li.current.k-ferment::before, .bake-steps > li.current.k-bake::before { background: var(--k); border-color: var(--k); color: #fff; }
 .notes { white-space: pre-wrap; }
 
@@ -529,7 +529,7 @@ textarea.input.tall { min-height: 260px; }
 .bake-steps > li.current::before { background: var(--shu); color: #fff; border-color: var(--shu); }
 .bake-steps > li.done { color: var(--ink-soft); }
 .bake-steps > li.done::before { content: '✓'; }
-.bake-steps > li.done .stext, .bake-steps > li.done b.num { color: color-mix(in srgb, var(--ink) 38%, var(--paper)); }
+.bake-steps > li.done .stext { color: color-mix(in srgb, var(--ink) 38%, var(--paper)); }
 
 @keyframes shake { from { transform: rotate(-.6deg); } to { transform: rotate(.6deg); } }
 
