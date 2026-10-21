@@ -929,6 +929,7 @@ html.laptop .bake > .col-b > h2:first-child { margin-top: 4px; }
 .ai-help summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; font-family: var(--title); font-size: 15px; }
 .ai-help summary::-webkit-details-marker { display: none; }
 .ai-help summary::marker { content: ""; }
+.ai-help > summary::before { content: none; }
 .ai-help summary::after { content: '›'; margin-left: auto; color: var(--ink-soft); transition: transform .2s ease; }
 .ai-help[open] summary::after { transform: rotate(90deg); }
 .ai-help summary .ic { width: 18px; height: 18px; }
