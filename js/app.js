@@ -128,8 +128,8 @@ const lookOf = (lv, n) => {
 
 // 店名在招牌字体里有多宽（以字号为 1 计）：用画布量真字体；字体还没加载好就先用备用字体量，加载好以后重画一遍
 const signCanvas = document.createElement('canvas').getContext('2d');
-let signFontReady = document.fonts?.check?.('16px ShopFont') ?? true;
-if (!signFontReady) document.fonts.load('16px ShopFont').then(() => { signFontReady = true; rerender(); }).catch(() => {});
+let signFontReady = document.fonts?.check?.('16px RecipeFont') ?? true;
+if (!signFontReady) document.fonts.load('16px RecipeFont').then(() => { signFontReady = true; rerender(); }).catch(() => {});
 const measure = (t) => { signCanvas.font = `100px ${getComputedStyle(document.documentElement).getPropertyValue('--title') || 'sans-serif'}`; return signCanvas.measureText(t); };
 const textEm = (t) => measure(t).width / 100;
 // 字身要往下挪多少（以字号为 1 计）才在招牌上看着正好居中：量出字形实际占的上下范围，和一行的正中间比。
