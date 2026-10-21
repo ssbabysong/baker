@@ -452,16 +452,16 @@ dialog[open]:has(> .roadmap) { display: flex; flex-direction: column; overflow: 
   background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--doodle) 35%, transparent) 0 4px, transparent 4px 8px); }
 .steps .meta { margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 /* 步骤里的计时标签：字调淡，只当提示，不跟正文抢 */
-.steps .meta .chip.time { color: var(--ink-soft); font-size: 13px; }
+.steps .meta .chip.time { color: var(--ink-soft); font-size: 14px; }
 .steps .meta .chip.time .muted { opacity: .7; }
 .steps .meta:empty { display: none; }
 /* 步骤正文：一种颜色读到底（再分深浅色反而花），行距放宽一点好扫读；数字不再单独变色 */
-.steps .stext { min-width: 0; overflow-wrap: anywhere; font-size: 15px; line-height: 1.85; letter-spacing: .03em; color: color-mix(in srgb, var(--ink) 82%, var(--paper)); }
+.steps .stext { min-width: 0; overflow-wrap: anywhere; font-size: 17px; line-height: 1.8; letter-spacing: 0; color: color-mix(in srgb, var(--ink) 82%, var(--paper)); }
 b.num { font-weight: 400; color: inherit; }
 /* 每一步的类型：发酵 / 烘烤 / 揉面 / 整形 / 冷却 / 装饰，各一个颜色，编号圆圈也跟着上色 */
 /* 只有两种「等」的步骤上色：发酵抹茶绿、烘烤朱红；揉面、整形、冷却、装饰都只是一个灰色小字标签 */
 .k-ferment { --k: #7d9150; } .k-bake { --k: var(--shu); }
-.kind { display: inline-flex; align-items: center; font-size: 12px; line-height: 20px; padding: 0 9px; border-radius: 999px;
+.kind { display: inline-flex; align-items: center; font-size: 13px; line-height: 22px; padding: 0 10px; border-radius: 999px;
   color: var(--ink-soft); border: 1px solid var(--hair); }
 .k-ferment .kind, .kind.k-ferment, .k-bake .kind, .kind.k-bake { color: var(--k); background: color-mix(in srgb, var(--k) 12%, transparent); border-color: color-mix(in srgb, var(--k) 35%, transparent); }
 /* 编号圆圈统一一个颜色，类型只看小标签，不然一列彩色圆圈很乱 */
