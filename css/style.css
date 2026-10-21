@@ -9,7 +9,7 @@
        url('../fonts/shopfont.ttf') format('truetype');
   font-display: swap;
 }
-/* 全 app 的中文用小赖字体（SIL OFL 1.1，授权见 fonts/OFL.txt）；小石头留作后备，iOS 底部菜单和小组件还在用它 */
+/* 配方详情页和烘焙页用小赖字体（SIL OFL 1.1，授权见 fonts/OFL.txt），其他地方用小石头 */
 @font-face {
   font-family: 'AppFont';
   src: url('../fonts/xiaolai.woff2') format('woff2');
@@ -42,9 +42,9 @@
   --danger: #c4513a;
   --shadow: 0 1px 2px rgba(74, 58, 46, .06), 0 6px 18px rgba(74, 58, 46, .07);
   --hair: rgba(74, 58, 46, .14);              /* 细分隔线 / 轻描边 */
-  --font: 'AppFont', 'ShopFont', 'PingFang SC', 'Noto Sans SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
-  --title: 'AppFont', 'ShopFont', 'ZCOOL KuaiLe', 'PingFang SC', 'Noto Sans SC', sans-serif;
-  --mono: 'Courier Prime', 'Courier New', 'AppFont', 'ShopFont', ui-monospace, monospace;   /* 中文字落到小赖字体 */
+  --font: 'ShopFont', 'PingFang SC', 'Noto Sans SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
+  --title: 'ShopFont', 'ZCOOL KuaiLe', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  --mono: 'Courier Prime', 'Courier New', 'ShopFont', ui-monospace, monospace;   /* 中文字落到小石头 */
   --tabbar-h: 64px;
   --glass: rgba(255, 252, 245, .58);          /* 菜单栏：半透明玻璃 */
   --glass-edge: rgba(255, 255, 255, .75);     /* 玻璃边缘的高光 */
@@ -913,7 +913,7 @@ html.laptop .bake > .col-b > h2:first-child { margin-top: 4px; }
 /* 隐藏款：灯罩里暖黄的光 */
 .store .glow { fill: #f6d27a; }
 
-/* 配方详情页和烘焙页：外面包的 .rfont（display: contents）不影响排版；字体和全 app 一样 */
+/* 配方详情页和烘焙页换成小赖字体：烘焙页外面包的 .rfont（display: contents）不影响排版 */
 .rfont { display: contents; }
 .split.recipe, .rfont {
   --font: 'AppFont', 'ShopFont', 'PingFang SC', 'Noto Sans SC', sans-serif;
