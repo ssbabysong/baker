@@ -631,45 +631,60 @@ details[open] > summary::before { content: '▾ '; }
 }
 .tabbar nav {
   --n: 3;
+  /* 缩成小胶囊时的比例：宽 340 → 约 196，高 64 → 50 */
+  --sx: .58; --sy: .78;
   pointer-events: auto; position: relative; display: flex;
   width: min(100%, 340px); height: var(--tabbar-h); padding: 5px;
   border-radius: 999px; isolation: isolate;
+}
+/* 玻璃底和顶上的高光都画在伪元素上：缩小只改 transform，不重新排版、不逐帧改尺寸，动画才顺 */
+.tabbar nav::after {
+  content: ''; position: absolute; inset: 0; z-index: -2; border-radius: 999px; pointer-events: none;
   background: var(--glass);
   -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%);
   box-shadow: 0 10px 34px var(--glass-shade), 0 1px 3px var(--glass-shade),
               inset 0 1px 0 var(--glass-edge), inset 0 0 0 .5px var(--glass-edge);
-  transition: width .45s cubic-bezier(.3, 1.3, .5, 1), height .45s cubic-bezier(.3, 1.3, .5, 1);
+  transform-origin: 50% 100%;
+  transition: transform .45s cubic-bezier(.3, 1.25, .5, 1);
+  will-change: transform;
 }
 /* 顶部那道弯弯的高光，像玻璃的反光 */
 .tabbar nav::before {
   content: ''; position: absolute; inset: 1px 14% auto; height: 45%; border-radius: 999px; z-index: -1; pointer-events: none;
   background: linear-gradient(to bottom, var(--glass-edge), transparent); opacity: .55;
+  transform-origin: 50% calc(var(--tabbar-h) - 1px);
+  transition: transform .45s cubic-bezier(.3, 1.25, .5, 1);
 }
 /* 选中项下面的镜片：按 --i 滑到对应位置，带一点回弹 */
 .tabbar .lens {
   position: absolute; top: 5px; bottom: 5px; left: 5px; z-index: -1;
   width: calc((100% - 10px) / var(--n)); border-radius: 999px;
   background: var(--lens); box-shadow: inset 0 0 0 .5px var(--glass-edge);
+  transform-origin: 150% 100%;   /* 正好是整条菜单的底边中点：缩小时和玻璃底一起往中间收 */
   transform: translateX(calc(var(--i, 0) * 100%));
   transition: transform .5s cubic-bezier(.3, 1.4, .5, 1);
 }
 .tabbar a {
   flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
   text-decoration: none; font-size: 11px; line-height: 1.2; color: var(--ink-soft); border-radius: 999px;
-  transition: transform .2s ease;
+  transition: transform .2s ease, translate .45s cubic-bezier(.3, 1.25, .5, 1);
 }
 .tabbar a:active { transform: scale(.92); }
-.tabbar a .tab-ic { display: flex; font-style: normal; }
-.tabbar a .ti { width: 28px; height: 28px; color: var(--ink-soft); transition: width .3s ease, height .3s ease; }
-.tabbar a span { white-space: nowrap; transition: opacity .25s ease, max-height .3s ease; max-height: 16px; overflow: hidden; }
+.tabbar a .tab-ic { display: flex; font-style: normal; transition: transform .45s cubic-bezier(.3, 1.25, .5, 1); }
+.tabbar a .ti { width: 28px; height: 28px; color: var(--ink-soft); }
+.tabbar a span { white-space: nowrap; transition: opacity .2s ease, transform .35s ease; }
 .tabbar a.on { color: var(--shu); font-weight: 500; }
 .tabbar a.ticking span { color: var(--shu); font-size: 11px; letter-spacing: .02em; }
 .tabbar a.on .ti { color: var(--doodle); }
 .tabbar a:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: -4px; }
-/* 往下滚：缩成小胶囊 */
-.tabbar.mini nav { width: min(100%, 196px); height: 50px; }
-.tabbar.mini a span { opacity: 0; max-height: 0; }
-.tabbar.mini a .ti { width: 26px; height: 26px; }
+/* 往下滚：缩成小胶囊。全部用 transform / opacity 做，不改宽高 */
+.tabbar.mini nav::after { transform: scale(var(--sx), var(--sy)); }
+.tabbar.mini nav::before { transform: scale(var(--sx), var(--sy)); }
+.tabbar.mini .lens { transform: scale(var(--sx), var(--sy)) translateX(calc(var(--i, 0) * 100%)); }
+.tabbar.mini a:nth-of-type(1) { translate: calc((1 - var(--sx)) * 100%) 0; }
+.tabbar.mini a:nth-of-type(3) { translate: calc((var(--sx) - 1) * 100%) 0; }
+.tabbar.mini a .tab-ic { transform: translateY(13px) scale(.93); }
+.tabbar.mini a span { opacity: 0; transform: translateY(8px); }
 
 /* ---------- 弹窗 ---------- */
 /* 弹窗只在安全区里居中：让开系统的菜单栏和按钮（普通 iPhone 底部的菜单栏、iPhone Duo 右边那一竖条），不会被盖住 */
