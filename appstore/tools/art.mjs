@@ -9,6 +9,7 @@ for (const lang of ['zh', 'en']) {
   mkdirSync(dir, { recursive: true });
   for (const [kind, h] of [['header', 823], ['search', 1280]]) {
     const p = await (await b.newContext({ viewport: { width: 1920, height: h }, deviceScaleFactor: 2 })).newPage();
+    await p.route('**/fonts/xiaonaipao.ttf', (r) => r.abort());   // 和 App 一样用小石头
     await p.goto(`http://localhost:8080/appstore/tools/art.html?kind=${kind}&lang=${lang}&shots=http://localhost:8081`);
     await p.waitForSelector('body[data-ready]'); await p.waitForTimeout(800);
     await p.screenshot({ path: `${dir}/${kind}.png` });

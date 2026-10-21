@@ -6,6 +6,8 @@ const STATUS = 54;                                   // 状态栏高度，合成
 const b = await chromium.launch();
 const ctx = await b.newContext({ viewport: { width: 440, height: 956 - STATUS }, deviceScaleFactor: 3, locale: LANG === 'zh' ? 'zh-CN' : 'en-US' });
 await ctx.clock.install({ time: NOW });
+// App 里没有打包乐米小奶泡体（只授权了网页），截图要和 App 一样用小石头
+await ctx.route('**/fonts/xiaonaipao.ttf', (r) => r.abort());
 await ctx.addInitScript((lang) => { localStorage.setItem('baker-lang', lang); localStorage.setItem('baker-currency', lang === 'zh' ? 'CNY' : 'USD'); }, LANG);
 const q = await ctx.newPage(); const errs = []; q.on('pageerror', (e) => errs.push(e.message));
 await q.goto('http://localhost:8080/#/recipes'); await q.waitForSelector('.rack');

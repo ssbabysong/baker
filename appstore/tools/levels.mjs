@@ -12,6 +12,7 @@ for (const lang of ['zh', 'en']) {
   if (lang === 'zh') jobs.push(['xhs', '', 1242, 1656, 'xiaohongshu'], ['xhs-hidden', '', 1242, 1656, 'xiaohongshu-hidden']);
   for (const [kind, lv, w, h, file] of jobs) {
     const p = await (await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 })).newPage();
+    await p.route('**/fonts/xiaonaipao.ttf', (r) => r.abort());   // 和 App 一样用小石头
     await p.goto(`http://localhost:8080/appstore/tools/levels.html?kind=${kind}&lv=${lv}&lang=${lang}`);
     await p.waitForSelector('body[data-ready]'); await p.waitForTimeout(600);
     await p.screenshot({ path: `${dir}/${file}.png` });

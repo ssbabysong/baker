@@ -15,6 +15,8 @@
 | 6 | 烘焙日历 | 每一炉都记进日历 | A diary for every bake |
 | 7 | 升级路线 | 从小推车到旗舰店 | From cart to flagship |
 
+截图里的文字用的是 App 里实际显示的小石头字体：网页版用的乐米小奶泡体没有 App 授权、不打进 iOS 包，生成脚本会把它挡掉。
+
 ## 详情页顶部图 & 搜索结果图
 
 `creative/` 里是 App Store Connect「创意素材」两个位置的图（JPEG，无透明通道）：
