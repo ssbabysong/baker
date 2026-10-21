@@ -7,14 +7,14 @@
   font-family: 'ShopFont';
   src: local('也字工厂小石头'), local('YEFONTXiaoShiTou'),
        url('../fonts/shopfont.ttf') format('truetype');
-  font-display: swap;
+  font-display: block;   /* 字体到了再显示文字（最多等 3 秒），不先显示别的字再跳过来 */
 }
 /* 全 app 的中文用乐米小奶泡体（杭州乐米网络科技有限公司，网页可免费商用，见 fonts/README.md；App 内嵌另需授权，所以没打进 iOS 包）。
    字体文件是原版，没有裁剪或修改；缺的字落到小石头 */
 @font-face {
   font-family: 'AppFont';
   src: url('../fonts/xiaonaipao.ttf') format('truetype');
-  font-display: swap;
+  font-display: block;   /* 字体到了再显示文字（最多等 3 秒），不先显示别的字再跳过来 */
   /* 这款字在字框里画得小（字身约为小石头的 9 成），笔画又细：整体放大 15%，和原来的字号看起来一样大 */
   size-adjust: 115%;
 }

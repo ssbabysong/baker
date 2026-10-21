@@ -129,7 +129,11 @@ const lookOf = (lv, n) => {
 // 店名在招牌字体里有多宽（以字号为 1 计）：用画布量真字体；字体还没加载好就先用备用字体量，加载好以后重画一遍
 const signCanvas = document.createElement('canvas').getContext('2d');
 let signFontReady = document.fonts?.check?.('16px AppFont') ?? true;
-if (!signFontReady) document.fonts.load('16px AppFont').then(() => { signFontReady = true; rerender(); }).catch(() => {});
+// 字体到了以后只把页面上招牌的字号重新量一遍，不整页重画（整页重画会让图片、文字闪一下）
+if (!signFontReady) document.fonts.load('16px AppFont').then(() => {
+  signFontReady = true;
+  document.querySelectorAll('.storefront[data-lv] > .sign').forEach((el) => { el.style.cssText = signStyle(Number(el.parentElement.dataset.lv), el.textContent); });
+}).catch(() => {});
 const measure = (t) => { signCanvas.font = `100px ${getComputedStyle(document.documentElement).getPropertyValue('--title') || 'sans-serif'}`; return signCanvas.measureText(t); };
 const textEm = (t) => measure(t).width / 100;
 // 字身要往下挪多少（以字号为 1 计）才在招牌上看着正好居中：量出字形实际占的上下范围，和一行的正中间比。
@@ -143,7 +147,7 @@ const inkShift = (cjk) => {
 // 门店插画 + 叠在招牌上的店名
 // 字号按招牌在画里的大小算（cqw = 店面宽度的百分之一，大图小图都对）：字宽加字距占招牌宽的八成多一点，字高不超过招牌高的八成。
 // 中文字距宽一点，英文窄一点；上下按字形实际的位置对正（inkShift）
-function shopFront(level, name = '', small = false) {
+function signStyle(level, name) {
   const g = storefrontSign(level);
   const n = [...name].length || 1;
   const cjk = /[\u2e80-\uffff]/.test(name);
@@ -155,7 +159,11 @@ function shopFront(level, name = '', small = false) {
   const style = `left:${(g.x / g.vbW * 100).toFixed(2)}%;width:${(g.w / g.vbW * 100).toFixed(2)}%;top:${(g.y / g.vbH * 100).toFixed(2)}%;height:${(g.h / g.vbH * 100).toFixed(2)}%`
     + `;font-size:${cq(fs)};letter-spacing:${ls}em;line-height:1;padding-left:${ls}em`
     + (shift > 0 ? `;padding-top:${cq(fs * shift * 2)}` : `;padding-bottom:${cq(-fs * shift * 2)}`);
-  return `<div class="storefront ${small ? 'mini' : ''}">${storefront(level)}${name ? (small
+  return style;
+}
+function shopFront(level, name = '', small = false) {
+  const style = signStyle(level, name);
+  return `<div class="storefront ${small ? 'mini' : ''}" data-lv="${level}">${storefront(level)}${name ? (small
     ? `<span class="sign" style="${style}">${esc(name)}</span>`
     : `<button class="sign" style="${style}" data-act="rename-shop" title="${L('点一下改店名', 'Tap to rename')}">${esc(name)}</button>`) : ''}</div>`;
 }
