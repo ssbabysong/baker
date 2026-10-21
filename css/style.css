@@ -12,7 +12,7 @@
 /* 配方详情页和烘焙页用猫啃珠圆体（SIL OFL 1.1，授权见 fonts/OFL.txt） */
 @font-face {
   font-family: 'RecipeFont';
-  src: local('MaokenZhuyuanTi'), url('../fonts/recipefont.ttf') format('truetype');
+  src: url('../fonts/recipefont.woff2') format('woff2');
   font-display: swap;
 }
 

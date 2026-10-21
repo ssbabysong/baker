@@ -1,8 +1,9 @@
 node_modules/
 .DS_Store
 fonts/*.ttf
-!fonts/shopfont.ttf
 fonts/*.otf
 fonts/*.woff
 fonts/*.woff2
+!fonts/shopfont.ttf
+!fonts/recipefont.woff2
 www/

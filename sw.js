@@ -1,10 +1,10 @@
 // 离线缓存：app 外壳预缓存，其余（比如字体）用到时顺手缓存。
-const CACHE = 'baker-v115';
+const CACHE = 'baker-v116';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/app.js', 'js/store.js', 'js/parser.js', 'js/sketch.js', 'js/timers.js', 'js/i18n.js', 'js/catalog.js', 'catalog/recipes.json',
   'fonts/shopfont.ttf',
-  'fonts/recipefont.ttf',
+  'fonts/recipefont.woff2',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 
@@ -44,6 +44,8 @@ async function handle(req) {
     if (hit) return hit;
     return fetch(req).then((res) => { putCache(req, res.clone()); return res; }).catch(() => Response.error());
   }
+  // 字体文件几 MB 又很少变：缓存优先，免得每次打开页面都在慢网络上重新校验、迟迟换不上字体（换字体时文件名会变）
+  if (hit && new URL(req.url).pathname.includes('/fonts/')) return hit;
   try {
     // 本站文件：网络优先，并绕过 HTTP 缓存拿新版本。只用网址发请求，不复制原请求（iOS 上复制「打开页面」的请求会出错）
     const res = await fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' });

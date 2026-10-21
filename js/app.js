@@ -2269,6 +2269,8 @@ async function boot() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkCatalogOnline(); });
   setInterval(tick, 1000);
   tick();
+  // 配方页和烘焙页的字体（猫啃珠圆体）提前在后台下好，点进去就是新字体，不会先闪一下店铺字体
+  setTimeout(() => document.fonts?.load?.('16px RecipeFont', '面包').catch(() => {}), 1500);
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     // 新版本接管后，等手上没事的时候再刷新一次（不在拍照、烘焙、编辑这些页面上刷，免得打断）。第一次安装不刷
