@@ -5,5 +5,5 @@ fonts/*.otf
 fonts/*.woff
 fonts/*.woff2
 !fonts/shopfont.ttf
-!fonts/xiaolai.woff2
+!fonts/xiaonaipao.ttf
 www/

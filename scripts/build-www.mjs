@@ -9,5 +9,7 @@ const FILES = ['index.html', 'manifest.webmanifest', 'sw.js', 'css', 'js', 'font
 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out);
-for (const f of FILES) cpSync(join(root, f), join(out, f), { recursive: true, filter: (p) => !p.endsWith('.mjs') && !p.endsWith('.md') });
+// 乐米小奶泡体只授权了网页用（自有网站），嵌进 App 要另外向乐米申请授权：先不打进 iOS 包，App 里自动退回小石头
+const WEB_ONLY = ['xiaonaipao.ttf'];
+for (const f of FILES) cpSync(join(root, f), join(out, f), { recursive: true, filter: (p) => !p.endsWith('.mjs') && !p.endsWith('.md') && !WEB_ONLY.some((w) => p.endsWith(w)) });
 console.log('www/ ready');
