@@ -128,8 +128,8 @@ const lookOf = (lv, n) => {
 
 // 店名在招牌字体里有多宽（以字号为 1 计）：用画布量真字体；字体还没加载好就先用备用字体量，加载好以后重画一遍
 const signCanvas = document.createElement('canvas').getContext('2d');
-let signFontReady = document.fonts?.check?.('16px RecipeFont') ?? true;
-if (!signFontReady) document.fonts.load('16px RecipeFont').then(() => { signFontReady = true; rerender(); }).catch(() => {});
+let signFontReady = document.fonts?.check?.('16px AppFont') ?? true;
+if (!signFontReady) document.fonts.load('16px AppFont').then(() => { signFontReady = true; rerender(); }).catch(() => {});
 const measure = (t) => { signCanvas.font = `100px ${getComputedStyle(document.documentElement).getPropertyValue('--title') || 'sans-serif'}`; return signCanvas.measureText(t); };
 const textEm = (t) => measure(t).width / 100;
 // 字身要往下挪多少（以字号为 1 计）才在招牌上看着正好居中：量出字形实际占的上下范围，和一行的正中间比。
@@ -936,7 +936,7 @@ function viewBake(id) {
   }).join('');
 
   const others = state.sessions.filter((x) => x.id !== s.id);
-  // 烘焙页和配方详情页一样用猫啃珠圆体：外面包一层 .rfont（display: contents，不影响排版）
+  // 烘焙页外面包一层 .rfont（display: contents，不影响排版），和配方详情页共用一套字体设置
   return `<div class="rfont">
   <div class="bake-head">
     <a class="btn icon ghost" href="#/" aria-label="${L('返回', 'Back')}">${icon('back')}</a>
@@ -2269,8 +2269,8 @@ async function boot() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkCatalogOnline(); });
   setInterval(tick, 1000);
   tick();
-  // 配方页和烘焙页的字体（猫啃珠圆体）提前在后台下好，点进去就是新字体，不会先闪一下店铺字体
-  setTimeout(() => document.fonts?.load?.('16px RecipeFont', '面包').catch(() => {}), 1500);
+  // app 的字体（小赖字体）尽早在后台下好
+  setTimeout(() => document.fonts?.load?.('16px AppFont', '面包').catch(() => {}), 1500);
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     // 新版本接管后，等手上没事的时候再刷新一次（不在拍照、烘焙、编辑这些页面上刷，免得打断）。第一次安装不刷
