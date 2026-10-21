@@ -842,49 +842,83 @@ Steps:
 5. Bake at 250°C for 40 min`);
 
 // 给用户自己的 AI 助手（ChatGPT、豆包、Kimi、DeepSeek……）用的提示词：让它把随便什么样的食谱整理成这里最好认的格式
-const AI_PROMPT = () => L(`请把我发给你的面包 / 甜点食谱整理成下面这个格式。只输出整理好的配方，不要加任何其他说明。
+const AI_PROMPT = () => L(`请把我发给你的面包 / 甜点食谱，严格按照下面「格式示例」的样子重写。只输出重写好的配方，不要加开场白、解释或总结。
 
-第一行：配方名
+格式示例：
+巧克力软欧
 
 材料：
-每行一种材料，写成「名称 数量单位」，比如「高筋面粉 250g」「鸡蛋 1个」「盐 适量」
-用量是范围的写成「牛奶 130-150g」
-材料分几组的（比如面团、馅料、表面装饰），先单独写一行组名加冒号，比如「馅料：」，再在下面列这一组的材料
+面团：
+高筋面粉 250g
+可可粉 15g
+牛奶 130-150g
+即发干酵母 3g（或鲜酵母 9g）
+馅料：
+黑巧克力 100g
+盐 适量
 
 步骤：
-1. 每一步一行，前面用数字编号
-2. 这一步要等的时间直接写进句子里，比如「一次发酵 60分钟」「350°F 烤 25分钟」，发酵、静置、冷藏、烘烤都写上时间
+1. 面团材料放入厨师机，低速搅拌 3分钟
+2. 室温进行一次发酵 60分钟，至两倍大
+3. 分割滚圆，松弛 15分钟
+4. 包入馅料，整形后进行二次发酵 40分钟
+5. 烤箱预热到 350°F
+6. 350°F 烤 25分钟
 
 小贴士：
-（可选）其他说明写在这里
+可可粉要过筛
 
-要求：
+必须遵守：
+- 第一行只写配方名
+- 只用三个小标题：「材料：」「步骤：」「小贴士：」，各占一行
+- 材料一样一行，写成「名称 数量单位」。绝对不要把几样材料写在同一行，也不要用顿号、逗号或空格把它们连在一起
+- 材料分组时，组名单独一行、以冒号结尾（如「馅料：」），这一组的材料写在它下面，每样一行
+- 用量是范围写成「130-150g」；没有准确用量写「适量」
+- 步骤用「1. 2. 3.」编号，一步一行，不要用「*」「-」或其他符号开头
+- 每个要等待的步骤（发酵、静置、松弛、冷藏、烘烤）都要写上时间，例如「发酵 60分钟」「烤 25分钟」；时间是范围可以写「40-60分钟」
 - 重量尽量换算成克（g），液体用克或毫升（ml）
 - 温度用华氏度（°F），原文是摄氏度的换算成华氏度
-- 不要用表格、加粗、表情符号
+- 不要用表格、加粗、斜体、Markdown 符号或表情符号
 - 原文是英文或其他语言时，翻译成中文
 
 食谱原文：
-`, `Please rewrite the bread / pastry recipe I send you in exactly this format. Output only the recipe, with no other commentary.
+`, `Rewrite the bread / pastry recipe I send you so it follows the "Format example" below exactly. Output only the rewritten recipe: no intro, explanation or summary.
 
-First line: the recipe name
+Format example:
+Chocolate Soft Loaf
 
 Ingredients:
-One ingredient per line as "amount unit name", e.g. "250g bread flour", "1 egg", "salt to taste"
-For a range write "130-150g milk"
-If the ingredients come in groups (dough, filling, topping…), put the group name on its own line ending with a colon, e.g. "Filling:", then list that group's ingredients under it
+Dough:
+250g bread flour
+15g cocoa powder
+130-150g milk
+3g instant yeast (or 9g fresh yeast)
+Filling:
+100g dark chocolate
+salt to taste
 
 Steps:
-1. One step per line, numbered
-2. Put any waiting time right in the sentence, e.g. "Bulk ferment 60 min", "Bake at 350°F for 25 min" — give a time for every proof, rest, chill and bake
+1. Put the dough ingredients in a stand mixer and mix on low for 3 min
+2. Bulk ferment at room temperature for 60 min, until doubled
+3. Divide, pre-shape and rest 15 min
+4. Fill, shape and proof for 40 min
+5. Preheat the oven to 350°F
+6. Bake at 350°F for 25 min
 
 Notes:
-(optional) anything else goes here
+Sift the cocoa powder
 
-Rules:
+Rules you must follow:
+- The first line is the recipe name only
+- Use only three headings, each on its own line: "Ingredients:", "Steps:", "Notes:"
+- One ingredient per line, as "amount unit name". Never put several ingredients on the same line or join them with commas or spaces
+- For groups, put the group name on its own line ending with a colon (e.g. "Filling:") and list that group's ingredients under it, one per line
+- Write ranges as "130-150g"; with no exact amount write "to taste"
+- Number the steps "1. 2. 3.", one step per line; don't start lines with "*", "-" or other symbols
+- Give a time for every waiting step (proof, rest, chill, bake), e.g. "proof 60 min", "bake 25 min"; a range like "40-60 min" is fine
 - Use grams (g) for weights where possible; grams or millilitres (ml) for liquids
 - Temperatures in °F (convert from °C if needed)
-- No tables, bold text or emoji
+- No tables, bold, italics, Markdown symbols or emoji
 - If the original is in another language, translate it into English
 
 Original recipe:

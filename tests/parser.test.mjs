@@ -223,3 +223,17 @@ test('parseRecipeText: AI 整理出来的格式（组名和材料同一行、空
   assert.deepEqual(r.steps.map((s) => [s.minutes, s.kind]), [[3, 'knead'], [60, 'ferment'], [20, 'chill'], [null, 'other'], [17, 'bake']]);
   assert.equal(r.notes, '碱水必须使用食品级氢氧化钠。');
 });
+
+test('AI 提示词里的格式示例本身能被完整认出（中英文）', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+  const zh = parseRecipeText(src.match(/格式示例：\n([\s\S]*?)\n\n必须遵守/)[1]);
+  assert.equal(zh.ingredients.length, 6);
+  assert.deepEqual(zh.steps.map((s) => s.minutes), [3, 60, 15, 40, null, 25]);
+  const en = parseRecipeText(src.match(/Format example:\n([\s\S]*?)\n\nRules you must/)[1]);
+  assert.deepEqual(en.ingredients.map((i) => [i.name, i.amount, i.note]), [
+    ['bread flour', 250, 'Dough'], ['cocoa powder', 15, 'Dough'], ['milk', 130, '130-150g'],
+    ['instant yeast', 3, 'or 9g fresh yeast'], ['dark chocolate', 100, 'Filling'], ['salt', null, 'Filling'],
+  ]);
+  assert.deepEqual(en.steps.map((s) => s.minutes), [3, 60, 15, 40, null, 25]);
+});

@@ -120,9 +120,16 @@ export function parseIngredient(line) {
     const name = raw.slice(0, range.index).trim().replace(/[:：]$/, '');
     return { name, amount: parseNumber(range[1]), unit: range[3] || '', note: `${range[1]}-${range[2]}${range[3] || ''}` };
   }
+  // 用量写在前面的范围：「130-150g milk」
+  const headRange = raw.match(new RegExp(`^(\\d+(?:\\.\\d+)?)\\s*[-~～–—]\\s*(\\d+(?:\\.\\d+)?)\\s*(?:(${UNIT_RE})(?![a-z]))?\\s*([^\\d].*)$`, 'i'));
+  if (headRange) {
+    return { name: headRange[4].trim(), amount: parseNumber(headRange[1]), unit: headRange[3] || '', note: `${headRange[1]}-${headRange[2]}${headRange[3] || ''}` };
+  }
   let m = raw.match(NUM_HEAD);
   if (m && m[3] && !/^\d/.test(m[3])) {
-    return { name: m[3].trim(), amount: parseNumber(m[1]), unit: m[2] || '', note: '' };
+    // 名字后面括号里的是备注：「3g instant yeast (or 9g fresh yeast)」
+    const paren = m[3].match(/^(.*?)\s*[（(]([^)）]*)[)）]\s*$/);
+    return { name: (paren ? paren[1] : m[3]).trim(), amount: parseNumber(m[1]), unit: m[2] || '', note: paren ? paren[2].trim() : '' };
   }
   m = raw.match(NUM_TAIL);
   if (m && m[1].trim()) {
