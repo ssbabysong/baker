@@ -469,15 +469,7 @@ async function syncNativeTabs(active = nativeActive) {
   nativeTabs.set(payload).catch((e) => console.warn('native tabs', e));
 }
 
-// 往下滚动时把菜单栏缩小，往上滚动或回到顶部时展开（和 iOS 一样）
-let lastY = 0;
-window.addEventListener('scroll', () => {
-  const y = window.scrollY;
-  const bar = $tabs.parentElement;
-  if (y < 40 || y < lastY - 6) bar.classList.remove('mini');
-  else if (y > lastY + 6) bar.classList.add('mini');
-  lastY = y;
-}, { passive: true });
+// 菜单栏一直保持原来的大小：滚动时缩小 / 展开的动画在手机上会卡，去掉了
 
 // =====================================================================
 // 店铺首页
