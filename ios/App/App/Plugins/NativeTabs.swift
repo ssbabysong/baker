@@ -20,7 +20,7 @@ final class TabsController: UITabBarController, UITabBarControllerDelegate {
         // 导航栏只放返回键和右边的手绘图标按钮：不要标题、不要底色（页面标题还是网页里原来的手绘大字）
         let clear = UINavigationBarAppearance()
         clear.configureWithTransparentBackground()
-        let tabFont = TabsController.shopFont(size: 11)
+        let tabFont = TabsController.appFont(size: 11)
         let list = keys.map { key -> UINavigationController in
             let slot = TabSlot(bridge: bridgeVC)
             slots[key] = slot
@@ -145,15 +145,15 @@ final class TabsController: UITabBarController, UITabBarControllerDelegate {
         ? UIColor(red: 0xef / 255, green: 0xe6 / 255, blue: 0xd8 / 255, alpha: 1)
         : UIColor(red: 0x33 / 255, green: 0x29 / 255, blue: 0x1f / 255, alpha: 1) }
 
-    /// 店里的字体（也字工厂小石头）：用网页那份 public/fonts/shopfont.ttf，底部菜单的文字用它，和网页一致
-    private static var shopFontDescriptor: UIFontDescriptor? = {
-        guard let url = Bundle.main.url(forResource: "shopfont", withExtension: "ttf", subdirectory: "public/fonts") else { return nil }
+    /// App 的字体（小赖字体）：用网页那份 public/fonts/xiaolai.ttf，底部菜单的文字用它，和网页一致
+    private static var appFontDescriptor: UIFontDescriptor? = {
+        guard let url = Bundle.main.url(forResource: "xiaolai", withExtension: "ttf", subdirectory: "public/fonts") else { return nil }
         CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
         guard let descs = CTFontManagerCreateFontDescriptorsFromURL(url as CFURL) as? [CTFontDescriptor], let first = descs.first else { return nil }
         return first as UIFontDescriptor
     }()
-    static func shopFont(size: CGFloat) -> UIFont? {
-        shopFontDescriptor.map { UIFont(descriptor: $0, size: size) }
+    static func appFont(size: CGFloat) -> UIFont? {
+        appFontDescriptor.map { UIFont(descriptor: $0, size: size) }
     }
 }
 

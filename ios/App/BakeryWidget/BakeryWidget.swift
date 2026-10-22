@@ -8,8 +8,8 @@ import SwiftUI
 // 数据和插画由 App 写进 App Group（见 WidgetBridgePlugin.swift），颜色跟着 App 当前主题。
 
 private let appGroup = "group.com.ssbabysong.bakerydays"
-// 所有文字（中英文、数字）都用 App 的店铺字体
-private let titleFont = "YEFONTXiaoShiTou"
+// 所有文字（中英文、数字）都用 App 的字体
+private let titleFont = "XiaolaiSC"   // 小赖字体，和 App 里一致
 private let zh = Locale.preferredLanguages.first?.hasPrefix("zh") ?? true
 private func T(_ a: String, _ b: String) -> String { zh ? a : b }
 

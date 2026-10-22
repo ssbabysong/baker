@@ -11,7 +11,7 @@
 		BA4E00000000000000000004 /* WidgetBridgePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA4E00000000000000000003 /* WidgetBridgePlugin.swift */; };
 		BA4E0000000000000000E102 /* NativeTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA4E0000000000000000E101 /* NativeTabs.swift */; };
 		BA4E0000000000000000000B /* BakeryWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA4E0000000000000000000A /* BakeryWidget.swift */; };
-		BA4E0000000000000000000F /* shopfont.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BA4E0000000000000000000E /* shopfont.ttf */; };
+		BA4E0000000000000000000F /* xiaolai.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BA4E0000000000000000000E /* xiaolai.ttf */; };
 		BA4E00000000000000000011 /* BakeryWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BA4E00000000000000000010 /* BakeryWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		BA4E00000000000000000015 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BA4E00000000000000000014 /* WidgetKit.framework */; };
 		BA4E00000000000000000017 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BA4E00000000000000000016 /* SwiftUI.framework */; };
@@ -60,7 +60,7 @@
 		BA4E0000000000000000000A /* BakeryWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BakeryWidget.swift; sourceTree = "<group>"; };
 		BA4E0000000000000000000C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		BA4E0000000000000000000D /* BakeryWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BakeryWidget.entitlements; sourceTree = "<group>"; };
-		BA4E0000000000000000000E /* shopfont.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = shopfont.ttf; path = ../../fonts/shopfont.ttf; sourceTree = SOURCE_ROOT; };
+		BA4E0000000000000000000E /* xiaolai.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = xiaolai.ttf; path = ../../fonts/xiaolai.ttf; sourceTree = SOURCE_ROOT; };
 		BA4E00000000000000000010 /* BakeryWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BakeryWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA4E00000000000000000014 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		BA4E00000000000000000016 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -115,7 +115,7 @@
 				BA4E0000000000000000000A /* BakeryWidget.swift */,
 				BA4E0000000000000000000C /* Info.plist */,
 				BA4E0000000000000000000D /* BakeryWidget.entitlements */,
-				BA4E0000000000000000000E /* shopfont.ttf */,
+				BA4E0000000000000000000E /* xiaolai.ttf */,
 				BA4E00000000000000000032 /* PrivacyInfo.xcprivacy */,
 			);
 			path = BakeryWidget;
@@ -255,7 +255,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BA4E0000000000000000000F /* shopfont.ttf in Resources */,
+				BA4E0000000000000000000F /* xiaolai.ttf in Resources */,
 				BA4E00000000000000000033 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
