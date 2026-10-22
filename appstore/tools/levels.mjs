@@ -4,8 +4,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 const OUT = new URL('../levels/', import.meta.url).pathname;
-// iOS 包里的样式（npm run build:www 生成，AppFont 换成了小赖字体）
-const APP_CSS = new URL('../../www/css/style.css', import.meta.url).pathname;
 const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 for (const lang of ['zh', 'en']) {
   const dir = `${OUT}${lang === 'zh' ? 'zh-Hans' : 'en-US'}`;
@@ -14,7 +12,6 @@ for (const lang of ['zh', 'en']) {
   if (lang === 'zh') jobs.push(['xhs', '', 1242, 1656, 'xiaohongshu'], ['xhs-hidden', '', 1242, 1656, 'xiaohongshu-hidden']);
   for (const [kind, lv, w, h, file] of jobs) {
     const p = await (await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 })).newPage();
-    await p.route('**/css/style.css', (r) => r.fulfill({ path: APP_CSS }));   // 和 App 一样用小赖字体
     await p.goto(`http://localhost:8080/appstore/tools/levels.html?kind=${kind}&lv=${lv}&lang=${lang}`);
     await p.waitForSelector('body[data-ready]'); await p.waitForTimeout(600);
     await p.screenshot({ path: `${dir}/${file}.png` });

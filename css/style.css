@@ -2,21 +2,19 @@
    奶油纸底 + 可可色文字 + 砖红线稿 + 蜡笔色块（面包黄 / 雾蓝 / 橄榄绿）
    数字和日期用打字机字体，英文小注用手写体 */
 
-/* 店铺字体：也字工厂小石头（随 app 一起提供，见 fonts/README.md） */
+/* 后备字体：也字工厂小石头（随 app 一起提供，见 fonts/README.md），小赖字体里缺的字落到它 */
 @font-face {
   font-family: 'ShopFont';
   src: local('也字工厂小石头'), local('YEFONTXiaoShiTou'),
        url('../fonts/shopfont.ttf') format('truetype');
   font-display: block;   /* 字体到了再显示文字（最多等 3 秒），不先显示别的字再跳过来 */
 }
-/* 全 app 的中文用乐米小奶泡体（杭州乐米网络科技有限公司，网页可免费商用，见 fonts/README.md；App 内嵌另需授权，所以没打进 iOS 包；iOS 包里由 build-www 换成小赖字体）。
-   字体文件是原版，没有裁剪或修改；缺的字落到小石头 */
+/* 全 app（网页和 iOS App）的中文都用小赖字体（SIL OFL 1.1，见 fonts/README.md）；缺的字落到小石头 */
 @font-face {
   font-family: 'AppFont';
-  src: url('../fonts/xiaonaipao.ttf') format('truetype');
+  src: url('../fonts/xiaolai.ttf') format('truetype');
   font-display: block;   /* 字体到了再显示文字（最多等 3 秒），不先显示别的字再跳过来 */
-  /* 这款字在字框里画得小（字身约为小石头的 9 成），笔画又细：整体放大 15%，和原来的字号看起来一样大 */
-  size-adjust: 115%;
+  size-adjust: 92%;      /* 小赖字体字身偏大：整体缩小一点 */
 }
 
 :root {
@@ -47,7 +45,9 @@
   --hair: rgba(74, 58, 46, .14);              /* 细分隔线 / 轻描边 */
   --font: 'AppFont', 'ShopFont', 'PingFang SC', 'Noto Sans SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
   --title: 'AppFont', 'ShopFont', 'ZCOOL KuaiLe', 'PingFang SC', 'Noto Sans SC', sans-serif;
-  --mono: 'Courier Prime', 'Courier New', 'AppFont', 'ShopFont', ui-monospace, monospace;   /* 中文字落到小奶泡体 */
+  /* 小赖字体只有常规体：要加粗的字用描边描粗（比浏览器自动加粗清楚，粗细也能定），随字号按比例变 */
+  --bold: .03em;
+  --mono: 'Courier Prime', 'Courier New', 'AppFont', 'ShopFont', ui-monospace, monospace;   /* 中文字落到小赖字体 */
   --tabbar-h: 64px;
   --glass: rgba(255, 252, 245, .58);          /* 菜单栏：半透明玻璃 */
   --glass-edge: rgba(255, 255, 255, .75);     /* 玻璃边缘的高光 */
@@ -145,10 +145,12 @@ img { max-width: 100%; display: block; }
 
 /* ---------- 字体工具 ---------- */
 .mono { font-family: var(--mono); letter-spacing: .02em; }
-/* 标题统一用站酷快乐体，它本身就够圆够粗，不再加粗 */
+/* 标题、招牌店名、配方名这些大字：小赖字体描粗 */
 h1, h2, h3, .greet h1, .hero h1, .storefront .sign, .bake-head .t b, .diary .name, .stat b.t, .recipe-row .t b, .shelf .item > span:not(.pic) {
-  font-family: var(--title); font-weight: 400;
+  font-family: var(--title); font-weight: 400; -webkit-text-stroke: var(--bold) currentColor;
 }
+/* 正文里的 <b>/<strong> 也用描边加粗，不让浏览器自动加粗 */
+b, strong { font-weight: 400; -webkit-text-stroke: var(--bold) currentColor; }
 .muted { color: var(--ink-soft); }
 .small { font-size: 14px; }
 .center { text-align: center; }
@@ -179,9 +181,9 @@ h1, h2, h3, .greet h1, .hero h1, .storefront .sign, .bake-head .t b, .diary .nam
 /* 小节标题 */
 h2 { font-size: 20px; margin: 32px 0 12px; display: flex; align-items: center; gap: 10px; letter-spacing: .03em; }
 h2::before { content: ''; width: 9px; height: 9px; flex: none; background: var(--shu); border-radius: 2px 3px 2px 3px; transform: rotate(-8deg); opacity: .9; }
-h2 > :not(.more) { font-family: var(--font); }
+h2 > :not(.more) { font-family: var(--font); -webkit-text-stroke: 0; }
 h2 .ic { align-self: center; }
-h2 .more { margin-left: auto; font-size: 14px; color: var(--ink-soft); font-weight: 400; text-decoration: none; letter-spacing: 0; }
+h2 .more { -webkit-text-stroke: 0; margin-left: auto; font-size: 14px; color: var(--ink-soft); font-weight: 400; text-decoration: none; letter-spacing: 0; }
 
 /* ---------- 按钮 ---------- */
 .btn {
@@ -252,7 +254,7 @@ a.card { display: block; text-decoration: none; }
 }
 .storefront.mini .sign { font-size: 9px; letter-spacing: .06em; cursor: default; }
 /* 等级徽章可以点，打开升级路线 */
-.shop-meta button.lv { border: 0; cursor: pointer; color: var(--ink); font: inherit; font-size: 14px; }
+.shop-meta button.lv { border: 0; cursor: pointer; color: var(--doodle); font: inherit; font-size: 13px; -webkit-text-stroke: .015em currentColor; }
 /* 升级路线 */
 .roadmap h3 { margin-bottom: 2px; }
 /* 升级路线：弹窗按屏幕剩下的高度排，标题和「知道啦」固定在上下，只有中间的列表自己滚（不会和按钮叠在一起） */
@@ -261,9 +263,10 @@ dialog[open]:has(> .roadmap) { display: flex; flex-direction: column; overflow: 
 .roadmap > .row { flex: none; }
 .roadmap ol { list-style: none; margin: 12px 0 16px; padding: 0; display: grid; align-content: start; gap: 10px; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .roadmap li { display: flex; gap: 12px; align-items: center; padding: 8px 10px; border-radius: 16px; }
+.roadmap li .t > .small { font-size: 12.5px; line-height: 1.45; }
 .roadmap li .storefront { width: 104px; flex: none; margin: 0; }
 .roadmap li .t { display: grid; gap: 1px; min-width: 0; }
-.roadmap li .t b { font-family: var(--title); font-weight: 400; font-size: 16px; }
+.roadmap li .t > b { font-family: var(--title); font-weight: 400; font-size: 16px; color: var(--doodle); -webkit-text-stroke: .015em currentColor; }   /* 轻一点的加粗，可可色，不要一排黑字 */
 .roadmap li.now { background: var(--crust-soft); }
 .roadmap li[data-act] { cursor: pointer; }
 .roadmap li[data-act]:active { background: var(--lens); }
@@ -279,16 +282,18 @@ dialog[open]:has(> .roadmap) { display: flex; flex-direction: column; overflow: 
 .roadmap .here { color: var(--shu); }
 /* 升级路线和首页里的次数：用清楚的打字机数字，大一号、面包皮棕色 */
 /* 和下面统计数字同一套字体（Courier 常规体），只是换成棕色 */
-.need { font-family: var(--mono); font-weight: 400; font-size: 20px; line-height: 1; color: var(--brown); padding: 0 3px; vertical-align: -1px; }
+.need { font-family: var(--mono); font-weight: 400; -webkit-text-stroke: 0; font-size: 15px; line-height: 1; color: var(--brown); padding: 0 2px; vertical-align: 0; }
+/* 升级路线里的次数（顶上的「累计出炉 xx 次」和每一级的「出炉 xx 次解锁」）：和那行小字差不多大 */
+.roadmap .need { font-size: 13px; vertical-align: 0; padding: 0 2px; }
 .celebrate > .storefront { max-width: 260px; margin: 0 auto 6px; }
 .shop-meta { text-align: center; margin-top: 4px; }
-.shop-meta .lv { display: inline-block; padding: 1px 12px; border-radius: 999px; font-size: 14px; background: var(--card); box-shadow: var(--shadow); }
+.shop-meta .lv { display: inline-block; padding: 1px 12px; border-radius: 999px; font-size: 13px; background: var(--card); box-shadow: var(--shadow); }
 .progress { height: 8px; border-radius: 999px; margin: 10px auto 2px; max-width: 220px; overflow: hidden; background: var(--paper-2); box-shadow: inset 0 0 0 1px var(--hair); }
 .progress > i { display: block; height: 100%; background: repeating-linear-gradient(-45deg, var(--crust) 0 4px, transparent 4px 7px); }
 
 /* 数字统计：大号打字机数字 + 灰色小字 */
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 22px; text-align: center; }
-.stat b { display: block; font-family: var(--mono); font-weight: 400; font-size: 30px; line-height: 1.1; }
+.stat b { display: block; font-family: var(--mono); font-weight: 400; -webkit-text-stroke: 0; font-size: 30px; line-height: 1.1; }
 .stat span { font-size: 13px; color: var(--ink-soft); }
 
 /* 烤箱卡片 */
@@ -358,7 +363,7 @@ dialog[open]:has(> .roadmap) { display: flex; flex-direction: column; overflow: 
 .shelf { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 12px; scroll-snap-type: x mandatory; margin: 0 -2px; position: relative; }
 .shelf::-webkit-scrollbar { display: none; }
 .shelf-board { height: 10px; margin-top: -6px; border-top: 2px solid var(--line); background: linear-gradient(var(--wood), transparent); opacity: .7; }
-.shelf .item { flex: 0 0 96px; text-align: center; text-decoration: none; scroll-snap-align: start; }
+.shelf .item { flex: 0 0 96px; min-width: 0; text-align: center; text-decoration: none; scroll-snap-align: start; }
 .shelf .item svg { width: 62px; height: 62px; display: block; margin: 0 auto 2px; }
 .shelf .item > span:not(.pic) { font-size: 14px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .shelf .item:not(.add) > span:not(.pic) { background: #ecdcbf; color: #4a3a2e; margin: 2px 6px 0; padding: 1px 8px; border-radius: 3px; position: relative; transform: rotate(-1.5deg); }
@@ -408,8 +413,8 @@ dialog[open]:has(> .roadmap) { display: flex; flex-direction: column; overflow: 
 .shelf .item .pic { width: 62px; margin: 0 auto; }
 .shelf .price { right: -18px; }
 .price { position: absolute; right: -14px; top: 4px; padding: 0 5px; background: var(--card); color: var(--brown); border: 1.5px solid var(--line);
-  border-radius: 3px; font-family: var(--mono); font-weight: 700; font-size: 12px; line-height: 17px; transform: rotate(9deg); white-space: nowrap; }
-.price-chip { cursor: pointer; font-family: var(--mono); font-weight: 700; color: var(--brown); }
+  border-radius: 3px; font-family: var(--mono); font-weight: 400; -webkit-text-stroke: var(--bold) currentColor; font-size: 12px; line-height: 17px; transform: rotate(9deg); white-space: nowrap; }
+.price-chip { cursor: pointer; font-family: var(--mono); font-weight: 400; -webkit-text-stroke: var(--bold) currentColor; color: var(--brown); }
 .price-chip .ic { width: 13px; height: 13px; opacity: .6; }
 .price-f .row { gap: 8px; align-items: center; }
 .price-f .input.num { width: 90px; flex: none; }
@@ -457,7 +462,7 @@ dialog[open]:has(> .roadmap) { display: flex; flex-direction: column; overflow: 
 .steps .meta:empty { display: none; }
 /* 步骤正文：一种颜色读到底（再分深浅色反而花），行距放宽一点好扫读；数字不再单独变色 */
 .steps .stext { min-width: 0; overflow-wrap: anywhere; font-size: 17px; line-height: 1.8; letter-spacing: 0; color: color-mix(in srgb, var(--ink) 82%, var(--paper)); }
-b.num { font-weight: 400; color: inherit; }
+b.num { font-weight: 400; -webkit-text-stroke: 0; color: inherit; }
 /* 每一步的类型：发酵 / 烘烤 / 揉面 / 整形 / 冷却 / 装饰，各一个颜色，编号圆圈也跟着上色 */
 /* 只有两种「等」的步骤上色：发酵抹茶绿、烘烤朱红；揉面、整形、冷却、装饰都只是一个灰色小字标签 */
 .k-ferment { --k: #7d9150; } .k-bake { --k: var(--shu); }
@@ -609,7 +614,10 @@ button.photo-drop { width: 100%; font: inherit; padding: 0; }
 .diary .photo img { width: 100%; aspect-ratio: 1; object-fit: cover; }
 .diary .photo .ph-empty { aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; }
 .diary .photo .ph-empty svg { width: 34%; }
-.diary .meta { font-family: var(--mono); font-size: 13px; color: var(--ink-soft); margin-top: 10px; }
+.diary .meta { font-family: var(--mono); font-size: 13px; color: var(--ink-soft); margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; column-gap: 2px; line-height: 1.4; }
+/* 日记照片角上的「换照片」 */
+.photo-change { position: absolute; left: 10px; top: 10px; display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px 5px 8px; border-radius: 999px; background: rgba(255, 252, 245, .88); color: var(--ink); font-size: 13px; cursor: pointer; box-shadow: var(--shadow); }
+.photo-change .ic { width: 16px; height: 16px; }
 
 details > summary { cursor: pointer; list-style: none; }
 details > summary::-webkit-details-marker { display: none; }
@@ -665,7 +673,7 @@ details[open] > summary::before { content: '▾ '; }
 .tabbar a .tab-ic { display: flex; font-style: normal; }
 .tabbar a .ti { width: 28px; height: 28px; color: var(--ink-soft); }
 .tabbar a span { white-space: nowrap; }
-.tabbar a.on { color: var(--shu); font-weight: 500; }
+.tabbar a.on { color: var(--shu); -webkit-text-stroke: var(--bold) currentColor; }
 .tabbar a.ticking span { color: var(--shu); font-size: 11px; letter-spacing: .02em; }
 .tabbar a.on .ti { color: var(--doodle); }
 .tabbar a:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: -4px; }
@@ -685,6 +693,10 @@ dialog::backdrop { background: rgba(50, 38, 30, .35); }
 dialog h3 { margin: 0 0 8px; font-size: 21px; }
 /* 弹窗一打开系统会把焦点放到第一个按钮上，iOS 上就是一圈蓝框；点按的时候不需要这圈框 */
 dialog button:focus:not(:focus-visible), dialog [data-dlg]:focus { outline: none; }
+/* 选完照片后的调整框：正方形（作品墙、日记里都是正方形显示），拖动 / 缩放；抠过图的露出纸色底，和拍立得里一样 */
+.pe-frame { position: relative; width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: 14px; background: #f4ede0; touch-action: none; cursor: grab; margin: 10px 0 8px; box-shadow: inset 0 0 0 1px var(--hair); }
+.pe-frame .pe-img { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 0 0; user-select: none; -webkit-user-select: none; pointer-events: none; }
+.pe-opts { gap: 8px; margin: 2px 0 14px; }
 .alarm { text-align: center; }
 .alarm svg.ic { width: 72px; height: 72px; animation: shake .25s ease-in-out infinite alternate; }
 .alarm .mascot { width: 70px; display: block; margin: 0 auto 4px; }
@@ -716,7 +728,7 @@ dialog button:focus:not(:focus-visible), dialog [data-dlg]:focus { outline: none
 .bg-timer .ic { width: 16px; height: 16px; color: var(--k, var(--ink)); flex: none; }
 .bg-timer span:first-of-type { flex: 1; min-width: 0; text-align: left; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bg-timer b, .bg-timer .go { flex: none; }
-.bg-timer b { font-weight: 400; font-size: 16px; color: var(--k, var(--ink)); }
+.bg-timer b { font-weight: 400; -webkit-text-stroke: 0; font-size: 16px; color: var(--k, var(--ink)); }
 .bg-timer .go { color: var(--ink-soft); font-size: 13px; }
 .bg-timer.ring b { animation: blink 1s steps(2) infinite; }
 /* 「边等边做下一步」：主按钮下面一个小一号的描边按钮 */
@@ -757,7 +769,7 @@ dialog button:focus:not(:focus-visible), dialog [data-dlg]:focus { outline: none
 .bf-when { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .bf-when .f:last-child:nth-child(3) { grid-column: 1 / -1; }
 .bf-when .input { width: 100%; }
-.edit-time { display: inline-flex; margin-left: 4px; font-size: 13px; padding: 2px 8px; }
+.edit-time { display: inline-flex; margin-left: 4px; font-size: 13px; line-height: 1.4; padding: 2px 8px; }
 
 /* 首页最下面的小房子 */
 .home-foot { display: flex; justify-content: center; margin: 40px 0 0; }
@@ -878,6 +890,26 @@ html.laptop .bake .bake-hero > :not(.oven-wrap) { grid-column: 2; }
 html.laptop .bake .step-now { margin: 0 0 12px; }
 html.laptop .bake .up-next { margin-top: 8px; }
 html.laptop .bake > .col-b > h2:first-child { margin-top: 4px; }
+
+/* ---------- Duo 立起来当小闹钟、正在烤（html.focus）：整屏只放现在这一步 ----------
+   烘焙页别的东西（顶上的配方名、称料、全部步骤、提示语）都藏起来；动画、计时、这一步、主按钮、下一步居中放大 */
+html.focus #app { padding: 0 !important; }
+html.focus #app > :not(.split.bake):not(.rfont), html.focus .rfont > :not(.split.bake) { display: none !important; }
+html.focus .split.bake { display: block; }
+html.focus .split.bake > .col-b { display: none; }
+html.focus .split.bake > .col-a {
+  min-height: 100dvh; display: flex; align-items: center; justify-content: center;
+  padding: calc(env(safe-area-inset-top) + 12px) calc(env(safe-area-inset-right) + 20px) calc(env(safe-area-inset-bottom) + 12px) calc(env(safe-area-inset-left) + 20px);
+}
+html.focus .bake .bake-hero { width: 100%; max-width: 560px; margin: 0 auto; }
+html.focus .bake .hero-hint { display: none; }
+html.focus .bake .step-now p { font-size: clamp(19px, 5vw, 28px); line-height: 1.45; }
+/* 横着立起来（屏幕又宽又矮）：动画在左，步骤和按钮在右，和半折时上半截一样 */
+@media (orientation: landscape) {
+  html.focus .bake .bake-hero { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); column-gap: 24px; align-items: center; max-width: 820px; }
+  html.focus .bake .bake-hero > .oven-wrap { grid-column: 1; grid-row: 1 / span 8; width: min(80%, 260px); }
+  html.focus .bake .bake-hero > :not(.oven-wrap) { grid-column: 2; }
+}
 
 /* ---------- 折叠屏合上（html.folded，外屏）：首页第一屏正好是问候、小店、等级、三个数字 ----------
    这一块撑满一屏，小店落在等级牌上面，数字贴着屏幕下沿；烤箱、配方架、作品墙往下滑才出来 */

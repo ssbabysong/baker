@@ -6,8 +6,6 @@ const STATUS = 54;                                   // 状态栏高度，合成
 const b = await chromium.launch();
 const ctx = await b.newContext({ viewport: { width: 440, height: 956 - STATUS }, deviceScaleFactor: 3, locale: LANG === 'zh' ? 'zh-CN' : 'en-US' });
 await ctx.clock.install({ time: NOW });
-// App 里没有打包乐米小奶泡体（只授权了网页），用的是小赖字体：截图换上 iOS 包里的样式（先 npm run build:www）
-await ctx.route('**/css/style.css', (r) => r.fulfill({ path: new URL('../../www/css/style.css', import.meta.url).pathname }));
 await ctx.addInitScript((lang) => { localStorage.setItem('baker-lang', lang); localStorage.setItem('baker-currency', lang === 'zh' ? 'CNY' : 'USD'); }, LANG);
 const q = await ctx.newPage(); const errs = []; q.on('pageerror', (e) => errs.push(e.message));
 await q.goto('http://localhost:8080/#/recipes'); await q.waitForSelector('.rack');
@@ -54,8 +52,7 @@ await go('#/', '.storefront'); await shot('1-shop');
 await q.evaluate(() => { const el = document.querySelector('.ovens'); window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 150); }); await shot('3-ovens');
 await go('#/bake/sess-chocobun', '.bake-hero'); await shot('2-proof');
 await go('#/recipes', '.rack'); await shot('4-rack');
-// 步骤页固定用巧克力面包（步骤最多、最有看头），不看配方架上的排序
-const choco = await q.evaluate(async () => { const { db } = await import('/js/store.js'); return '#/r/' + (await db.all('recipes')).find((r) => r.shape === 'chocobun').id; });
+const choco = await q.evaluate(() => document.querySelector('.rack-item[href^="#/r/"]').getAttribute('href'));
 await go(choco, '.hero'); await q.evaluate(() => { const el = document.querySelector('.steps'); window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 70); }); await shot('5-steps');
 await go('#/logs', '.cal'); await shot('6-calendar');
 await go('#/', '.storefront'); await q.click('[data-act="roadmap"]'); await q.waitForSelector('.roadmap'); await shot('7-roadmap');

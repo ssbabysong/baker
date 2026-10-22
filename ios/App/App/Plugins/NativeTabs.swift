@@ -120,7 +120,16 @@ final class TabsController: UITabBarController, UITabBarControllerDelegate {
             }
         }
         if let active, let i = keys.firstIndex(of: active), i != selectedIndex { selectedIndex = i }
-        if barHidden { hideBar(false, animated: true) }
+        if barHidden && !focusMode { hideBar(false, animated: true) }
+    }
+
+    /// 专注模式（Duo 立起来当小闹钟、外屏只看正在做的这一步）：菜单栏和导航栏都收起来，整屏留给网页
+    private(set) var focusMode = false
+    func setFocus(_ on: Bool) {
+        guard on != focusMode else { return }
+        focusMode = on
+        hideBar(on, animated: true)
+        for case let nav as UINavigationController in viewControllers ?? [] { nav.setNavigationBarHidden(on, animated: true) }
     }
 
     /// 当前这一页的导航栏
@@ -209,7 +218,8 @@ final class TabSlot: UIViewController {
     // 导航栏是透明的、只在右上角浮几个按钮：网页不用给它让出一整条，页面顶上的手绘标题和这些按钮在同一行（和原来一样）
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        let barH = navigationController?.navigationBar.frame.height ?? 0
+        // 专注模式把导航栏藏起来了：安全区里本来就没有它，不用再往回让
+        let barH = navigationController?.isNavigationBarHidden == true ? 0 : (navigationController?.navigationBar.frame.height ?? 0)
         if additionalSafeAreaInsets.top != -barH { additionalSafeAreaInsets.top = -barH }
         if #available(iOS 26.0, *), let web = (bridge as? CAPBridgeViewController)?.webView {
             web.scrollView.topEdgeEffect.isHidden = true // 也不要顶上那层渐变模糊
@@ -251,6 +261,7 @@ final class TabSlot: UIViewController {
 /// - set({ active, titles: {shop: '店铺', …}, icons?: {shop: {off: base64PNG, on: base64PNG}, …} })：底部菜单
 /// - bar({ title, subtitle, back?, backIcon?, items: [{ id, symbol, icon?, title, prominent, menu?: [{ id, title }] }] })：顶部导航栏（icon 是网页画的手绘图标 PNG）
 /// - share({ title, text })：系统分享面板
+/// - focus({ on })：专注模式，收起菜单栏和导航栏
 /// - posture()：当前铰链姿态 { status: closed|partial|open|unknown, angle（度）, fold?: { x, y, w, h }（折痕在网页里的位置） }
 /// - 事件：用户点了某个标签 "select" { key }；点了导航栏上的按钮 "tap" { id }（返回是 "back"）；铰链姿态变了 "posture" { 同上 }
 @objc(NativeTabsPlugin)
@@ -262,6 +273,7 @@ public class NativeTabsPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "bar", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "share", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "posture", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "focus", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "devSeed", returnType: CAPPluginReturnPromise)
     ]
     static weak var shared: NativeTabsPlugin?
@@ -347,6 +359,14 @@ public class NativeTabsPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func posture(_ call: CAPPluginCall) {
         DispatchQueue.main.async { call.resolve(TabsController.posture) }
+    }
+
+    @objc func focus(_ call: CAPPluginCall) {
+        let on = call.getBool("on") ?? false
+        DispatchQueue.main.async {
+            TabsController.shared?.setFocus(on)
+            call.resolve()
+        }
     }
 
     /// 网页按 @3x 出的 PNG。template：只取形状，颜色跟着系统（导航栏按钮的墨色、深浅色、突出按钮的白字）

@@ -145,7 +145,7 @@ const inkShift = (cjk) => {
 };
 
 // 门店插画 + 叠在招牌上的店名
-// 字号按招牌在画里的大小算（cqw = 店面宽度的百分之一，大图小图都对）：字宽加字距占招牌宽的八成多一点，字高不超过招牌高的八成。
+// 字号按招牌在画里的大小算（cqw = 店面宽度的百分之一，大图小图都对）：字宽加字距最多占招牌宽的六成多，字高不超过招牌高的六成，四周留白，不显得挤。
 // 中文字距宽一点，英文窄一点；上下按字形实际的位置对正（inkShift）
 function signStyle(level, name) {
   const g = storefrontSign(level);
@@ -153,7 +153,7 @@ function signStyle(level, name) {
   const cjk = /[\u2e80-\uffff]/.test(name);
   const ls = cjk ? 0.12 : 0.05;
   // 隐藏款的招牌又细又扁：中文可以撑满一点；英文 y、g 的尾巴会往下拖，要留出位置
-  const fs = Math.min(g.h * (g.fit ? (cjk ? 0.92 : 0.72) : 0.8), (g.w * 0.84) / (textEm(name || '店') + ls * n));
+  const fs = Math.min(g.h * (g.fit ? (cjk ? 0.7 : 0.56) : 0.6), (g.w * 0.64) / (textEm(name || '店') + ls * n));
   const cq = (v) => `${(v / g.vbW * 100).toFixed(2)}cqw`;
   const shift = inkShift(cjk); // 招牌是弹性居中的：上面垫 2 倍，字就往下走 1 倍
   const style = `left:${(g.x / g.vbW * 100).toFixed(2)}%;width:${(g.w / g.vbW * 100).toFixed(2)}%;top:${(g.y / g.vbH * 100).toFixed(2)}%;height:${(g.h / g.vbH * 100).toFixed(2)}%`
@@ -194,7 +194,31 @@ async function showRoadmap(scrollTop = 0) {
           <span class="small ${using ? 'here' : 'muted'}">${using ? L('正在用这家店面', 'In use') : open ? L('已解锁，点开可以换上', 'Unlocked: tap to use it') : secretHow(x)}</span></div></li>`;
     }).join('')}</ol>
     <div class="row" style="justify-content:center"><button class="btn primary" data-dlg="ok">${L('知道啦', 'Got it')}</button></div>
-  </div>`, { onOpen: (d) => { d.querySelector('.roadmap ol').scrollTop = scrollTop; } });
+  </div>`, { onOpen: (d) => { d.querySelector('.roadmap ol').scrollTop = scrollTop; flattenShops(d.querySelector('.roadmap ol')); } });
+}
+
+// 升级路线里的小店面都套着手绘抖动滤镜，WebKit 滚动时现画来不及，快速滑会闪白：
+// 打开以后挨个画成图片换上去（画过的按等级和深浅色记住，下次打开直接用），滚动时只是挪图片
+const shopPngCache = new Map();
+async function flattenShops(list) {
+  const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  for (const box of list.querySelectorAll('li .storefront')) {
+    const svg = box.querySelector(':scope > svg');
+    if (!svg || !list.isConnected) continue;
+    const key = `${box.dataset.lv || 'mystery'}|${dark}`;
+    const [, , vw, vh] = (svg.getAttribute('viewBox') || '0 0 1 1').split(/[\s,]+/).map(Number);
+    const w = box.clientWidth || 104;
+    const h = Math.round(w * vh / vw);
+    if (!shopPngCache.has(key)) shopPngCache.set(key, svgToPng(svg.outerHTML, w, h).catch(() => null));
+    const png = await shopPngCache.get(key);
+    if (!png || !svg.isConnected) continue;
+    const img = new Image(w, h);
+    img.alt = '';
+    img.src = `data:image/png;base64,${png}`;
+    img.style.cssText = 'display:block;width:100%;height:auto';
+    await img.decode().catch(() => {});
+    svg.replaceWith(img);
+  }
 }
 
 // ---------- 弹窗 ----------
@@ -202,7 +226,7 @@ async function showRoadmap(scrollTop = 0) {
 function dialog(html, { onOpen } = {}) {
   return new Promise((resolve) => {
     $dlg.innerHTML = html;
-    const done = (v) => { $dlg.close(); resolve(v); };
+    const done = (v) => { $dlg.close(); nativeBarSig = ''; syncNativeBar(); resolve(v); };
     $dlg.onclick = (e) => {
       const b = e.target.closest('[data-dlg]');
       if (b) {
@@ -212,8 +236,12 @@ function dialog(html, { onOpen } = {}) {
     };
     $dlg.oncancel = (e) => { e.preventDefault(); done(null); };
     $dlg.showModal();
+    // 原生导航栏浮在网页上面，弹窗高的时候（比如升级路线）会被右上角的按钮盖住：弹窗开着时先把导航栏按钮收起来
+    if (nativeTabs) { nativeBarSig = 'dialog'; nativeTabs.bar({ items: [] }).catch(() => {}); }
     onOpen?.($dlg);
-    $dlg.querySelector('[data-dlg-input]')?.focus();
+    // 系统会自动把焦点给第一个能点的东西：日期、时间框会因此直接弹出系统的选择器（看着像两个弹窗），按钮会多一圈蓝框。只有要打字的框才给焦点
+    const typing = $dlg.querySelector('[data-dlg-input]');
+    if (typing) typing.focus(); else document.activeElement?.blur?.();
   });
 }
 
@@ -317,6 +345,7 @@ async function route() {
   swapApp(html);
   renderTabs(r.tab);
   renderTabClock();
+  syncFocus();
   keepAwake(hash.startsWith('#/bake/'));
   window.scrollTo(0, 0);
   scheduleWidgetSync();
@@ -332,6 +361,7 @@ async function rerender() {
   if (token !== routeToken || html == null) return;
   swapApp(html);
   renderTabClock();
+  syncFocus();
   window.scrollTo(0, y);
   scheduleWidgetSync();
 }
@@ -400,7 +430,7 @@ function barIcon(name) {
 }
 
 async function syncNativeBar() {
-  if (!nativeTabs) return;
+  if (!nativeTabs || $dlg.open) return;
   const heads = [...$app.querySelectorAll('.topbar, .greet, .bake-head')];
   nativeBack = $app.querySelector('.topbar > a.btn.icon:first-child, .bake-head > a.btn.icon:first-child');
   nativeTools = heads.flatMap((h) => [...h.querySelectorAll('[data-tool], [data-tool-menu]')]);
@@ -426,13 +456,63 @@ async function syncNativeBar() {
   nativeTabs.bar(bar).catch((e) => console.warn('native bar', e));
 }
 
+// Duo 立起来当小闹钟时，正在烤的话整屏只放「现在这一步」（html.focus）：自动切到那一炉的烘焙页，
+// 收起菜单栏、导航栏；放下 / 合上 / 打开以后回到原来的页面
+let standBack = null;
+function standSwitch(on) {
+  const onBake = location.hash.startsWith('#/bake/');
+  if (on && state.sessions.length && !onBake) {
+    // 好几炉同时在做：挑计时最快到点的那一炉
+    const left = (x) => Math.min(Infinity, ...x.timers.filter((t) => !t.done).map(remainingMs));
+    const pick = [...state.sessions].sort((a, b) => left(a) - left(b))[0];
+    standBack = location.hash || '#/';
+    go(`#/bake/${pick.id}`);
+    return; // 换页以后 route() 会调 syncFocus
+  }
+  if (!on && standBack != null) {
+    const back = standBack;
+    standBack = null;
+    if (onBake) { go(back); return; }
+  }
+  syncFocus();
+}
+function syncFocus() {
+  const root = document.documentElement;
+  const on = root.classList.contains('stand') && !!$app.querySelector('.split.bake');
+  if (on === root.classList.contains('focus')) return;
+  root.classList.toggle('focus', on);
+  nativeTabs?.focus({ on }).catch(() => {});
+}
+
 // 折叠屏半折、折痕横在屏幕中间（手机横过来立着，像个小笔记本）：html.laptop，--fold-top / --fold-bottom 是折痕上下沿。
 // 烘焙页在这个姿势下分成两截：上半截固定显示正在进行的这一步，下半截滚动看其余内容（见 CSS）
-function applyPosture(p) {
+// 测试用的假姿势：stand 立起来 / laptop 半折平放 / closed 合上 / open 打开 / real 回到真实的铰链（真的动一下铰链也会回到真实的）
+let fakePosture = false;
+function testPosture(kind) {
+  const fakes = {
+    stand: { status: 'partial', angle: 45 },
+    laptop: { status: 'partial', angle: 110, fold: { x: 0, y: Math.round(innerHeight / 2) - 10, w: innerWidth, h: 20 } },
+    closed: { status: 'closed', angle: 0 },
+    open: { status: 'open', angle: 180 },
+  };
+  fakePosture = kind !== 'real';
+  if (fakePosture) applyPosture(fakes[kind] || fakes.open, true);
+  else nativeTabs?.posture().then((p) => applyPosture(p)).catch(() => {});
+  toast(`posture: ${kind}`);
+}
+
+function applyPosture(p, fake = false) {
+  // 真的动了铰链：假姿势作废，按真实的来
+  if (!fake) fakePosture = false;
   const f = p?.fold;
-  const laptop = p?.status === 'partial' && f && f.w > f.h;
+  // 立起来（像个小闹钟）：只打开一点点角度，或者半开着但用的是外屏（外屏上没有折痕）
+  const stand = p?.status === 'partial' && (!f || (p.angle > 0 && p.angle <= 75));
+  const laptop = !stand && p?.status === 'partial' && f && f.w > f.h;
   const root = document.documentElement;
   root.classList.toggle('laptop', !!laptop);
+  const wasStand = root.classList.contains('stand');
+  root.classList.toggle('stand', stand);
+  if (stand !== wasStand) standSwitch(stand);
   // 合上用外屏：首页第一屏正好到三个数字为止（html.folded，见 CSS）
   root.classList.toggle('folded', p?.status === 'closed');
   if (laptop) {
@@ -1582,14 +1662,14 @@ async function viewLog(id) {
   const d = new Date(b.finishedAt);
   const modeText = { update: L('已更新到原配方', 'Saved to recipe'), new: L('已另存为新配方', 'Saved as new recipe'), none: L('只记在这一次', 'This bake only') }[b.changeMode] || '';
   return `
-  <div class="topbar"><a class="btn icon ghost" href="#/logs/${d.getFullYear()}-${d.getMonth() + 1}" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1></h1>
-    <label class="btn icon ghost" aria-label="${L('换照片', 'Change photo')}">${icon('camera')}<input type="file" accept="image/*" hidden data-act-change="replace-photo" data-id="${b.id}"></label></div>
+  <div class="topbar"><a class="btn icon ghost" href="#/logs/${d.getFullYear()}-${d.getMonth() + 1}" aria-label="${L('返回', 'Back')}">${icon('back')}</a><h1></h1></div>
   <div class="diary">
     <div class="date">${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}</div>
     <div class="wday">${weekday(d.getDay())}</div>
     ${shape(b.shape)}
     <div class="name">${esc(b.recipeName)}</div>
-    <div class="photo">${url ? `<img src="${url}" alt="">` : `<div class="ph-empty">${shape(b.shape)}</div>`}${hanko(L('出炉', 'Baked'))}</div>
+    <div class="photo">${url ? `<img src="${url}" alt="">` : `<div class="ph-empty">${shape(b.shape)}</div>`}${hanko(L('出炉', 'Baked'))}
+      <label class="photo-change" aria-label="${L('换照片', 'Change photo')}">${icon('camera')}<span>${url ? L('换照片', 'Change') : L('加照片', 'Add photo')}</span><input type="file" accept="image/*" hidden data-act-change="replace-photo" data-id="${b.id}"></label></div>
     <div class="meta">${L(`${fmtTime(b.finishedAt)} 出炉 · 用时 ${fmtDur(b.finishedAt - b.startedAt)}`, `Out at ${fmtTime(b.finishedAt)} · took ${fmtDur(b.finishedAt - b.startedAt)}`)}${b.scale !== 1 ? ` · ×${b.scale}` : ''}${b.backfilled ? ` · ${L('补记', 'added later')}` : ''}
       <button class="link-btn edit-time" data-act="edit-bake-time" data-id="${b.id}">${icon('pencil')} ${L('改日期', 'Change date')}</button></div>
     ${ratingRow(b.rating, 'log-rate', b.id)}
@@ -1699,7 +1779,7 @@ async function syncWidgets() {
 
   const since = Date.now() - 45 * DAY; // 日历最多看这个月，留够 45 天
   const data = {
-    colors: { paper: v('--paper'), card: v('--card'), ink: v('--ink'), soft: v('--ink-soft'), line: v('--line'), wood: v('--wood'), brown: v('--brown') },
+    colors: { paper: v('--paper'), card: v('--card'), ink: v('--ink'), soft: v('--ink-soft'), line: v('--line'), wood: v('--wood'), brown: v('--brown'), cocoa: v('--doodle') },
     shop: { lv: lv.lv, bakes: bakes.length, img: shopPic },
     rack: recipes.slice(0, 12).map((r) => ({ id: r.id, name: r.name, img: bread(r.shape), price: getPrice(r) != null ? formatPrice(getPrice(r)) : '' })),
     recipeCount: recipes.length,
@@ -1728,7 +1808,12 @@ async function syncWidgets() {
 async function listenWidgetRoutes() {
   if (!isNative()) return;
   widgetPlugin ||= window.Capacitor.Plugins.WidgetBridge;
-  const goTo = (hash) => { if (hash && hash !== location.hash) location.hash = hash; };
+  const goTo = (hash) => {
+    // 模拟器里没法真的折 Duo：用链接假装一个姿势来测试（xcrun simctl openurl booted bakerydays://route/test-posture/stand）
+    const fake = hash?.match(/^#\/test-posture\/(\w+)$/);
+    if (fake) return testPosture(fake[1]);
+    if (hash && hash !== location.hash) location.hash = hash;
+  };
   await widgetPlugin.addListener('route', (e) => goTo(e.hash));
   goTo((await widgetPlugin.takeRoute()).hash);
 }
@@ -2039,6 +2124,7 @@ const changeActions = {
   },
   async 'replace-photo'(el) {
     const file = el.files?.[0];
+    el.value = '';
     if (file) await replaceLogPhoto(el.dataset.id, file);
   },
   async 'bf-photo'(el) {
@@ -2046,9 +2132,12 @@ const changeActions = {
     el.value = '';
     if (!file) return;
     const f = backfillDraft();
+    let blob;
+    try { blob = await editPhoto(file); } catch { return toast(L('这张照片读不了，换一张试试', 'Couldn’t read that photo, try another')); }
+    if (!blob) return;
     state.photoBusy = true; rerender();
     try {
-      const id = await savePhoto(await compressImage(file));
+      const id = await savePhoto(blob);
       if (f.photoId) await db.del('photos', f.photoId);
       f.photoId = id;
     } catch { toast(L('这张照片读不了，换一张试试', 'Couldn’t read that photo, try another')); }
@@ -2070,13 +2159,140 @@ const changeActions = {
 
 // ---------- 照片 ----------
 
+// 选完照片先调一下：方框就是作品墙 / 日记里显示的样子（都是正方形），拖动挪位置、双指缩放、双指拧旋转；
+// 原生 app 里还能一键抠图（系统的主体识别，背景变透明）。点「算了」返回 null，什么都不改
+async function editPhoto(file) {
+  const base = await compressImage(file, 1600, 0.9);
+  const cutter = isNative() ? window.Capacitor?.Plugins?.PhotoCutout : null;
+  const plainUrl = URL.createObjectURL(base);
+  const img = new Image();
+  img.src = plainUrl;
+  try { await img.decode(); } catch { URL.revokeObjectURL(plainUrl); throw new Error('bad image'); }
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const st = { F: 300, z: 1, x: 0, y: 0, r: 0, cut: false, cutUrl: '' };
+  let $img;
+  const minZ = () => (st.cut ? 0.4 : 1);
+  // 转了角度以后，照片要比方框大一圈才盖得住四个角：方框转到照片的方向上，宽高都变成 F·(|cos|+|sin|)
+  const span = () => st.F * (Math.abs(Math.cos(st.r)) + Math.abs(Math.sin(st.r)));
+  const scale = () => Math.max(span() / W, span() / H) * st.z;
+  // 不抠图时照片要铺满方框（不露底）：在照片自己的方向上限制挪动；抠图后可以缩小，只要别整个拖出框外
+  const clamp = () => {
+    const s = scale();
+    if (st.cut) {
+      const m = Math.max(W, H) * s / 2 + st.F / 4;
+      st.x = Math.max(-m, Math.min(m, st.x));
+      st.y = Math.max(-m, Math.min(m, st.y));
+      return;
+    }
+    const c = Math.cos(st.r), n = Math.sin(st.r);
+    const eu = Math.max(0, (W * s - span()) / 2), ev = Math.max(0, (H * s - span()) / 2);
+    const u = Math.max(-eu, Math.min(eu, st.x * c + st.y * n));
+    const v = Math.max(-ev, Math.min(ev, -st.x * n + st.y * c));
+    st.x = u * c - v * n;
+    st.y = u * n + v * c;
+  };
+  const draw = () => {
+    clamp();
+    const s = scale();
+    $img.style.width = `${W * s}px`;
+    $img.style.height = `${H * s}px`;
+    $img.style.transform = `translate(${st.F / 2 + st.x}px, ${st.F / 2 + st.y}px) rotate(${st.r}rad) translate(${-W * s / 2}px, ${-H * s / 2}px)`;
+  };
+  const html = `<div class="photo-edit">
+    <h3>${L('调整照片', 'Adjust photo')}</h3>
+    <p class="small muted">${L('拖动挪位置，双指缩放、拧一拧可以旋转', 'Drag to move, pinch to zoom, twist to rotate')}</p>
+    <div class="pe-frame"><img class="pe-img" alt="" draggable="false" src="${plainUrl}"></div>
+    <div class="row pe-opts">
+      ${cutter ? `<button class="btn sm" data-pe="cut"><span>${L('抠图', 'Cut out')}</span></button>` : ''}
+      <button class="btn sm ghost" data-pe="reset">${L('复位', 'Reset')}</button>
+    </div>
+    <div class="row end"><button class="btn ghost" data-dlg="cancel">${L('算了', 'Cancel')}</button><button class="btn primary" data-dlg="ok">${L('用这张', 'Use it')}</button></div>
+  </div>`;
+  const v = await dialog(html, { onOpen: (d) => {
+    const frame = d.querySelector('.pe-frame');
+    $img = d.querySelector('.pe-img');
+    st.F = frame.clientWidth || 300;
+    draw();
+    // 拖动 + 双指缩放
+    const pts = new Map();
+    let last = null;
+    let free = 0; // 双指拧的真实角度（显示的角度靠近 90° 的整数倍时会吸附过去）
+    const QUARTER = Math.PI / 2;
+    const snap = (a) => { const q = Math.round(a / QUARTER) * QUARTER; return Math.abs(a - q) < 0.07 ? q : a; };
+    const pinch = () => { const [a, b] = [...pts.values()]; return { d: Math.hypot(a.x - b.x, a.y - b.y), a: Math.atan2(b.y - a.y, b.x - a.x) }; };
+    frame.addEventListener('pointerdown', (e) => { frame.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); last = pts.size === 2 ? pinch() : null; free = st.r; });
+    frame.addEventListener('pointermove', (e) => {
+      const p = pts.get(e.pointerId);
+      if (!p) return;
+      if (pts.size === 1) { st.x += e.clientX - p.x; st.y += e.clientY - p.y; }
+      p.x = e.clientX; p.y = e.clientY;
+      if (pts.size === 2) {
+        const now = pinch();
+        if (last) {
+          st.z = Math.max(minZ(), Math.min(4, st.z * now.d / last.d));
+          let da = now.a - last.a;
+          if (da > Math.PI) da -= 2 * Math.PI;
+          if (da < -Math.PI) da += 2 * Math.PI;
+          free += da;
+          st.r = snap(free);
+        }
+        last = now;
+      }
+      draw();
+    });
+    const up = (e) => { pts.delete(e.pointerId); last = pts.size === 2 ? pinch() : null; free = st.r; };
+    frame.addEventListener('pointerup', up);
+    frame.addEventListener('pointercancel', up);
+    frame.addEventListener('wheel', (e) => { e.preventDefault(); st.z = Math.max(minZ(), Math.min(4, st.z * (e.deltaY < 0 ? 1.08 : 1 / 1.08))); draw(); }, { passive: false });
+    d.querySelector('[data-pe="reset"]').addEventListener('click', () => { st.z = 1; st.x = 0; st.y = 0; st.r = 0; draw(); });
+    const cutBtn = d.querySelector('[data-pe="cut"]');
+    cutBtn?.addEventListener('click', async () => {
+      if (cutBtn.disabled) return;
+      if (!st.cut && !st.cutUrl) {
+        cutBtn.disabled = true;
+        cutBtn.querySelector('span').textContent = L('抠图中…', 'Cutting out…');
+        try {
+          const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(base); });
+          const { data } = await cutter.cutout({ data: b64 });
+          st.cutUrl = `data:image/png;base64,${data}`;
+        } catch { toast(L('没找到能抠出来的东西，换个角度拍试试', 'Couldn’t find a subject to cut out')); }
+        cutBtn.disabled = false;
+        cutBtn.querySelector('span').textContent = L('抠图', 'Cut out');
+        if (!st.cutUrl) return;
+      }
+      st.cut = !st.cut;
+      cutBtn.classList.toggle('primary', st.cut);
+      frame.classList.toggle('cut', st.cut);
+      $img.src = st.cut ? st.cutUrl : plainUrl;
+      await $img.decode().catch(() => {});
+      if (!st.cut && st.z < 1) st.z = 1;
+      draw();
+    });
+  } });
+  if (v !== 'ok') { URL.revokeObjectURL(plainUrl); return null; }
+  // 按方框里看到的样子出一张 1200×1200 的图：抠过的存 PNG（留着透明背景），没抠的存 JPEG
+  const N = 1200, k = N / st.F, s = scale();
+  const canvas = document.createElement('canvas');
+  canvas.width = N; canvas.height = N;
+  const ctx = canvas.getContext('2d');
+  ctx.translate((st.F / 2 + st.x) * k, (st.F / 2 + st.y) * k);
+  ctx.rotate(st.r);
+  ctx.drawImage($img, -W * s / 2 * k, -H * s / 2 * k, W * s * k, H * s * k);
+  const blob = await new Promise((res) => canvas.toBlob(res, st.cut ? 'image/png' : 'image/jpeg', 0.85));
+  canvas.width = 0; canvas.height = 0;
+  URL.revokeObjectURL(plainUrl);
+  return blob || base;
+}
+
 async function setFinishPhoto(file) {
   const s = routeSession();
   if (!s) return;
   const f = finishDraft(s.id);
+  let blob;
+  try { blob = await editPhoto(file); } catch { return toast(L('这张照片读不了，换一张试试', 'Couldn’t read that photo, try another')); }
+  if (!blob) return;
   state.photoBusy = true; rerender();
   try {
-    const blob = await compressImage(file);
     const old = f.photoId;
     f.photoId = await savePhoto(blob);
     if (old) await db.del('photos', old);
@@ -2088,8 +2304,10 @@ async function setFinishPhoto(file) {
 
 async function replaceLogPhoto(id, file) {
   try {
+    const blob = await editPhoto(file);
+    if (!blob) return;
     const b = await getBake(id);
-    const photoId = await savePhoto(await compressImage(file));
+    const photoId = await savePhoto(blob);
     if (b.photoId) await db.del('photos', b.photoId);
     b.photoId = photoId;
     await saveBake(b);
@@ -2349,7 +2567,7 @@ async function boot() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkCatalogOnline(); });
   setInterval(tick, 1000);
   tick();
-  // app 的字体（乐米小奶泡体）尽早在后台下好
+  // app 的字体（小赖字体）尽早在后台下好
   setTimeout(() => document.fonts?.load?.('16px AppFont', '面包').catch(() => {}), 1500);
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {

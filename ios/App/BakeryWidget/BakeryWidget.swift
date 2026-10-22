@@ -16,7 +16,7 @@ private func T(_ a: String, _ b: String) -> String { zh ? a : b }
 // MARK: - 数据
 
 struct Colors: Codable {
-    var paper: String?, card: String?, ink: String?, soft: String?, line: String?, wood: String?, brown: String?
+    var paper: String?, card: String?, ink: String?, soft: String?, line: String?, wood: String?, brown: String?, cocoa: String?
 }
 
 struct ShopInfo: Codable {
@@ -68,7 +68,7 @@ extension Color {
 }
 
 struct Palette {
-    let card, ink, soft, line, wood, brown: Color
+    let card, ink, soft, line, wood, brown, cocoa: Color
     init(_ c: Colors?) {
         card = Color(hex: c?.card, "#fffcf5")
         ink = Color(hex: c?.ink, "#33291f")
@@ -76,6 +76,7 @@ struct Palette {
         line = Color(hex: c?.line, "#4a3a2e")
         wood = Color(hex: c?.wood, "#d2a676")
         brown = Color(hex: c?.brown, "#9a5f2e")
+        cocoa = Color(hex: c?.cocoa, "#5b4636")   // 可可棕：插画线稿的颜色
     }
 }
 
@@ -147,7 +148,7 @@ struct ShopView: View {
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("\(data.shop?.bakes ?? 0)").font(.custom(titleFont, size: 24)).foregroundColor(p.brown)
-                    Text(data.text("baked", T("次出炉", "baked"))).font(.custom(titleFont, size: 12)).foregroundColor(p.soft)
+                    Text(data.text("baked", T("次出炉", "baked"))).font(.custom(titleFont, size: 10)).foregroundColor(p.soft)
                 }
             }
             Text("Lv.\(data.shop?.lv ?? 1)").font(.custom(titleFont, size: 11)).foregroundColor(p.soft)
@@ -241,7 +242,8 @@ struct RackView: View {
                 }
             }
             .frame(maxHeight: large ? 46 : 54)
-            Text(it.name).font(.custom(titleFont, size: 12)).foregroundColor(p.ink).lineLimit(1)
+            // 面包名：小一号、可可棕（和插画线条同色），不用深墨色，看着软一点
+            Text(it.name).font(.custom(titleFont, size: 10.5)).foregroundColor(p.cocoa).lineLimit(1).minimumScaleFactor(0.85)
         }
         .frame(maxWidth: .infinity)
     }
