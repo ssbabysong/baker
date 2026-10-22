@@ -59,7 +59,7 @@ export async function refreshCatalog(force = false) {
 
 const bodyOf = (c, lang) => (lang === 'en' && c.en ? c.en : c.zh);
 // 比较「内容有没有被用户改过」用的指纹：名字、份量、备注、材料、步骤
-const fingerprint = (r) => {
+export const fingerprint = (r) => {
   const s = JSON.stringify([r.name, r.yield || '', r.notes || '',
     r.ingredients.map((i) => [i.name, i.amount ?? null, i.unit || '', i.note || '']),
     r.steps.map((st) => [st.text, st.minutes ?? null, st.kind || 'other'])]);
@@ -83,11 +83,14 @@ function applyBody(r, c, lang) {
   return next;
 }
 
-export async function mergeCatalog(catalog, lang) {
+// seed：要不要把新的内置配方放上架。开了 iCloud 的新设备，要等第一次同步完才放，
+// 免得把用户在别的设备上删掉的配方又放回去
+export async function mergeCatalog(catalog, lang, { seed = true } = {}) {
   if (!catalog) return false;
   const all = await db.all('recipes');
   let placed = await db.getKv('seededSamples');
   if (!Array.isArray(placed)) placed = (await db.getKv('seeded')) ? ['anpan', 'country', 'milk'] : [];
+  const before = (await db.getKv('seededSamples'))?.length ?? -1;
   let changed = false;
 
   for (const c of catalog.recipes) {
@@ -96,8 +99,9 @@ export async function mergeCatalog(catalog, lang) {
       || all.find((x) => !x.sample && (x.name === c.zh.name || x.name === c.en?.name));
 
     if (!r) {
-      if (placed.includes(c.key) || catalog.removed.includes(c.key)) continue; // 删过的、下架的不再放
-      await saveRecipe(applyBody({ ingredients: [], steps: [] }, c, lang));
+      if (!seed || placed.includes(c.key) || catalog.removed.includes(c.key)) continue; // 删过的、下架的不再放
+      // id 按 key 固定：两台设备各自放上架的是同一条，同步时不会多出一份
+      await saveRecipe(applyBody({ id: `s-${c.key}`, ingredients: [], steps: [] }, c, lang));
       placed.push(c.key);
       changed = true;
       continue;
@@ -120,7 +124,7 @@ export async function mergeCatalog(catalog, lang) {
       changed = true;
     }
   }
-  await db.setKv('seededSamples', placed);
+  if (changed || placed.length !== before) await db.setKv('seededSamples', placed);
   return changed;
 }
 

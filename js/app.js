@@ -1,7 +1,7 @@
 import {
   db, uid, listRecipes, getRecipe, saveRecipe, deleteRecipe, listBakes, getBake, saveBake, deleteBake,
   savePhoto, photoUrl, compressImage, getShop, saveShop, getSessions, saveSessions,
-  exportAll, importAll, guessShape, setPrice, randomPrice, getPrice,
+  exportAll, importAll, guessShape, setPrice, randomPrice, getPrice, quiet,
 } from './store.js';
 import { parseRecipeText, formatAmount, formatMinutes, guessStepKind } from './parser.js';
 import { rateStar, hanko, houseLogo, shape, icon, storefront, storefrontSign, mysteryShop, ovenScene, stageScene, emptyShelf, mascot, tabIcon, SHAPE_NAMES, SHAPE_NAMES_EN } from './sketch.js';
@@ -11,6 +11,7 @@ import {
   isNative, permissionState, refreshPermission, syncNativeAlarms,
 } from './timers.js';
 import { currentCatalog, refreshCatalog, mergeCatalog, takeCatalogUpdate, skipCatalogUpdate } from './catalog.js';
+import { initCloud, cloudReady, cloudStatus, setCloudOn, syncNow, seedingAllowed } from './cloud.js';
 import { L, isEn, getLang, setLang, getCurrency, setCurrency, currencySymbol, formatPrice, APP_NAME } from './i18n.js';
 
 const $app = document.getElementById('app');
@@ -1839,11 +1840,37 @@ function viewSettings() {
     <div class="card alt"><div class="row"><div class="grow"><b>${L('价签货币', 'Currency')}</b></div>${chips('currency', getCurrency(), [['CNY', L('¥ 人民币', '¥ CNY')], ['USD', L('$ 美元', '$ USD')]])}</div></div>
     <div class="card"><div class="row"><div class="grow"><b>${L('外观', 'Look')}</b></div>
       ${chips('theme', theme, [['auto', L('跟随系统', 'Auto')], ['light', L('白纸', 'Paper')], ['dark', L('黑板', 'Chalkboard')]])}</div></div>
-    <div class="card"><b>${L('备份', 'Backup')}</b><p class="small muted" style="margin:2px 0 10px">${L('数据只存在这台设备上，换手机前记得导出。', 'Data lives only on this device. Export before switching phones.')}</p>
+    ${cloudReady() ? cloudCard(chips) : ''}
+    <div class="card"><b>${L('备份', 'Backup')}</b><p class="small muted" style="margin:2px 0 10px">${cloudStatus().on && cloudStatus().account === 'available'
+      ? L('已经同步到 iCloud。导出的文件可以留作存档，也能导入网页版。', 'Already synced with iCloud. An exported file is handy as an archive or to move to the web version.')
+      : L('数据只存在这台设备上，换手机前记得导出。', 'Data lives only on this device. Export before switching phones.')}</p>
       <div class="row"><button class="btn sm" data-act="export-all">${icon('download')} ${L('导出备份', 'Export')}</button>
       <label class="btn sm">${icon('upload')} ${L('从备份恢复', 'Restore')}<input type="file" accept=".json,application/json" hidden data-act-change="import-all"></label></div></div>
   </div>
   <p class="center small muted" style="margin-top:28px">${esc(APP_NAME())} · ${L('经营你的小面包店', 'run your own little bakery')}</p>`;
+}
+
+// iCloud 同步那张卡片：开关 + 现在的状态
+function cloudCard(chips) {
+  const c = cloudStatus();
+  const ago = (t) => {
+    const m = Math.floor((Date.now() - t) / 60000);
+    if (m < 1) return L('刚刚', 'just now');
+    if (m < 60) return L(`${m} 分钟前`, `${m} min ago`);
+    const h = Math.floor(m / 60);
+    return h < 24 ? L(`${h} 小时前`, `${h} h ago`) : L(`${Math.floor(h / 24)} 天前`, `${Math.floor(h / 24)} d ago`);
+  };
+  const line = !c.on ? L('已关闭：数据只存在这台设备上', 'Off: data stays on this device')
+    : c.account === 'noAccount' ? L('没有登录 iCloud：到系统「设置」里登录 Apple 账号', 'Not signed in to iCloud. Sign in with your Apple Account in Settings')
+    : c.account === 'restricted' ? L('这台设备不能使用 iCloud', 'iCloud is restricted on this device')
+    : c.account !== 'available' ? L('暂时连不上 iCloud', 'Can’t reach iCloud right now')
+    : c.syncing ? L('正在同步…', 'Syncing…')
+    : c.lastSync ? L(`已同步 · ${ago(c.lastSync)}`, `Synced · ${ago(c.lastSync)}`)
+    : L('等待第一次同步…', 'Waiting for the first sync…');
+  return `<div class="card alt"><div class="row"><div class="grow"><b>${L('iCloud 同步', 'iCloud sync')}</b><div class="small muted">${line}</div></div>
+      ${chips('cloud', c.on ? 'on' : 'off', [['on', L('开', 'On')], ['off', L('关', 'Off')]])}</div>
+    <p class="small muted" style="margin:6px 0 0">${L('配方、出炉记录、照片和店名，在登录同一个 Apple 账号的设备之间自动同步。', 'Recipes, bakes, photos and your shop name sync across devices signed in to the same Apple Account.')}</p>
+    ${c.on && c.account === 'available' ? `<div class="row" style="margin-top:8px"><button class="btn sm" data-act="cloud-sync-now">${L('现在同步', 'Sync now')}</button></div>` : ''}</div>`;
 }
 
 function notFound() {
@@ -2105,6 +2132,8 @@ const actions = {
     rerender();
   },
   'currency'(el) { setCurrency(el.dataset.v); rerender(); },
+  async 'cloud'(el) { await setCloudOn(el.dataset.v === 'on'); rerender(); },
+  'cloud-sync-now'() { syncNow(); },
   async 'export-all'() {
     const data = await exportAll();
     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
@@ -2533,15 +2562,27 @@ document.addEventListener('visibilitychange', () => {
 
 // 内置配方：先用手上的目录（app 自带的或上次存下的）放上架；再悄悄去线上看一眼有没有新版
 async function syncCatalog() {
-  await mergeCatalog(await currentCatalog(), getLang());
+  return mergeCatalog(await currentCatalog(), getLang(), { seed: seedingAllowed() });
 }
 async function checkCatalogOnline(force = false) {
   const fresh = await refreshCatalog(force).catch(() => null);
   if (!fresh) return;
-  if (await mergeCatalog(fresh, getLang())) {
+  if (await mergeCatalog(fresh, getLang(), { seed: seedingAllowed() })) {
     // 只在看配方的页面上刷新，别打断烘焙
     if (/^#?\/?$|^#\/recipes|^#\/r\//.test(location.hash || '#/')) rerender();
   }
+}
+
+// 别的设备改了东西，已经合进本地：重读店铺，在不打断操作的页面上刷新（烘焙、编辑、拍照这些页面等离开再说）
+async function cloudChanged() {
+  state.shop = await getShop();
+  if (!/^#\/(bake|finish|edit|import|backfill)/.test(location.hash) && !state.photoBusy) rerender();
+  else scheduleWidgetSync();
+}
+function cloudStatusChanged(s, was) {
+  // 新设备第一次同步完：这时候再把内置配方放上架
+  if (s.fetchedOnce && !was.fetchedOnce) syncCatalog().then((changed) => changed && cloudChanged());
+  if (location.hash === '#/settings') rerender();
 }
 
 async function boot() {
@@ -2553,7 +2594,9 @@ async function boot() {
   document.title = APP_NAME();
 
   state.shop = await getShop();
-  if (!(await db.getKv('shop'))) await saveShop(state.shop);
+  // 默认店名记成「最早」的修改：新设备开了 iCloud 时，别拿默认名盖掉别的设备上起好的店名
+  if (!(await db.getKv('shop'))) await quiet.setKv('shop', state.shop, 0);
+  await initCloud({ changed: cloudChanged, statusChanged: cloudStatusChanged }).catch((e) => console.warn('cloud', e));
   await syncCatalog();
   state.sessions = await getSessions();
   for (const s of state.sessions) s.editing = false;

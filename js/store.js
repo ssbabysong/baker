@@ -41,15 +41,53 @@ function tx(store, mode, fn) {
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
+// iCloud 同步（见 cloud.js）：这些数据一改就告诉同步模块，传到同一个 Apple 账号的其他设备上。
+// 正在烤的炉、目录缓存这些只留在本机。每条记录带一个 _m（最后修改时间），两边都改过时以后改的为准；
+// kv 里的值没法带字段，修改时间另存在「m:键名」里
+const SYNCED = new Set(['recipes', 'bakes', 'photos']);
+const SYNCED_KV = new Set(['shop', 'seededSamples']);
+let syncHook = null;
+export const setSyncHook = (fn) => { syncHook = fn; };
+const told = (change) => { try { syncHook?.(change); } catch (e) { console.warn('sync', e); } };
+
+const rawPut = (store, value) => tx(store, 'readwrite', (s) => s.put(value));
+const rawDel = (store, id) => tx(store, 'readwrite', (s) => s.delete(id));
+const rawSetKv = (key, value) => tx('kv', 'readwrite', (s) => s.put(value, key));
+
 export const db = {
   all: (store) => tx(store, 'readonly', (s) => s.getAll()),
   get: (store, id) => tx(store, 'readonly', (s) => s.get(id)),
-  put: (store, value) => tx(store, 'readwrite', (s) => s.put(value)),
-  del: (store, id) => tx(store, 'readwrite', (s) => s.delete(id)),
+  async put(store, value) {
+    if (!SYNCED.has(store)) return rawPut(store, value);
+    const v = { ...value, _m: Date.now() };
+    const r = await rawPut(store, v);
+    told({ store, id: v.id, value: v, mtime: v._m });
+    return r;
+  },
+  async del(store, id) {
+    await rawDel(store, id);
+    if (SYNCED.has(store)) told({ store, id, deleted: true });
+  },
   clear: (store) => tx(store, 'readwrite', (s) => s.clear()),
   getKv: (key) => tx('kv', 'readonly', (s) => s.get(key)),
-  setKv: (key, value) => tx('kv', 'readwrite', (s) => s.put(value, key)),
+  async setKv(key, value) {
+    await rawSetKv(key, value);
+    if (!SYNCED_KV.has(key)) return;
+    const m = Date.now();
+    await rawSetKv(`m:${key}`, m);
+    told({ store: 'kv', id: key, value, mtime: m });
+  },
   delKv: (key) => tx('kv', 'readwrite', (s) => s.delete(key)),
+};
+
+// 别的设备同步过来的改动：原样写进本地，不再传回去
+export const quiet = {
+  put: rawPut,
+  del: rawDel,
+  async setKv(key, value, mtime) {
+    await rawSetKv(key, value);
+    await rawSetKv(`m:${key}`, mtime);
+  },
 };
 
 // ---------- 配方 ----------

@@ -35,15 +35,16 @@
       <nav><a href="#en">English</a> · <a href="support.html">技术支持 Support</a></nav>
     </div>
   </header>
-  <p class="muted">面包物语（Bakery Days）· 生效日期：2026 年 10 月 22 日</p>
+  <p class="muted">面包物语（Bakery Days）· 生效日期：2026 年 10 月 22 日（1.1 版起加入 iCloud 同步）</p>
 
   <div class="card">
-    <strong>一句话：面包物语不收集你的任何个人数据。</strong>没有账号，没有统计、广告或追踪。你的配方、出炉记录和照片都只保存在你自己的手机上。
+    <strong>一句话：面包物语不收集你的任何个人数据。</strong>没有账号，没有统计、广告或追踪。你的配方、出炉记录和照片保存在你自己的手机上；打开 iCloud 同步时，也存一份在你自己的 iCloud 里，开发者看不到。
   </div>
 
   <h2>数据存在哪里</h2>
   <ul>
-    <li>配方、出炉记录、评分、笔记、照片、店名和设置，都保存在设备本地，不会上传到任何服务器。</li>
+    <li>配方、出炉记录、评分、笔记、照片、店名和设置，都保存在设备本地，不会上传到开发者的服务器。</li>
+    <li><strong>iCloud 同步</strong>（iOS App，默认开启，可在「设置」里关闭）：配方、出炉记录、照片和店名会存进你自己 Apple 账号的 iCloud 私有空间，在登录同一个账号的设备之间同步。这部分数据由 Apple 按 <a href="https://www.apple.com/legal/privacy/">Apple 隐私政策</a>保管，开发者无法访问。关闭同步不会删除 iCloud 里已有的数据；要删除，可以在 iPhone 的「设置 → Apple 账号 → iCloud → 管理储存空间」里删掉本 App 的数据。</li>
     <li>删除 App 会一并删除这些数据。你可以在「设置」里随时导出备份文件，文件由你自己保管。</li>
     <li>桌面小组件显示的内容由 App 写在本机的共享存储里，同样不离开你的设备。</li>
   </ul>
@@ -55,7 +56,7 @@
   </ul>
 
   <h2>联网</h2>
-  <p>App 只在以下两种情况联网，都不会发送你的个人数据或内容：</p>
+  <p>除了上面的 iCloud 同步，App 只在以下两种情况联网，都不会发送你的个人数据或内容：</p>
   <ul>
     <li>从 GitHub Pages（<code>ssbabysong.github.io</code>）下载最新的内置配方列表。</li>
     <li>从 Google Fonts 加载显示数字用的字体。</li>
@@ -81,12 +82,13 @@
     <p class="muted">Bakery Days · Effective October 22, 2026</p>
 
     <div class="card">
-      <strong>In short: Bakery Days does not collect any personal data.</strong> There are no accounts, analytics, ads or tracking. Your recipes, bakes and photos stay on your own phone.
+      <strong>In short: Bakery Days does not collect any personal data.</strong> There are no accounts, analytics, ads or tracking. Your recipes, bakes and photos stay on your own phone, and, with iCloud sync on, in your own iCloud, where the developer can't see them.
     </div>
 
     <h2>Where your data lives</h2>
     <ul>
-      <li>Recipes, bake records, ratings, notes, photos, your shop name and settings are stored only on your device and are never uploaded to any server.</li>
+      <li>Recipes, bake records, ratings, notes, photos, your shop name and settings are stored on your device and are never uploaded to the developer's servers.</li>
+      <li><strong>iCloud sync</strong> (iOS app, on by default, can be turned off in Settings): recipes, bakes, photos and your shop name are stored in the private iCloud space of your own Apple Account and synced across devices signed in to it. Apple keeps this data under the <a href="https://www.apple.com/legal/privacy/">Apple Privacy Policy</a>; the developer has no access to it. Turning sync off doesn't delete what is already in iCloud; to delete it, go to Settings → Apple Account → iCloud → Manage Storage on your iPhone.</li>
       <li>Deleting the app deletes this data. You can export a backup file from Settings at any time; the file stays with you.</li>
       <li>Home-screen widgets read what the app saves in on-device shared storage. That data also never leaves your device.</li>
     </ul>
@@ -98,7 +100,7 @@
     </ul>
 
     <h2>Network</h2>
-    <p>The app connects to the internet only to:</p>
+    <p>Apart from iCloud sync, the app connects to the internet only to:</p>
     <ul>
       <li>download the latest built-in recipe list from GitHub Pages (<code>ssbabysong.github.io</code>), and</li>
       <li>load the font used for numbers from Google Fonts.</li>

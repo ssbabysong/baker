@@ -10,6 +10,7 @@
 		BA4E00000000000000000002 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA4E00000000000000000001 /* MainViewController.swift */; };
 		BA4E00000000000000000004 /* WidgetBridgePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA4E00000000000000000003 /* WidgetBridgePlugin.swift */; };
 		BA4E0000000000000000F002 /* PhotoCutoutPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA4E0000000000000000F001 /* PhotoCutoutPlugin.swift */; };
+		BA4E0000000000000000F102 /* CloudSyncPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA4E0000000000000000F101 /* CloudSyncPlugin.swift */; };
 		BA4E0000000000000000E102 /* NativeTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA4E0000000000000000E101 /* NativeTabs.swift */; };
 		BA4E0000000000000000000B /* BakeryWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA4E0000000000000000000A /* BakeryWidget.swift */; };
 		BA4E0000000000000000000F /* xiaolai.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BA4E0000000000000000000E /* xiaolai.ttf */; };
@@ -57,6 +58,7 @@
 		BA4E00000000000000000001 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		BA4E00000000000000000003 /* WidgetBridgePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBridgePlugin.swift; sourceTree = "<group>"; };
 		BA4E0000000000000000F001 /* PhotoCutoutPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoCutoutPlugin.swift; sourceTree = "<group>"; };
+		BA4E0000000000000000F101 /* CloudSyncPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSyncPlugin.swift; sourceTree = "<group>"; };
 		BA4E0000000000000000E101 /* NativeTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTabs.swift; sourceTree = "<group>"; };
 		BA4E00000000000000000005 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		BA4E0000000000000000000A /* BakeryWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BakeryWidget.swift; sourceTree = "<group>"; };
@@ -107,6 +109,7 @@
 			children = (
 				BA4E00000000000000000003 /* WidgetBridgePlugin.swift */,
 				BA4E0000000000000000F001 /* PhotoCutoutPlugin.swift */,
+				BA4E0000000000000000F101 /* CloudSyncPlugin.swift */,
 				BA4E0000000000000000E101 /* NativeTabs.swift */,
 			);
 			path = Plugins;
@@ -297,6 +300,7 @@
 				BA4E00000000000000000002 /* MainViewController.swift in Sources */,
 				BA4E00000000000000000004 /* WidgetBridgePlugin.swift in Sources */,
 				BA4E0000000000000000F002 /* PhotoCutoutPlugin.swift in Sources */,
+				BA4E0000000000000000F102 /* CloudSyncPlugin.swift in Sources */,
 				BA4E0000000000000000E102 /* NativeTabs.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -336,7 +340,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = BakeryWidget/BakeryWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = BN3CG5FXJ2;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BakeryWidget/Info.plist;
@@ -346,7 +350,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ssbabysong.bakerydays.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -362,7 +366,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = BakeryWidget/BakeryWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = BN3CG5FXJ2;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BakeryWidget/Info.plist;
@@ -372,7 +376,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ssbabysong.bakerydays.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -498,7 +502,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = BN3CG5FXJ2;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				INFOPLIST_FILE = App/Info.plist;
@@ -507,7 +511,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ssbabysong.bakerydays;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -522,7 +526,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = BN3CG5FXJ2;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				INFOPLIST_FILE = App/Info.plist;
@@ -531,7 +535,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ssbabysong.bakerydays;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
