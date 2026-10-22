@@ -67,10 +67,11 @@ export async function initCloud({ changed, statusChanged } = {}) {
   pull();
 }
 
+let uploadedRound = null; // 这一轮已经整个传过了：晚到的旧状态通知别再触发一遍
 function setStatus(s) {
   const was = status;
   status = s;
-  if (active() && s.needsFullUpload) uploadAll();
+  if (active() && s.needsFullUpload && s.round !== uploadedRound) uploadAll(s.round);
   onStatus(s, was);
 }
 
@@ -101,7 +102,8 @@ async function push(c) {
 
 // 第一次开同步、换了 iCloud 账号：本地的全部交给原生（云端已有的，原生那边按修改时间比，旧的不会盖掉新的）
 let uploading = null;
-function uploadAll() {
+function uploadAll(round) {
+  uploadedRound = round;
   uploading ||= (async () => {
     for (const store of ['recipes', 'bakes', 'photos']) {
       for (const v of await db.all(store)) await push({ store, id: v.id, value: v, mtime: v._m ?? 0 });

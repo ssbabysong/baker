@@ -8,7 +8,8 @@ import UIKit
 /// 数据本身在网页的 IndexedDB 里，这里只做中转（合并规则在 js/cloud.js）：
 ///   - 要上传的放在 outbox/（每条一个 json，照片另存一个 jpg），CKSyncEngine 要发的时候从这里读，发成功了删掉
 ///   - 下载下来的放进 inbox/，通知网页来取；网页合并进 IndexedDB 后 ack，再删掉
-/// - status() → { on, account: available|noAccount|restricted|unknown, syncing, lastSync（毫秒）, fetchedOnce, needsFullUpload }
+/// - status() → { on, account: available|noAccount|restricted|unknown, syncing, lastSync（毫秒）, fetchedOnce, needsFullUpload, round }
+///   round：第几轮「要把本地的全部传上去」，网页每轮只传一次
 /// - setOn({ on }) → status
 /// - save({ store, id, json, mtime, photo?: base64 JPEG })、remove({ store, id })
 /// - takeInbox() → { items: [{ name, store, id, json?, mtime?, deleted?, photo?（文件路径） }] }、ack({ names })
@@ -119,8 +120,12 @@ final class CloudSync: CKSyncEngineDelegate, @unchecked Sendable {
     }
     var needsFullUpload: Bool {
         get { defaults.object(forKey: "cloud.needsFullUpload") as? Bool ?? true }   // 第一次要把本地的全部传上去
-        set { defaults.set(newValue, forKey: "cloud.needsFullUpload") }
+        set {
+            if newValue && !needsFullUpload { defaults.set(round + 1, forKey: "cloud.round") }
+            defaults.set(newValue, forKey: "cloud.needsFullUpload")
+        }
     }
+    private var round: Int { defaults.integer(forKey: "cloud.round") }
     private var fetchedOnce: Bool {
         get { defaults.bool(forKey: "cloud.fetchedOnce") }
         set { defaults.set(newValue, forKey: "cloud.fetchedOnce") }
@@ -176,7 +181,7 @@ final class CloudSync: CKSyncEngineDelegate, @unchecked Sendable {
     }
 
     func statusDict() -> [String: Any] {
-        ["on": isOn, "account": account, "syncing": syncing, "lastSync": lastSync, "fetchedOnce": fetchedOnce, "needsFullUpload": needsFullUpload]
+        ["on": isOn, "account": account, "syncing": syncing, "lastSync": lastSync, "fetchedOnce": fetchedOnce, "needsFullUpload": needsFullUpload, "round": round]
     }
 
     private func refreshAccount() {
